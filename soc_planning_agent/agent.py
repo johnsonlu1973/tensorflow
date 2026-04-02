@@ -1,5 +1,7 @@
 """Core SOC Planning Agent using Claude API with web search."""
 import json
+import time
+import random
 from datetime import datetime
 from typing import Optional
 
@@ -74,6 +76,28 @@ class SOCPlanningAgent:
             {"type": "web_fetch_20260209", "name": "web_fetch"},
         ]
 
+    def _api_call_with_retry(self, **kwargs) -> anthropic.types.Message:
+        """Call Claude API with exponential backoff on rate limit errors."""
+        max_retries = 5
+        base_delay = 60  # start with 60s for rate limits
+
+        for attempt in range(max_retries):
+            try:
+                with self.client.messages.stream(**kwargs) as stream:
+                    return stream.get_final_message()
+            except anthropic.RateLimitError as e:
+                if attempt == max_retries - 1:
+                    raise
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 10)
+                print(f"\n⏳ Rate limit hit. Waiting {delay:.0f}s before retry {attempt + 1}/{max_retries}...")
+                time.sleep(delay)
+            except anthropic.APIStatusError as e:
+                if e.status_code >= 500 and attempt < max_retries - 1:
+                    delay = 30 * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    raise
+
     def _run_with_search(self, user_message: str, extra_context: str = "") -> tuple[str, list]:
         """Run Claude with web search tools, return (text_response, sources)."""
         messages = [{"role": "user", "content": user_message}]
@@ -87,15 +111,14 @@ class SOCPlanningAgent:
         max_iterations = 8  # prevent infinite loops
 
         for _ in range(max_iterations):
-            with self.client.messages.stream(
+            response = self._api_call_with_retry(
                 model=MODEL,
-                max_tokens=8192,
+                max_tokens=4096,
                 thinking={"type": "adaptive"},
                 system=system,
                 tools=self.tools,
                 messages=messages,
-            ) as stream:
-                response = stream.get_final_message()
+            )
 
             # Collect sources from web search results
             for block in response.content:
@@ -164,6 +187,9 @@ Provide a structured summary with key findings and their product planning implic
                         sources=sources,
                     )
                     collection_ids.append(coll_id)
+
+                # Pause between requests to stay within rate limits
+                time.sleep(15)
 
         return collection_ids
 
@@ -241,7 +267,7 @@ Return as JSON array: [{{"type": ..., "title": ..., "content": ..., "priority": 
 Return ONLY the JSON, no other text."""
 
         response = self.client.messages.create(
-            model=MODEL,
+            model="claude-haiku-4-5",
             max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -305,7 +331,7 @@ Return ONLY the JSON, empty preferences if none found."""
 
         try:
             response = self.client.messages.create(
-                model=MODEL,
+                model="claude-haiku-4-5",
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )
