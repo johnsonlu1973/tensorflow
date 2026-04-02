@@ -194,15 +194,17 @@ Docker images available: `CPU`, `GPU`, `ANDROID`, `CMAKE`, `HADOOP`, `TENSORBOAR
 ### Python Code Style
 
 - **PEP 8** with Google Python Style Guide conventions.
+- **Indentation: 2 spaces** (not 4 — this is intentional for Google style). PEP8 checks E111/E114 are disabled to accommodate this.
 - All Python files use `from __future__ import absolute_import, division, print_function` for Python 2/3 compatibility.
 - Lint with **pylint** using the config at `tensorflow/tools/ci_build/pylintrc`.
 - PEP 8 formatting checked via `tensorflow/tools/ci_build/pep8/`.
 - Imports ordered: standard library → third-party (`six`, `numpy`) → TensorFlow internals (`tensorflow.core.*`, `tensorflow.python.*`).
 - Disabled pylint checks: `design`, `similarities`, `no-self-use`, `attribute-defined-outside-init`, `import-error`, `no-member`, and others (see pylintrc).
+- Max line length: **80 characters**.
 
 **File header (required on all source files):**
 ```python
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+# Copyright YEAR The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # ...
@@ -211,11 +213,13 @@ Docker images available: `CPU`, `GPU`, `ANDROID`, `CMAKE`, `HADOOP`, `TENSORBOAR
 ### C++ Code Style
 
 - **Google C++ Style Guide**.
+- **Formatter**: `clang-format` with `.clang-format` at the repo root (`BasedOnStyle: Google`, `DerivePointerAlignment: false`).
 - Headers use `#ifndef TENSORFLOW_<PATH>_<FILE>_H_` include guards.
 - All code in `namespace tensorflow { ... }`.
-- Copyright header required on all files.
+- Copyright header required on all files (same Apache 2.0 header as Python).
 - Use `TF_DISALLOW_COPY_AND_ASSIGN` macro instead of `= delete` for copy constructors.
 - Prefer `Status` return values over exceptions.
+- Max line length: **80 characters**.
 
 ### Bazel BUILD Files
 
@@ -258,6 +262,10 @@ TensorFlow 1.x uses a **define-then-run** model:
 - **Tensor**: The N-dimensional array flowing between ops
 - **Variable**: A mutable tensor persisted across session runs
 
+### C API (Stable ABI)
+
+`tensorflow/c/c_api.h` provides a stable C ABI used by all language bindings (Java, Go, etc.). When adding new functionality that should be accessible from non-Python languages, add it here first.
+
 ### Key Public Python API Modules
 ```
 tensorflow.python.framework.ops        # Graph, Tensor, Operation classes
@@ -299,13 +307,16 @@ The `tensorflow/contrib/` directory contains **experimental and contributed code
 ### Modifying Protos
 Protocol buffer definitions are in `tensorflow/core/framework/` and `tensorflow/core/protobuf/`. After changing a `.proto` file, Bazel regenerates the `.pb.h`/`_pb2.py` files automatically.
 
-### Running Lint
+### Running Lint and Sanity Checks
 ```bash
-# Python lint
+# Python lint (run against your changed file)
 pylint --rcfile=tensorflow/tools/ci_build/pylintrc <file.py>
 
 # PEP8 check
 tensorflow/tools/ci_build/pep8/run_pep8.sh
+
+# Full sanity suite (pylint for Python 2 & 3, PEP8, Bazel no-build checks)
+tensorflow/tools/ci_build/ci_sanity.sh
 ```
 
 ---
