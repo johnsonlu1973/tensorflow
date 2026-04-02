@@ -7,7 +7,7 @@ from typing import Optional
 
 import anthropic
 
-from config import MODEL, DAILY_TOPICS, WEEKLY_THEMES, SEARCH_QUERIES
+from config import MODEL, COLLECTION_MODEL, DAILY_TOPICS, WEEKLY_THEMES, SEARCH_QUERIES
 from database import Database
 
 
@@ -71,9 +71,15 @@ class SOCPlanningAgent:
     def __init__(self, db: Database, api_key: str):
         self.db = db
         self.client = anthropic.Anthropic(api_key=api_key)
+        # Tools for Opus/Sonnet (supports programmatic tool calling)
         self.tools = [
             {"type": "web_search_20260209", "name": "web_search"},
             {"type": "web_fetch_20260209", "name": "web_fetch"},
+        ]
+        # Tools for Haiku (direct calling only, no dynamic filtering)
+        self.tools_direct = [
+            {"type": "web_search_20260209", "name": "web_search", "allowed_callers": ["direct"]},
+            {"type": "web_fetch_20260209", "name": "web_fetch", "allowed_callers": ["direct"]},
         ]
 
     def _api_call_with_retry(self, **kwargs) -> anthropic.types.Message:
@@ -98,27 +104,39 @@ class SOCPlanningAgent:
                 else:
                     raise
 
-    def _run_with_search(self, user_message: str, extra_context: str = "") -> tuple[str, list]:
+    def _run_with_search(self, user_message: str, extra_context: str = "", model: str = None) -> tuple[str, list]:
         """Run Claude with web search tools, return (text_response, sources)."""
         messages = [{"role": "user", "content": user_message}]
 
-        system = SYSTEM_PROMPT
+        use_model = model or MODEL
+        # Use short system prompt for Haiku to save tokens
+        if "haiku" in use_model:
+            system = "You are a SoC product planning expert. Search the web and summarize key findings concisely."
+        else:
+            system = SYSTEM_PROMPT
         if extra_context:
             system += f"\n\n{extra_context}"
+        # Haiku doesn't support adaptive thinking
+        thinking_config = {"type": "adaptive"} if "opus" in use_model or "sonnet" in use_model else None
 
         all_content = []
         sources = []
         max_iterations = 8  # prevent infinite loops
 
         for _ in range(max_iterations):
-            response = self._api_call_with_retry(
-                model=MODEL,
-                max_tokens=4096,
-                thinking={"type": "adaptive"},
+            # Use direct tools for Haiku (no programmatic tool calling support)
+            tools = self.tools if ("opus" in use_model or "sonnet" in use_model) else self.tools_direct
+            call_kwargs = dict(
+                model=use_model,
+                max_tokens=2048,
                 system=system,
-                tools=self.tools,
+                tools=tools,
                 messages=messages,
             )
+            if thinking_config:
+                call_kwargs["thinking"] = thinking_config
+
+            response = self._api_call_with_retry(**call_kwargs)
 
             # Collect sources from web search results
             for block in response.content:
@@ -160,24 +178,13 @@ class SOCPlanningAgent:
     def collect_daily_updates(self) -> list[int]:
         """Run daily data collection across all topics. Returns list of saved collection IDs."""
         collection_ids = []
-        learning_ctx = _build_learning_context(self.db)
 
         for category, queries in SEARCH_QUERIES.items():
             for query in queries:
-                prompt = f"""Search for the latest information on: **{query}**
+                # Keep prompt short to minimize input tokens (rate limit = 30k tokens/min)
+                prompt = f"Search: {query}\nSummarize key findings in 3-5 bullet points for SoC product planning."
 
-Please:
-1. Search for recent news and announcements (focus on last 3-6 months)
-2. Extract key facts, specifications, and strategic implications
-3. Note any 3GPP standards updates, product launches, or market shifts
-4. Highlight what this means for SoC product planning
-
-Provide a structured summary with key findings and their product planning implications."""
-
-                if learning_ctx:
-                    prompt += f"\n\nContext from previous interactions:\n{learning_ctx}"
-
-                text, sources = self._run_with_search(prompt)
+                text, sources = self._run_with_search(prompt, model=COLLECTION_MODEL)
 
                 if text.strip():
                     coll_id = self.db.save_collection(
@@ -187,9 +194,11 @@ Provide a structured summary with key findings and their product planning implic
                         sources=sources,
                     )
                     collection_ids.append(coll_id)
+                    print(f"  ✓ Saved #{coll_id}: {query[:60]}")
 
-                # Pause between requests to stay within rate limits
-                time.sleep(15)
+                # 65s delay to stay well within 30k tokens/min rate limit
+                print(f"  ⏸ Waiting 65s before next request...")
+                time.sleep(65)
 
         return collection_ids
 

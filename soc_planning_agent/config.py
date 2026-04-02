@@ -9,7 +9,9 @@ BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "soc_planning.db"
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-MODEL = "claude-opus-4-6"
+# Model tiers: use Haiku for collection (low token cost), Opus for weekly analysis
+MODEL = "claude-opus-4-6"           # weekly deep analysis
+COLLECTION_MODEL = "claude-haiku-4-5"  # daily collection (10x cheaper, within rate limits)
 
 # Daily collection focuses
 DAILY_TOPICS = [
