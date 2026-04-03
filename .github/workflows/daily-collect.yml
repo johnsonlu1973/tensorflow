@@ -1,0 +1,142 @@
+name: SOC Planning — Daily RSS Collection
+
+on:
+  schedule:
+    # 每天 UTC 00:00 (台灣時間 08:00) 執行，週一到週五
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+    # 允許手動觸發 (GitHub Actions UI 右上角 "Run workflow")
+    inputs:
+      force_all_categories:
+        description: 'Force collect all categories (ignore date filter)'
+        required: false
+        default: 'false'
+
+jobs:
+  collect:
+    name: Fetch RSS & Summarize
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write   # needed to commit JSON results back to repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: claude/soc-planning-agent-0XctZ   # ← 開發分支
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: soc_planning_agent/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic>=0.40.0
+
+      - name: Run RSS collection & Claude summarization
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          python soc_planning_agent/github_collector.py
+
+      - name: Check if new data was produced
+        id: check_data
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          FILE="soc_planning_agent/data/${TODAY}.json"
+          if [ -f "$FILE" ]; then
+            COUNT=$(python3 -c "import json; d=json.load(open('$FILE')); print(d.get('total_articles',0))")
+            echo "file_exists=true"  >> $GITHUB_OUTPUT
+            echo "article_count=$COUNT" >> $GITHUB_OUTPUT
+            echo "today=$TODAY"      >> $GITHUB_OUTPUT
+          else
+            echo "file_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit & push collection results
+        if: steps.check_data.outputs.file_exists == 'true'
+        run: |
+          git config user.name  "SOC Planning Agent"
+          git config user.email "soc-agent@github-actions[bot]"
+          git add soc_planning_agent/data/
+          # Only commit if there are changes
+          git diff --staged --quiet || git commit -m \
+            "collect: daily RSS digest ${{ steps.check_data.outputs.today }} (${{ steps.check_data.outputs.article_count }} articles)"
+          git push
+
+      - name: Summary
+        run: |
+          echo "### Collection Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_data.outputs.file_exists }}" == "true" ]; then
+            echo "✅ **Articles collected:** ${{ steps.check_data.outputs.article_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "📅 **Date:** ${{ steps.check_data.outputs.today }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`python main.py sync\` locally to import into DB." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No data file produced." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # 每週一跑 3GPP 專項收集
+  collect-3gpp:
+    name: Weekly 3GPP Collection
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'schedule' && startsWith(github.event.schedule, '0 0 * * 1')
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/soc-planning-agent-0XctZ
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: soc_planning_agent/requirements.txt
+
+      - name: Install dependencies
+        run: pip install anthropic>=0.40.0
+
+      - name: Run 3GPP collection
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          import sys; sys.path.insert(0,'soc_planning_agent')
+          from rss_collector import RSSCollector
+          import json, os
+          from pathlib import Path
+          from datetime import datetime, timezone
+          collector = RSSCollector(max_age_days=7)
+          results = collector.collect_3gpp_vendors()
+          total = sum(len(a) for a in results.values())
+          today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+          out = Path('soc_planning_agent/data') / f'3gpp-{today}.json'
+          out.parent.mkdir(exist_ok=True)
+          out.write_text(json.dumps({'date': today, 'type': '3gpp_weekly',
+            'total_articles': total,
+            'collections': [{'category': cat, 'articles': arts} for cat, arts in results.items()]},
+            ensure_ascii=False, indent=2))
+          print(f'3GPP: {total} articles → {out}')
+          "
+
+      - name: Commit 3GPP results
+        run: |
+          git config user.name  "SOC Planning Agent"
+          git config user.email "soc-agent@github-actions[bot]"
+          git add soc_planning_agent/data/
+          git diff --staged --quiet || git commit -m "collect: weekly 3GPP digest $(date -u +%Y-%m-%d)"
+          git push
