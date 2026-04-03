@@ -1,0 +1,167 @@
+{
+  "name": "SOC Planning Agent — Daily RSS Collection",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 8 * * 1-5" }]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 8am (Mon-Fri)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "rss_sources",
+              "value": "={{ JSON.stringify([\n  {\"category\":\"agentic_ai\",  \"source\":\"TechCrunch AI\",          \"url\":\"https://techcrunch.com/category/artificial-intelligence/feed/\"},\n  {\"category\":\"agentic_ai\",  \"source\":\"VentureBeat AI\",          \"url\":\"https://venturebeat.com/category/ai/feed/\"},\n  {\"category\":\"agentic_ai\",  \"source\":\"IEEE Spectrum\",            \"url\":\"https://spectrum.ieee.org/feeds/feed.rss\"},\n  {\"category\":\"agentic_ai\",  \"source\":\"MIT Tech Review\",          \"url\":\"https://www.technologyreview.com/feed/\"},\n  {\"category\":\"chips_soc\",   \"source\":\"EE Times\",                \"url\":\"https://www.eetimes.com/feed/\"},\n  {\"category\":\"chips_soc\",   \"source\":\"DigiTimes\",               \"url\":\"https://www.digitimes.com/rss/daily.xml\"},\n  {\"category\":\"chips_soc\",   \"source\":\"SemiAnalysis\",            \"url\":\"https://semianalysis.com/feed/\"},\n  {\"category\":\"chips_soc\",   \"source\":\"Semiconductor Eng\",       \"url\":\"https://semiengineering.com/feed/\"},\n  {\"category\":\"mobile\",      \"source\":\"GSMArena\",                \"url\":\"https://www.gsmarena.com/rss-news-articles.php3\"},\n  {\"category\":\"mobile\",      \"source\":\"The Verge\",               \"url\":\"https://www.theverge.com/rss/index.xml\"},\n  {\"category\":\"5g_cpe\",      \"source\":\"Light Reading\",           \"url\":\"https://www.lightreading.com/rss.xml\"},\n  {\"category\":\"5g_cpe\",      \"source\":\"RCR Wireless\",            \"url\":\"https://www.rcrwireless.com/feed\"},\n  {\"category\":\"5g_cpe\",      \"source\":\"FierceTelecom\",           \"url\":\"https://www.fiercetelecom.com/rss/xml\"},\n  {\"category\":\"csp_cloud\",   \"source\":\"The New Stack\",           \"url\":\"https://thenewstack.io/feed/\"},\n  {\"category\":\"csp_cloud\",   \"source\":\"SiliconANGLE\",            \"url\":\"https://siliconangle.com/feed/\"}\n]) }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-sources",
+      "name": "RSS Source List",
+      "type": "n8n-nodes-base.set",
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Parse source list\nconst sources = JSON.parse($input.first().json.rss_sources);\nconst results = [];\n\n// Step 2: Keyword filters per category\nconst KEYWORDS = {\n  agentic_ai: ['agentic','ai agent','multi-agent','llm','large language model','generative ai','on-device ai','autonomous agent','inference','copilot','anthropic','openai','gemini'],\n  chips_soc:  ['soc','chipset','modem','baseband','qualcomm','mediatek','exynos','snapdragon','dimensity','npu','ai accelerator','semiconductor','tsmc','arm','risc-v'],\n  mobile:     ['smartphone','5g phone','flagship','android','iphone','galaxy','pixel','oem','xiaomi','oppo','vivo'],\n  '5g_cpe':   ['5g','cpe','fixed wireless','fwa','6g','open ran','o-ran','vran','mmwave','5g-advanced','release 19','release 20'],\n  csp_cloud:  ['cloud','aws','azure','google cloud','datacenter','hyperscaler','kubernetes','edge computing']\n};\n\n// Step 3: Date cutoff — last 24 hours\nconst cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);\n\n// Step 4: Fetch each RSS feed\nfor (const src of sources) {\n  try {\n    const resp = await $http.request({ method: 'GET', url: src.url, timeout: 15000,\n      headers: { 'User-Agent': 'SOC-Planning-Agent-n8n/1.0' } });\n    \n    // Parse RSS/Atom XML (n8n provides xmlParser helper)\n    const xml = this.helpers.xml.parse ? await this.helpers.xml.parse(resp) : resp;\n    const items = xml?.rss?.channel?.[0]?.item || xml?.feed?.entry || [];\n    const keywords = KEYWORDS[src.category] || [];\n\n    for (const item of items) {\n      const title   = (item.title?.[0] || item.title || '').toString();\n      const link    = (item.link?.[0] || item.link?.['$']?.href || '').toString();\n      const desc    = (item.description?.[0] || item.summary?.[0] || '').toString().replace(/<[^>]+>/g,' ').trim();\n      const pubRaw  = (item.pubDate?.[0] || item.published?.[0] || item.updated?.[0] || '').toString();\n      const pubDate = pubRaw ? new Date(pubRaw) : null;\n\n      // Date filter\n      if (pubDate && pubDate < cutoff) continue;\n\n      // Keyword filter\n      const text = (title + ' ' + desc).toLowerCase();\n      const match = keywords.some(kw => text.includes(kw));\n      if (!match) continue;\n\n      results.push({\n        category: src.category,\n        source:   src.source,\n        title:    title.slice(0, 200),\n        url:      link,\n        summary:  desc.slice(0, 500),\n        published: pubDate ? pubDate.toISOString().slice(0, 10) : pubRaw\n      });\n    }\n  } catch(e) {\n    // Individual feed failure — log and continue (don't fail the whole workflow)\n    console.log(`RSS fetch failed [${src.source}]: ${e.message}`);\n  }\n}\n\n// Step 5: Group by category\nconst grouped = {};\nfor (const art of results) {\n  if (!grouped[art.category]) grouped[art.category] = [];\n  grouped[art.category].push(art);\n}\n\n// Step 6: Return one item per category (for next node to iterate)\nconst output = Object.entries(grouped).map(([category, articles]) => ({\n  json: { category, articles, article_count: articles.length }\n}));\n\nif (output.length === 0) {\n  return [{ json: { category: null, articles: [], article_count: 0, message: 'No new articles in last 24h' } }];\n}\n\nreturn output;"
+      },
+      "id": "fetch-filter-rss",
+      "name": "Fetch & Filter RSS",
+      "type": "n8n-nodes-base.code",
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json.article_count }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-empty",
+      "name": "Has Articles?",
+      "type": "n8n-nodes-base.filter",
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are a SoC product planning expert. Summarize tech news in Traditional Chinese, preserving English technical terms. Apply this framework to the top 2 most important articles:\\n1.目標對象 2.創造的價值 3.解決的痛點 4.商業模式 5.產業鏈誘因（IP→晶片→foundry→OEM→電信業者→消費者）\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Today is {{ $now.format('yyyy-MM-dd') }}.\\nCategory: {{ $json.category }}\\nArticles ({{ $json.article_count }} items, all from last 24 hours):\\n\\n{{ $json.articles.map((a,i) => `${i+1}. [${a.source}] ${a.title}\\n   Date: ${a.published}\\n   URL: ${a.url}\\n   ${a.summary}`).join('\\n\\n') }}\\n\\nProvide:\\n1. Top 3-5 most important articles with 2-3 bullet points each\\n2. Apply 5-part framework to top 2 articles\\n3. Keep source URLs\"\n  }]\n}",
+        "options": { "timeout": 60000 }
+      },
+      "id": "claude-summarize",
+      "name": "Claude Haiku — Summarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "name": "category",      "value": "={{ $('fetch-filter-rss').item.json.category }}", "type": "string" },
+            { "name": "summary",       "value": "={{ $json.content[0].text }}", "type": "string" },
+            { "name": "sources",       "value": "={{ $('fetch-filter-rss').item.json.articles.map(a => a.url).filter(Boolean) }}", "type": "array" },
+            { "name": "article_count", "value": "={{ $('fetch-filter-rss').item.json.article_count }}", "type": "number" }
+          ]
+        }
+      },
+      "id": "prepare-payload",
+      "name": "Prepare Webhook Payload",
+      "type": "n8n-nodes-base.set",
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $env.SOC_AGENT_HOST || 'localhost' }}:{{ $env.SOC_AGENT_PORT || '8080' }}/ingest/analyzed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "post-to-agent",
+      "name": "POST → Agent Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Serper fallback: search when RSS feeds fail entirely\nconst category = $input.first().json.category || 'agentic_ai';\nconst SEARCH_QUERIES = {\n  agentic_ai: 'agentic AI agent LLM autonomous 2026 site:techcrunch.com OR site:venturebeat.com',\n  chips_soc:  'SoC chipset AI accelerator semiconductor 2026 site:eetimes.com OR site:semianalysis.com',\n  mobile:     'smartphone 5G flagship Android 2026 site:gsmarena.com OR site:theverge.com',\n  '5g_cpe':   '5G CPE O-RAN telecom 2026 site:lightreading.com OR site:rcrwireless.com',\n  csp_cloud:  'cloud AI infrastructure hyperscaler 2026 site:thenewstack.io'\n};\nconst today = new Date();\nconst after  = new Date(today - 3 * 86400000).toISOString().slice(0,10);\n\ntry {\n  const resp = await $http.request({\n    method: 'POST',\n    url: 'https://google.serper.dev/news',\n    headers: { 'X-API-KEY': $env.SERPER_API_KEY, 'Content-Type': 'application/json' },\n    body: JSON.stringify({ q: (SEARCH_QUERIES[category] || SEARCH_QUERIES.agentic_ai) + ` after:${after}`, num: 10 })\n  });\n  const articles = (resp.news || []).map(r => ({\n    category, source: r.source, title: r.title, url: r.link, summary: r.snippet, published: r.date || after\n  }));\n  return [{ json: { category, articles, article_count: articles.length, via: 'serper_fallback' } }];\n} catch(e) {\n  return [{ json: { category, articles: [], article_count: 0, error: e.message } }];\n}"
+      },
+      "id": "serper-fallback",
+      "name": "Serper Fallback (if RSS fails)",
+      "type": "n8n-nodes-base.code",
+      "position": [440, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $env.SOC_AGENT_HOST || 'localhost' }}:{{ $env.SOC_AGENT_PORT || '8080' }}/ingest",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "post-raw-fallback",
+      "name": "POST Raw → Agent (Serper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [660, 500]
+    }
+  ],
+  "connections": {
+    "Daily 8am (Mon-Fri)":      { "main": [[{ "node": "RSS Source List",          "type": "main", "index": 0 }]] },
+    "RSS Source List":           { "main": [[{ "node": "Fetch & Filter RSS",        "type": "main", "index": 0 }]] },
+    "Fetch & Filter RSS":        { "main": [[{ "node": "Has Articles?",             "type": "main", "index": 0 }]] },
+    "Has Articles?":             { "main": [[{ "node": "Claude Haiku — Summarize",  "type": "main", "index": 0 }]] },
+    "Claude Haiku — Summarize":  { "main": [[{ "node": "Prepare Webhook Payload",   "type": "main", "index": 0 }]] },
+    "Prepare Webhook Payload":   { "main": [[{ "node": "POST → Agent Webhook",      "type": "main", "index": 0 }]] },
+    "Serper Fallback (if RSS fails)": { "main": [[{ "node": "POST Raw → Agent (Serper)", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": true },
+  "_comment": {
+    "setup": [
+      "1. Import this file into n8n: Workflows → Import from file",
+      "2. Set n8n environment variables (Settings → Variables):",
+      "   ANTHROPIC_API_KEY  your Anthropic API key",
+      "   SOC_AGENT_HOST     IP of machine running 'python main.py serve' (default: localhost)",
+      "   SOC_AGENT_PORT     port (default: 8080)",
+      "   SERPER_API_KEY     (optional) get from serper.dev for RSS fallback",
+      "3. Start the agent webhook: python main.py serve",
+      "4. Activate the workflow in n8n",
+      "",
+      "Cost estimate per daily run (15 RSS sources):",
+      "  n8n RSS fetch:     FREE",
+      "  Keyword filter:    FREE (in-node JavaScript)",
+      "  Claude Haiku:      ~$0.002 per category (~5 categories = $0.01/day)",
+      "  Serper fallback:   $0.001/search (only when RSS fails)",
+      "  Total:             ~$0.01-0.05/day vs ~$0.30/day with web_search"
+    ]
+  }
+}

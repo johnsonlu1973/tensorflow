@@ -403,6 +403,35 @@ def show_feedback():
 
 
 @cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
+@click.option("--port", default=8080, help="Port to listen on (default: 8080)")
+def serve(host: str, port: int):
+    """Start webhook server to receive RSS articles from n8n.
+
+    n8n fetches RSS → filters keywords → calls Claude → POSTs here.
+
+    \b
+    Endpoints:
+      GET  /health            health check
+      GET  /stats             DB statistics
+      POST /ingest            raw articles (agent summarizes with Claude)
+      POST /ingest/analyzed   pre-analyzed summary from n8n+Claude (cheapest)
+      POST /ingest/batch      multiple categories at once
+
+    \b
+    Example n8n HTTP Request node:
+      URL:    http://<this-machine-ip>:{port}/ingest/analyzed
+      Method: POST
+      Body:   { "category": "agentic_ai",
+                "summary": "{{ $json.summary }}",
+                "sources": ["https://..."],
+                "article_count": 5 }
+    """
+    from webhook_server import run_server
+    run_server(host=host, port=port)
+
+
+@cli.command()
 @click.option("--key", required=True, help="Preference key (e.g., 'focus_area', 'analysis_depth')")
 @click.option("--value", required=True, help="Preference value")
 def set_preference(key: str, value: str):
