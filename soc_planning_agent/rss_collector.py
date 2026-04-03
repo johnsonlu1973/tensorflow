@@ -1,17 +1,24 @@
 """RSS feed collector for SOC Planning Agent.
 
+Uses only Python built-in libraries (urllib + xml.etree.ElementTree).
+No external dependencies required.
+
 Only vetted, high-credibility news sources are included.
 No generic third-party blogs — only established tech news outlets,
 industry publications, and official vendor/operator newsrooms.
 """
 import socket
 import time
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
-
-import feedparser
+from email.utils import parsedate_to_datetime
 
 # Timeout for RSS fetch requests (seconds)
 FETCH_TIMEOUT = 15
+
+# Atom namespace
+ATOM_NS = "http://www.w3.org/2005/Atom"
 
 # Vetted daily news RSS sources by focus category.
 # Format: {category: [(display_name, rss_url), ...]}
@@ -63,7 +70,6 @@ RSS_SOURCES_3GPP_VENDORS = {
         ("MediaTek Newsroom", "https://www.mediatek.com/news-events/press-releases/rss"),
     ],
     "operators": [
-        ("GSMA Intelligence Blog", "https://data.gsmaintelligence.com/research/research/rss"),
         ("Verizon News", "https://www.verizon.com/about/news/rss.xml"),
         ("T-Mobile Newsroom", "https://www.t-mobile.com/news/feed"),
         ("Vodafone Newsroom", "https://newscentre.vodafone.co.uk/feed/"),
@@ -71,7 +77,6 @@ RSS_SOURCES_3GPP_VENDORS = {
 }
 
 # Keyword filters per category — article must match at least one keyword.
-# Applied to title + summary text (case-insensitive).
 CATEGORY_KEYWORDS = {
     "agentic_ai": [
         "agentic", "ai agent", "multi-agent", "autonomous agent",
@@ -114,67 +119,130 @@ CATEGORY_KEYWORDS = {
 }
 
 
+def _parse_date(date_str: str):
+    """Parse date string to UTC datetime. Returns None on failure."""
+    if not date_str:
+        return None
+    # Try RFC 2822 (RSS pubDate)
+    try:
+        return parsedate_to_datetime(date_str).astimezone(timezone.utc)
+    except Exception:
+        pass
+    # Try ISO 8601 (Atom published)
+    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
+        try:
+            dt = datetime.strptime(date_str[:19], fmt[:len(date_str)])
+            return dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            pass
+    return None
+
+
+def _strip_html(text: str) -> str:
+    """Remove HTML tags from text."""
+    import re
+    return re.sub(r"<[^>]+>", " ", text).strip()
+
+
+def _parse_feed_xml(xml_bytes: bytes, source_name: str) -> list:
+    """Parse RSS 2.0 or Atom 1.0 XML. Returns list of article dicts."""
+    articles = []
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError:
+        return articles
+
+    tag = root.tag.lower()
+
+    # --- Atom 1.0 ---
+    if "atom" in tag or root.tag == f"{{{ATOM_NS}}}feed":
+        for entry in root.iter(f"{{{ATOM_NS}}}entry"):
+            title = entry.findtext(f"{{{ATOM_NS}}}title", "").strip()
+            link_el = entry.find(f"{{{ATOM_NS}}}link[@rel='alternate']")
+            if link_el is None:
+                link_el = entry.find(f"{{{ATOM_NS}}}link")
+            url = link_el.get("href", "") if link_el is not None else ""
+            summary = entry.findtext(f"{{{ATOM_NS}}}summary", "") or \
+                      entry.findtext(f"{{{ATOM_NS}}}content", "")
+            published = entry.findtext(f"{{{ATOM_NS}}}published", "") or \
+                        entry.findtext(f"{{{ATOM_NS}}}updated", "")
+            articles.append({
+                "source": source_name,
+                "title": _strip_html(title),
+                "url": url,
+                "summary": _strip_html(summary)[:800],
+                "published": published,
+                "_dt": _parse_date(published),
+            })
+        return articles
+
+    # --- RSS 2.0 ---
+    for item in root.iter("item"):
+        title = item.findtext("title", "").strip()
+        url = item.findtext("link", "").strip()
+        description = item.findtext("description", "").strip()
+        pub_date = item.findtext("pubDate", "").strip()
+        articles.append({
+            "source": source_name,
+            "title": _strip_html(title),
+            "url": url,
+            "summary": _strip_html(description)[:800],
+            "published": pub_date,
+            "_dt": _parse_date(pub_date),
+        })
+    return articles
+
+
 class RSSCollector:
-    """Fetches and filters RSS articles from vetted sources."""
+    """Fetches and filters RSS articles from vetted sources.
+
+    Uses only Python built-in libraries — no external dependencies.
+    """
 
     def __init__(self, max_age_days: int = 1):
         self.max_age_days = max_age_days
         self.cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
 
-    def _is_recent(self, entry) -> bool:
-        """Return True if article was published within max_age_days."""
-        for attr in ("published_parsed", "updated_parsed"):
-            val = getattr(entry, attr, None)
-            if val:
-                try:
-                    pub_dt = datetime(*val[:6], tzinfo=timezone.utc)
-                    return pub_dt >= self.cutoff
-                except Exception:
-                    pass
-        # No date info — include by default (can't filter)
-        return True
+    def _is_recent(self, article: dict) -> bool:
+        dt = article.get("_dt")
+        if dt is None:
+            return True  # no date info — include by default
+        return dt >= self.cutoff
 
-    def _matches_keywords(self, entry, keywords: list) -> bool:
-        """Return True if entry title or summary contains any keyword."""
+    def _matches_keywords(self, article: dict, keywords: list) -> bool:
         if not keywords:
             return True
-        text = " ".join([
-            getattr(entry, "title", ""),
-            getattr(entry, "summary", ""),
-            getattr(entry, "description", ""),
-        ]).lower()
+        text = (article.get("title", "") + " " + article.get("summary", "")).lower()
         return any(kw.lower() in text for kw in keywords)
 
     def fetch_feed(self, source_name: str, feed_url: str, keywords: list) -> list:
-        """Fetch one RSS feed; return list of matching recent articles."""
-        articles = []
-        prev_timeout = socket.getdefaulttimeout()
+        """Fetch one RSS/Atom feed and return filtered recent articles."""
         try:
-            socket.setdefaulttimeout(FETCH_TIMEOUT)
-            feed = feedparser.parse(
+            req = urllib.request.Request(
                 feed_url,
-                request_headers={"User-Agent": "SOC-Planning-Agent/1.0"},
+                headers={"User-Agent": "SOC-Planning-Agent/1.0"},
             )
-            for entry in feed.entries:
-                if not self._is_recent(entry):
-                    continue
-                if not self._matches_keywords(entry, keywords):
-                    continue
-                articles.append({
-                    "source": source_name,
-                    "title": getattr(entry, "title", "No title").strip(),
-                    "url": getattr(entry, "link", ""),
-                    "summary": getattr(
-                        entry, "summary",
-                        getattr(entry, "description", "")
-                    )[:800].strip(),
-                    "published": str(getattr(entry, "published", "")),
-                })
+            prev_timeout = socket.getdefaulttimeout()
+            socket.setdefaulttimeout(FETCH_TIMEOUT)
+            try:
+                with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
+                    xml_bytes = resp.read()
+            finally:
+                socket.setdefaulttimeout(prev_timeout)
+
+            articles = _parse_feed_xml(xml_bytes, source_name)
+            filtered = [
+                a for a in articles
+                if self._is_recent(a) and self._matches_keywords(a, keywords)
+            ]
+            # Remove internal _dt key before returning
+            for a in filtered:
+                a.pop("_dt", None)
+            return filtered
+
         except Exception as e:
-            print(f"  ⚠ RSS error [{source_name}]: {e}")
-        finally:
-            socket.setdefaulttimeout(prev_timeout)
-        return articles
+            print(f"    ⚠ RSS error [{source_name}]: {e}")
+            return []
 
     def collect_category(self, category: str, sources: list) -> list:
         """Fetch all feeds in a category; return combined article list."""
@@ -187,7 +255,7 @@ class RSSCollector:
             else:
                 print(f"    · {source_name}: 0 new articles")
             all_articles.extend(articles)
-            time.sleep(1)  # polite delay between RSS requests
+            time.sleep(1)  # polite delay
         return all_articles
 
     def collect_daily(self) -> dict:
@@ -201,13 +269,12 @@ class RSSCollector:
         return results
 
     def collect_3gpp_vendors(self) -> dict:
-        """Fetch vendor/operator RSS for weekly 3GPP update. Returns {category: [articles]}."""
+        """Fetch vendor/operator RSS for weekly 3GPP update (7-day lookback)."""
         results = {}
+        weekly = RSSCollector(max_age_days=7)
         for category, sources in RSS_SOURCES_3GPP_VENDORS.items():
             print(f"\n  📡 [3gpp/{category}] ({len(sources)} sources)...")
-            # Weekly fetch — look back 7 days
-            collector = RSSCollector(max_age_days=7)
-            articles = collector.collect_category(category, sources)
+            articles = weekly.collect_category(category, sources)
             results[category] = articles
             print(f"     → {len(articles)} total")
         return results

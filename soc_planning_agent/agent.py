@@ -7,7 +7,7 @@ from typing import Optional
 
 import anthropic
 
-from config import MODEL, COLLECTION_MODEL, DAILY_TOPICS, WEEKLY_THEMES, THREEGPP_WEEKLY_QUERIES
+from config import MODEL, COLLECTION_MODEL, DAILY_TOPICS, WEEKLY_THEMES, THREEGPP_WEEKLY_QUERIES, FALLBACK_SEARCH_QUERIES
 from database import Database
 from rss_collector import RSSCollector
 
@@ -243,16 +243,58 @@ class SOCPlanningAgent:
         sources = [a["url"] for a in articles if a.get("url")]
         return text, list(dict.fromkeys(sources))  # deduplicated
 
-    def collect_daily_rss(self) -> list:
-        """Collect daily news via RSS from vetted sources. Returns saved collection IDs.
+    def _collect_via_web_search(self) -> list:
+        """Fallback: use web_search (Haiku) when direct RSS is network-blocked.
 
-        Uses RSSCollector (no Anthropic API tokens for fetch) +
-        Haiku summarization (cheap, no web_search needed).
+        Searches the same vetted sources using site: operator queries.
+        """
+        print("  🔄 Fallback: collecting via web_search (vetted sources only)...")
+        collection_ids = []
+        for category, queries in FALLBACK_SEARCH_QUERIES.items():
+            for query in queries:
+                prompt = (
+                    f"Search for the latest news from credible tech publications.\n"
+                    f"Query: {query}\n\n"
+                    f"For each article found, provide:\n"
+                    f"- Title and URL\n"
+                    f"- 2-3 bullet point summary\n"
+                    f"For the top 2 most relevant items, also apply:\n"
+                    f"目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
+                    f"Exclude generic blog posts — only established news outlets."
+                )
+                text, sources = self._run_with_search(prompt, model=COLLECTION_MODEL)
+                if text.strip():
+                    coll_id = self.db.save_collection(
+                        category=category,
+                        topic=f"Daily news — {category} (web search)",
+                        content=text,
+                        sources=sources,
+                    )
+                    collection_ids.append(coll_id)
+                    print(f"  ✓ Saved #{coll_id}: [{category}] {query[:50]}")
+                print("  ⏸ Waiting 30s...")
+                time.sleep(30)
+        return collection_ids
+
+    def collect_daily_rss(self) -> list:
+        """Collect daily news from vetted sources. Returns saved collection IDs.
+
+        Strategy:
+        1. Try direct RSS fetch (zero API tokens, fast)
+        2. If network is blocked (all feeds fail), fallback to web_search
+           targeting the same vetted sources via site: queries.
         """
         print("\n📡 Fetching RSS feeds from vetted sources...")
         collector = RSSCollector(max_age_days=1)
         category_articles = collector.collect_daily()
 
+        # Detect network blockage: if every category returned 0 articles
+        total_fetched = sum(len(a) for a in category_articles.values())
+        if total_fetched == 0:
+            print("\n  ⚠ Direct RSS unreachable (network proxy). Switching to web_search fallback.")
+            return self._collect_via_web_search()
+
+        # Normal RSS path: summarize each category with Haiku
         collection_ids = []
         for category, articles in category_articles.items():
             if not articles:
@@ -263,7 +305,6 @@ class SOCPlanningAgent:
             text, sources = self._summarize_articles(category, articles)
 
             if text.strip():
-                # Use first article title as topic label
                 topic = f"Daily RSS digest — {category} ({len(articles)} articles)"
                 coll_id = self.db.save_collection(
                     category=category,
@@ -274,7 +315,6 @@ class SOCPlanningAgent:
                 collection_ids.append(coll_id)
                 print(f"  ✓ Saved #{coll_id}: {topic[:70]}")
 
-            # Brief pause between Haiku calls to respect rate limits
             time.sleep(5)
 
         return collection_ids
@@ -295,9 +335,12 @@ class SOCPlanningAgent:
         rss_collector = RSSCollector(max_age_days=7)
         vendor_articles = rss_collector.collect_3gpp_vendors()
 
+        rss_total = sum(len(a) for a in vendor_articles.values())
+        if rss_total == 0:
+            print("  ⚠ Vendor RSS unreachable (network proxy) — skipping to web_search.")
+
         for category, articles in vendor_articles.items():
             if not articles:
-                print(f"  · [3gpp/{category}] no new articles, skipping.")
                 continue
             print(f"\n  ✍ Summarizing [3gpp/{category}] ({len(articles)} articles)...")
             text, sources = self._summarize_articles(category, articles)

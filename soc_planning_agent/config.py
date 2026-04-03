@@ -31,6 +31,31 @@ WEEKLY_THEMES = [
     "Technology trend synthesis and 12-month product roadmap recommendations",
 ]
 
+# Fallback web_search queries used when direct RSS fetch is blocked by network.
+# Targets the same vetted sources via site: operator searches.
+FALLBACK_SEARCH_QUERIES = {
+    "agentic_ai": [
+        "site:techcrunch.com OR site:venturebeat.com agentic AI agent LLM autonomous latest news 2025",
+        "site:spectrum.ieee.org OR site:technologyreview.com AI agent on-device inference 2025",
+    ],
+    "chips_soc": [
+        "site:eetimes.com OR site:semianalysis.com SoC chipset modem AI accelerator news 2025",
+        "site:tomshardware.com OR site:semiengineering.com semiconductor chip announcement 2025",
+    ],
+    "mobile": [
+        "site:gsmarena.com OR site:theverge.com smartphone 5G Android iPhone flagship latest 2025",
+        "site:androidauthority.com OR site:fiercewireless.com mobile OEM chipset announcement 2025",
+    ],
+    "5g_cpe": [
+        "site:lightreading.com OR site:rcrwireless.com 5G CPE O-RAN telecom news 2025",
+        "site:fiercetelecom.com OR site:telecomtv.com 5G-Advanced fixed wireless access news 2025",
+    ],
+    "csp_cloud": [
+        "site:thenewstack.io OR site:siliconangle.com cloud AI infrastructure hyperscaler news 2025",
+        "site:aws.amazon.com/blogs OR site:cloud.google.com/blog cloud services AI announcement 2025",
+    ],
+}
+
 # Web search queries for weekly 3GPP + vendor/operator updates.
 # These supplement the RSS vendor feeds with targeted 3GPP spec searches.
 THREEGPP_WEEKLY_QUERIES = {
