@@ -403,7 +403,112 @@ def show_feedback():
 
 
 @cli.command()
-@click.option("--host", default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
+@click.option("--days", default=7, help="Import files from the last N days (default: 7)")
+@click.option("--pull/--no-pull", default=True, help="Run git pull before importing (default: yes)")
+def sync(days: int, pull: bool):
+    """Import latest collections from GitHub Actions into local DB.
+
+    \b
+    Workflow:
+      1. GitHub Actions fetches RSS daily → commits JSON to soc_planning_agent/data/
+      2. Run this command locally to pull & import into soc_planning.db
+      3. Then run 'analyze' for weekly deep analysis
+
+    \b
+    Example:
+      python main.py sync          # git pull + import last 7 days
+      python main.py sync --days 1 # import today only
+    """
+    import subprocess
+    import json as _json
+    from pathlib import Path
+    from datetime import datetime, timedelta
+
+    db, _ = _get_agent()
+    data_dir = Path(__file__).parent / "data"
+
+    # Step 1: git pull
+    if pull:
+        console.print("[dim]Running git pull...[/dim]")
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=Path(__file__).parent.parent,
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            console.print(f"[dim]{result.stdout.strip()}[/dim]")
+        else:
+            console.print(f"[yellow]⚠ git pull warning: {result.stderr.strip()}[/yellow]")
+
+    # Step 2: find JSON files within date range
+    if not data_dir.exists():
+        console.print("[yellow]No data/ directory found. Has GitHub Actions run yet?[/yellow]")
+        return
+
+    cutoff = datetime.now().date() - timedelta(days=days)
+    imported = 0
+    skipped = 0
+
+    json_files = sorted(data_dir.glob("*.json"), reverse=True)
+    if not json_files:
+        console.print("[yellow]No JSON files found in data/. Has GitHub Actions run yet?[/yellow]")
+        return
+
+    console.print(f"\n[cyan]📥 Importing collections from last {days} days...[/cyan]\n")
+
+    for json_file in json_files:
+        # Parse date from filename (YYYY-MM-DD.json or 3gpp-YYYY-MM-DD.json)
+        stem = json_file.stem.replace("3gpp-", "")
+        try:
+            file_date = datetime.strptime(stem, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        if file_date < cutoff:
+            continue
+
+        try:
+            data = _json.loads(json_file.read_text(encoding="utf-8"))
+        except Exception as e:
+            console.print(f"[red]  ✗ {json_file.name}: {e}[/red]")
+            continue
+
+        collections = data.get("collections", [])
+
+        for item in collections:
+            category = item.get("category", "unknown")
+            topic    = item.get("topic", json_file.stem)
+            content  = item.get("content", "")
+            sources  = item.get("sources", [])
+
+            if not content:
+                continue
+
+            # Check for duplicates (same topic already in DB)
+            existing = db.get_recent_collections(days=days, category=category)
+            if any(e["topic"] == topic for e in existing):
+                skipped += 1
+                continue
+
+            coll_id = db.save_collection(
+                category=category,
+                topic=topic,
+                content=content,
+                sources=sources,
+            )
+            console.print(f"  [green]✓[/green] #{coll_id} [{category}] {topic[:60]}")
+            imported += 1
+
+    console.print(f"\n[green]✓ Imported {imported} collection(s)[/green]", end="")
+    if skipped:
+        console.print(f" [dim]({skipped} already in DB, skipped)[/dim]")
+    else:
+        console.print()
+
+    if imported:
+        console.print("\n[dim]Run 'python main.py analyze' for weekly deep analysis.[/dim]")
+
+
 @click.option("--port", default=8080, help="Port to listen on (default: 8080)")
 def serve(host: str, port: int):
     """Start webhook server to receive RSS articles from n8n.
