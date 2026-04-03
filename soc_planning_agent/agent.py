@@ -7,8 +7,9 @@ from typing import Optional
 
 import anthropic
 
-from config import MODEL, COLLECTION_MODEL, DAILY_TOPICS, WEEKLY_THEMES, SEARCH_QUERIES
+from config import MODEL, COLLECTION_MODEL, DAILY_TOPICS, WEEKLY_THEMES, THREEGPP_WEEKLY_QUERIES
 from database import Database
+from rss_collector import RSSCollector
 
 
 SYSTEM_PROMPT = """You are an expert SOC (System-on-Chip) product planning strategist specializing in telecom and wireless SoC design.
@@ -203,32 +204,143 @@ class SOCPlanningAgent:
         final_text = "\n\n".join(text_blocks)
         return final_text, list(set(sources))
 
-    def collect_daily_updates(self) -> list[int]:
-        """Run daily data collection across all topics. Returns list of saved collection IDs."""
+    def _summarize_articles(self, category: str, articles: list) -> tuple:
+        """Use Haiku (no web search) to summarize a list of RSS articles.
+
+        Returns (summary_text, source_urls).
+        """
+        if not articles:
+            return "", []
+
+        # Build article list text — cap each summary to save tokens
+        lines = []
+        for i, a in enumerate(articles[:25], 1):
+            lines.append(
+                f"{i}. [{a['source']}] {a['title']}\n"
+                f"   URL: {a['url']}\n"
+                f"   {a['summary'][:400]}"
+            )
+        articles_text = "\n\n".join(lines)
+
+        prompt = (
+            f"以下是今日 [{category}] 領域的最新新聞（來自可信來源）。\n"
+            f"請為 SoC 產品規劃做重點摘要：\n"
+            f"1. 列出最重要的 3~5 則新聞及其要點（2~3 bullet points 每則）\n"
+            f"2. 對最重要的新聞，用以下框架簡析：\n"
+            f"   目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
+            f"3. 請保留原文連結（URL）\n\n"
+            f"新聞列表：\n{articles_text}"
+        )
+
+        response = self.client.messages.create(
+            model=COLLECTION_MODEL,
+            max_tokens=2048,
+            system="You are a SoC product planning expert. Summarize tech news concisely in Traditional Chinese with English technical terms preserved.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        text = response.content[0].text.strip() if response.content else ""
+        sources = [a["url"] for a in articles if a.get("url")]
+        return text, list(dict.fromkeys(sources))  # deduplicated
+
+    def collect_daily_rss(self) -> list:
+        """Collect daily news via RSS from vetted sources. Returns saved collection IDs.
+
+        Uses RSSCollector (no Anthropic API tokens for fetch) +
+        Haiku summarization (cheap, no web_search needed).
+        """
+        print("\n📡 Fetching RSS feeds from vetted sources...")
+        collector = RSSCollector(max_age_days=1)
+        category_articles = collector.collect_daily()
+
+        collection_ids = []
+        for category, articles in category_articles.items():
+            if not articles:
+                print(f"  · [{category}] no new articles today, skipping.")
+                continue
+
+            print(f"\n  ✍ Summarizing [{category}] ({len(articles)} articles)...")
+            text, sources = self._summarize_articles(category, articles)
+
+            if text.strip():
+                # Use first article title as topic label
+                topic = f"Daily RSS digest — {category} ({len(articles)} articles)"
+                coll_id = self.db.save_collection(
+                    category=category,
+                    topic=topic,
+                    content=text,
+                    sources=sources,
+                )
+                collection_ids.append(coll_id)
+                print(f"  ✓ Saved #{coll_id}: {topic[:70]}")
+
+            # Brief pause between Haiku calls to respect rate limits
+            time.sleep(5)
+
+        return collection_ids
+
+    def collect_3gpp_weekly(self) -> list:
+        """Collect weekly 3GPP specs + vendor/operator news.
+
+        Uses two approaches:
+        1. RSS feeds from Nokia, Ericsson, operators (no API tokens)
+        2. Web search (Haiku) for targeted 3GPP spec queries
+
+        Returns saved collection IDs.
+        """
         collection_ids = []
 
-        for category, queries in SEARCH_QUERIES.items():
+        # --- Part 1: Vendor/operator RSS feeds (7-day lookback) ---
+        print("\n📡 Fetching 3GPP vendor/operator RSS feeds (7-day lookback)...")
+        rss_collector = RSSCollector(max_age_days=7)
+        vendor_articles = rss_collector.collect_3gpp_vendors()
+
+        for category, articles in vendor_articles.items():
+            if not articles:
+                print(f"  · [3gpp/{category}] no new articles, skipping.")
+                continue
+            print(f"\n  ✍ Summarizing [3gpp/{category}] ({len(articles)} articles)...")
+            text, sources = self._summarize_articles(category, articles)
+            if text.strip():
+                topic = f"3GPP {category} weekly digest ({len(articles)} articles)"
+                coll_id = self.db.save_collection(
+                    category="3gpp",
+                    topic=topic,
+                    content=text,
+                    sources=sources,
+                )
+                collection_ids.append(coll_id)
+                print(f"  ✓ Saved #{coll_id}: {topic[:70]}")
+            time.sleep(5)
+
+        # --- Part 2: Web search for 3GPP specs (targeted, Haiku) ---
+        print("\n🔍 Searching for 3GPP specification updates...")
+        for sub_category, queries in THREEGPP_WEEKLY_QUERIES.items():
             for query in queries:
-                # Keep prompt short to minimize input tokens (rate limit = 30k tokens/min)
-                prompt = f"Search: {query}\nSummarize key findings in 3-5 bullet points for SoC product planning."
-
+                prompt = (
+                    f"Search: {query}\n"
+                    f"Summarize key findings for SoC product planning in 3-5 bullet points. "
+                    f"Focus on 3GPP spec changes, timeline, and hardware implications."
+                )
                 text, sources = self._run_with_search(prompt, model=COLLECTION_MODEL)
-
                 if text.strip():
                     coll_id = self.db.save_collection(
-                        category=category,
-                        topic=query,
+                        category="3gpp",
+                        topic=query[:200],
                         content=text,
                         sources=sources,
                     )
                     collection_ids.append(coll_id)
                     print(f"  ✓ Saved #{coll_id}: {query[:60]}")
 
-                # 65s delay to stay well within 30k tokens/min rate limit
-                print(f"  ⏸ Waiting 65s before next request...")
+                print(f"  ⏸ Waiting 65s...")
                 time.sleep(65)
 
         return collection_ids
+
+    def collect_daily_updates(self) -> list:
+        """Backward-compatible alias → collect_daily_rss()."""
+        return self.collect_daily_rss()
 
     def run_weekly_analysis(self) -> int:
         """Run comprehensive weekly cross-analysis. Returns analysis ID."""

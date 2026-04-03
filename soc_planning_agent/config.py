@@ -9,21 +9,21 @@ BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "soc_planning.db"
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-# Model tiers: use Haiku for collection (low token cost), Opus for weekly analysis
-MODEL = "claude-opus-4-6"           # weekly deep analysis
-COLLECTION_MODEL = "claude-haiku-4-5"  # daily collection (10x cheaper, within rate limits)
 
-# Daily collection focuses
+# Model tiers: Haiku for collection (10x cheaper), Opus for deep analysis
+MODEL = "claude-opus-4-6"
+COLLECTION_MODEL = "claude-haiku-4-5"
+
+# Daily RSS collection focus areas (informational — see rss_collector.py for actual sources)
 DAILY_TOPICS = [
-    "3GPP latest standard releases and work items (Release 18, Release 19, Release 20)",
-    "AI agent and LLM integration in telecom and network infrastructure",
-    "5G/6G chipset and SoC market competitive landscape",
-    "Qualcomm, MediaTek, Samsung Exynos, Apple Silicon latest announcements",
-    "Open RAN and vRAN SoC technology developments",
-    "Edge AI and on-device inference chip trends",
+    "Agentic AI — multi-agent systems, autonomous agents, on-device LLM",
+    "Chips/SoC — mobile SoC, baseband, NPU, AI accelerators, semiconductor news",
+    "Mobile — smartphone OEM announcements, flagship launches, 5G phones",
+    "5G CPE — Fixed Wireless Access, O-RAN, network slicing, 5G-Advanced",
+    "CSP/Cloud — AWS, Azure, GCP infrastructure and AI services",
 ]
 
-# Weekly deep-dive analysis themes
+# Weekly analysis themes (used by run_weekly_analysis)
 WEEKLY_THEMES = [
     "Cross-analysis: 3GPP standards roadmap vs SoC product gap analysis",
     "Competitive positioning: feature comparison and market share shifts",
@@ -31,22 +31,20 @@ WEEKLY_THEMES = [
     "Technology trend synthesis and 12-month product roadmap recommendations",
 ]
 
-# Search queries for data collection
-SEARCH_QUERIES = {
-    "3gpp": [
-        "3GPP Release 18 19 20 latest approved specifications 2024 2025",
-        "3GPP new work items radio access network chipset requirements",
-        "3GPP 5G-Advanced features timeline standardization",
+# Web search queries for weekly 3GPP + vendor/operator updates.
+# These supplement the RSS vendor feeds with targeted 3GPP spec searches.
+THREEGPP_WEEKLY_QUERIES = {
+    "3gpp_specs": [
+        "3GPP Release 19 Release 20 new approved work items specifications 2025",
+        "3GPP 5G-Advanced NR features timeline standardization 2025",
+        "3GPP TSG RAN SA CT latest meeting decisions plenary 2025",
     ],
-    "market_trends": [
-        "AI agent integration telecom infrastructure SoC 2025",
-        "on-device LLM inference mobile chipset requirements",
-        "6G research chipset technology roadmap",
+    "vendors_news": [
+        "Nokia Ericsson 5G-Advanced RAN baseband chipset announcement 2025",
+        "Huawei ZTE 5G base station SoC technology announcement 2025",
     ],
-    "competitors": [
-        "Qualcomm Snapdragon X Elite X85 modem baseband announcement",
-        "MediaTek Dimensity modem SoC latest release specs",
-        "Samsung Exynos 2500 baseband modem specification",
-        "Apple M4 A18 modem integration latest news",
+    "operators_news": [
+        "T-Mobile Verizon AT&T China Mobile Vodafone 5G deployment strategy 2025",
+        "global operator 5G-Advanced network commercial launch 2025",
     ],
 }

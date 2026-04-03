@@ -95,32 +95,53 @@ def status():
 
 
 @cli.command()
-@click.option("--run-now", is_flag=True, help="Run collection immediately without waiting for schedule")
-def collect(run_now: bool):
-    """Run daily market intelligence collection."""
+def collect():
+    """Run daily RSS news collection (Agentic AI / Chips / Mobile / 5G CPE / CSP).
+
+    Fetches from vetted sources: TechCrunch, DigiTimes, LightReading, EE Times, etc.
+    No web search API used — fast and token-efficient.
+    """
     db, agent = _get_agent()
 
-    if run_now or Confirm.ask("Run daily collection now?", default=True):
-        console.print("\n[cyan]🔍 Starting daily market intelligence collection...[/cyan]")
-        console.print("[dim]This will search the web for 3GPP updates, market trends, and competitor info.[/dim]\n")
+    console.print("\n[cyan]📡 Starting daily RSS news collection...[/cyan]")
+    console.print("[dim]Sources: TechCrunch, DigiTimes, LightReading, EE Times, VentureBeat, IEEE Spectrum, etc.[/dim]")
+    console.print("[dim]Categories: Agentic AI / Chips & SoC / Mobile / 5G CPE / CSP Cloud[/dim]\n")
 
-        with console.status("[cyan]Collecting intelligence (this may take a few minutes)...[/cyan]"):
-            collection_ids = agent.collect_daily_updates()
+    collection_ids = agent.collect_daily_rss()
 
-        console.print(f"\n[green]✓ Collected {len(collection_ids)} items[/green]\n")
+    console.print(f"\n[green]✓ Collected {len(collection_ids)} digest(s)[/green]\n")
+    for coll_id in collection_ids:
+        item = db.get_collection_by_id(coll_id)
+        if item:
+            console.print(f"  [dim]#{coll_id}[/dim] [{item['category'].upper()}] {item['topic'][:70]}")
 
-        # Show what was collected
-        for coll_id in collection_ids:
-            item = db.get_collection_by_id(coll_id)
-            if item:
-                console.print(f"  [dim]#{coll_id}[/dim] [{item['category'].upper()}] {item['topic'][:70]}")
 
-        # Prompt for feedback
-        if collection_ids and Confirm.ask("\nAdd feedback on this collection run?", default=False):
-            comment = Prompt.ask("Your feedback")
-            for cid in collection_ids:
-                agent.learn_from_feedback("collection", cid, comment)
-            console.print("[green]Feedback saved and will improve future collections.[/green]")
+@cli.command("collect-3gpp")
+def collect_3gpp():
+    """Run weekly 3GPP + vendor/operator news collection.
+
+    Fetches from:
+      - Nokia, Ericsson newsrooms (RSS, 7-day lookback)
+      - Qualcomm, MediaTek press releases (RSS)
+      - Major operators: Verizon, T-Mobile, Vodafone (RSS)
+      - 3GPP.org spec updates (web search)
+      - Targeted 3GPP Release 19/20 spec queries (web search)
+
+    Run this once per week (e.g., every Monday).
+    """
+    db, agent = _get_agent()
+
+    console.print("\n[cyan]📡 Starting weekly 3GPP & vendor/operator collection...[/cyan]")
+    console.print("[dim]RSS: Nokia, Ericsson, Qualcomm, MediaTek, Verizon, T-Mobile...[/dim]")
+    console.print("[dim]Web search: 3GPP specs, Release 19/20 updates, operator deployment news[/dim]\n")
+
+    collection_ids = agent.collect_3gpp_weekly()
+
+    console.print(f"\n[green]✓ Collected {len(collection_ids)} item(s)[/green]\n")
+    for coll_id in collection_ids:
+        item = db.get_collection_by_id(coll_id)
+        if item:
+            console.print(f"  [dim]#{coll_id}[/dim] [3GPP] {item['topic'][:70]}")
 
 
 @cli.command()
@@ -414,10 +435,13 @@ Press Ctrl+C to stop.
     scheduler = AgentScheduler()
 
     def daily_task():
-        ids = agent.collect_daily_updates()
-        console.print(f"[green]Daily collection: {len(ids)} items saved[/green]")
+        ids = agent.collect_daily_rss()
+        console.print(f"[green]Daily RSS collection: {len(ids)} digest(s) saved[/green]")
 
     def weekly_task():
+        # 3GPP + vendor/operator collection first, then cross-analysis
+        ids = agent.collect_3gpp_weekly()
+        console.print(f"[green]3GPP weekly collection: {len(ids)} item(s) saved[/green]")
         analysis_id = agent.run_weekly_analysis()
         console.print(f"[green]Weekly analysis #{analysis_id} saved[/green]")
 
