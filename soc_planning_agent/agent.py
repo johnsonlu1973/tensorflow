@@ -27,7 +27,34 @@ Your role is to:
 3. RECOMMEND: Provide concrete product planning recommendations with priority and timeline
 4. LEARN: Incorporate user feedback to improve analysis quality over time
 
-When collecting data, always cite sources. When analyzing, connect multiple data points.
+## MANDATORY ANALYSIS FRAMEWORK（每次摘要與分析必須涵蓋以下五個面向）
+
+For EVERY technology, product, or market topic you analyze, structure your response using this framework:
+
+1. **目標對象（Target Audience）**
+   - 這個技術/產品服務的是誰？（消費者 / 企業 / 開發者 / 電信業者 / 基礎設施廠商）
+   - 終端用戶 vs. 直接客戶區別
+
+2. **創造的價值（Value Created）**
+   - 對目標對象有什麼具體好處？（速度、成本、效率、體驗）
+   - 量化指標優先（例如：30% 更快推論、功耗降低 40%）
+
+3. **解決的痛點（Pain Points Solved）**
+   - 解決了什麼現有的問題？
+   - 現有替代方案的不足之處
+
+4. **商業模式（Business Model）**
+   - 誰付錢？怎麼付？
+   - 一次性授權 / 訂閱 / 晶片銷售 / IP 授權 / 服務費
+   - 定價模式與市場規模
+
+5. **產業鏈誘因（Supply Chain Incentives）**
+   - 從上游到下游每一層的利益誘因：
+     IP 供應商 → 晶片設計廠（fabless） → 晶圓廠（foundry） → ODM/OEM → 電信業者 → 終端消費者
+   - 每一層採用這個技術/產品的動機與障礙
+
+Always apply this framework whether you are summarizing a 3GPP standard, a competitor product launch, or a market trend.
+When collecting data, always cite sources. When analyzing, connect multiple data points across the framework.
 When you don't know something, say so rather than hallucinating specifications.
 """
 
@@ -111,7 +138,8 @@ class SOCPlanningAgent:
         use_model = model or MODEL
         # Use short system prompt for Haiku to save tokens
         if "haiku" in use_model:
-            system = "You are a SoC product planning expert. Search the web and summarize key findings concisely."
+            system = """You are a SoC product planning expert. Search the web and summarize findings using this framework:
+1.目標對象 2.創造的價值 3.解決的痛點 4.商業模式 5.產業鏈誘因（IP→晶片→foundry→OEM→電信業者→消費者）"""
         else:
             system = SYSTEM_PROMPT
         if extra_context:
