@@ -248,15 +248,22 @@ class SOCPlanningAgent:
 
         Searches the same vetted sources using site: operator queries.
         """
-        print("  🔄 Fallback: collecting via web_search (vetted sources only)...")
+        today = datetime.now().strftime("%Y-%m-%d")
+        current_year = datetime.now().year
+        print(f"  🔄 Fallback: collecting via web_search (vetted sources only, today={today})...")
         collection_ids = []
         for category, queries in FALLBACK_SEARCH_QUERIES.items():
             for query in queries:
                 prompt = (
-                    f"Search for the latest news from credible tech publications.\n"
+                    f"Today is {today}. Search for the LATEST news published in {current_year} "
+                    f"from credible tech publications.\n"
                     f"Query: {query}\n\n"
-                    f"For each article found, provide:\n"
-                    f"- Title and URL\n"
+                    f"IMPORTANT:\n"
+                    f"- Only include articles published in {current_year} (ignore anything from {current_year - 1} or earlier)\n"
+                    f"- If no {current_year} articles are found, clearly state that\n"
+                    f"- Always include the publication date for each article\n\n"
+                    f"For each recent article found, provide:\n"
+                    f"- Title, URL, and publication date\n"
                     f"- 2-3 bullet point summary\n"
                     f"For the top 2 most relevant items, also apply:\n"
                     f"目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
@@ -357,11 +364,15 @@ class SOCPlanningAgent:
             time.sleep(5)
 
         # --- Part 2: Web search for 3GPP specs (targeted, Haiku) ---
+        today = datetime.now().strftime("%Y-%m-%d")
+        current_year = datetime.now().year
         print("\n🔍 Searching for 3GPP specification updates...")
         for sub_category, queries in THREEGPP_WEEKLY_QUERIES.items():
             for query in queries:
                 prompt = (
-                    f"Search: {query}\n"
+                    f"Today is {today}. Search: {query}\n"
+                    f"Only include news and specifications from {current_year}. "
+                    f"Include publication date for each item found. "
                     f"Summarize key findings for SoC product planning in 3-5 bullet points. "
                     f"Focus on 3GPP spec changes, timeline, and hardware implications."
                 )
