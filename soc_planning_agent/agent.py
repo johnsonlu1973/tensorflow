@@ -2,7 +2,7 @@
 import json
 import time
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import anthropic
@@ -247,25 +247,33 @@ class SOCPlanningAgent:
         """Fallback: use web_search (Haiku) when direct RSS is network-blocked.
 
         Searches the same vetted sources using site: operator queries.
+        Uses after: date filter to restrict results to the past 3 days.
         """
-        today = datetime.now().strftime("%Y-%m-%d")
-        current_year = datetime.now().year
-        print(f"  🔄 Fallback: collecting via web_search (vetted sources only, today={today})...")
+        today = datetime.now()
+        today_str = today.strftime("%Y-%m-%d")
+        after_str = (today - timedelta(days=3)).strftime("%Y-%m-%d")
+        current_year = today.year
+
+        print(f"  🔄 Fallback: web_search with date filter after:{after_str} (today={today_str})...")
         collection_ids = []
         for category, queries in FALLBACK_SEARCH_QUERIES.items():
             for query in queries:
+                # Append after: date operator — supported by most search engines
+                dated_query = f"{query} after:{after_str}"
                 prompt = (
-                    f"Today is {today}. Search for the LATEST news published in {current_year} "
-                    f"from credible tech publications.\n"
-                    f"Query: {query}\n\n"
+                    f"Today is {today_str}. Search for news published in the last 3 days "
+                    f"(from {after_str} to {today_str}) from credible tech publications.\n"
+                    f"Query: {dated_query}\n\n"
                     f"IMPORTANT:\n"
-                    f"- Only include articles published in {current_year} (ignore anything from {current_year - 1} or earlier)\n"
-                    f"- If no {current_year} articles are found, clearly state that\n"
-                    f"- Always include the publication date for each article\n\n"
-                    f"For each recent article found, provide:\n"
-                    f"- Title, URL, and publication date\n"
+                    f"- ONLY include articles with publication date {after_str} or later\n"
+                    f"- Skip any article older than 3 days — even if relevant\n"
+                    f"- Always show the exact publication date (YYYY-MM-DD) for each article\n"
+                    f"- If no articles from the past 3 days are found from these specific sites, "
+                    f"clearly state 'No recent articles found' rather than showing older content\n\n"
+                    f"For each article found, provide:\n"
+                    f"- Title, URL, and exact publication date\n"
                     f"- 2-3 bullet point summary\n"
-                    f"For the top 2 most relevant items, also apply:\n"
+                    f"For the top 2 most relevant, apply:\n"
                     f"目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
                     f"Exclude generic blog posts — only established news outlets."
                 )
@@ -273,7 +281,7 @@ class SOCPlanningAgent:
                 if text.strip():
                     coll_id = self.db.save_collection(
                         category=category,
-                        topic=f"Daily news — {category} (web search)",
+                        topic=f"Daily news — {category} ({today_str})",
                         content=text,
                         sources=sources,
                     )
