@@ -191,9 +191,9 @@ def ask(question: str):
 @cli.command()
 @click.option("--days", default=7, help="Show collections from last N days")
 @click.option("--category", default=None, help="Filter by category (3gpp, market_trends, competitors, query)")
-@click.option("--limit", default=10, help="Max items to show")
+@click.option("--limit", default=30, help="Max items to show")
 def show_collections(days: int, category: Optional[str], limit: int):
-    """Show recent market intelligence collections."""
+    """List recent market intelligence collections (titles only)."""
     db, _ = _get_agent()
     items = db.get_recent_collections(days=days, category=category)
 
@@ -201,34 +201,70 @@ def show_collections(days: int, category: Optional[str], limit: int):
         console.print("[yellow]No collections found.[/yellow]")
         return
 
-    console.print(f"\n[bold]Recent Collections (last {days} days)[/bold]\n")
+    console.print(f"\n[bold]Recent Collections (last {days} days)[/bold]")
+    console.print("[dim]Use: python main.py view-collection <ID>  to see full content[/dim]\n")
 
-    table = Table(show_header=True, header_style="bold cyan")
-    table.add_column("#", width=6)
-    table.add_column("Date", width=12)
-    table.add_column("Category", width=14)
-    table.add_column("Topic", width=50)
+    table = Table(show_header=True, header_style="bold cyan", box=None)
+    table.add_column("#", width=5, style="cyan")
+    table.add_column("Date", width=11)
+    table.add_column("Category", width=15)
+    table.add_column("Topic", no_wrap=False)
+
+    category_colors = {
+        "3gpp": "green",
+        "market_trends": "yellow",
+        "competitors": "red",
+        "query": "blue",
+    }
 
     for item in items[:limit]:
+        cat = item["category"]
+        color = category_colors.get(cat, "white")
         table.add_row(
             str(item["id"]),
             item["collected_at"][:10],
-            item["category"],
-            item["topic"][:48],
+            f"[{color}]{cat}[/{color}]",
+            item["topic"],
         )
 
     console.print(table)
 
-    if Confirm.ask("\nView a specific collection?", default=False):
-        coll_id = int(Prompt.ask("Enter collection ID"))
-        item = db.get_collection_by_id(coll_id)
-        if item:
-            _display_collection(item)
-            if Confirm.ask("Add feedback on this item?", default=False):
-                comment = Prompt.ask("Feedback")
-                db, agent = _get_agent()
-                agent.learn_from_feedback("collection", coll_id, comment)
-                console.print("[green]✓ Feedback saved.[/green]")
+
+@cli.command()
+@click.argument("collection_id", type=int)
+def view_collection(collection_id: int):
+    """View full content and sources of a specific collection."""
+    db, agent = _get_agent()
+    item = db.get_collection_by_id(collection_id)
+
+    if not item:
+        console.print(f"[red]Collection #{collection_id} not found.[/red]")
+        return
+
+    # Display full content
+    sources = json.loads(item.get("sources", "[]"))
+    console.print(Panel(
+        Markdown(item["content"]),
+        title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
+        subtitle=f"[dim]{item['collected_at'][:16]}[/dim]",
+        border_style="blue",
+    ))
+
+    # Display sources as clickable links
+    if sources:
+        console.print("\n[bold]📎 資料來源連結[/bold]")
+        for i, url in enumerate(sources, 1):
+            console.print(f"  {i}. [link={url}]{url}[/link]")
+    else:
+        console.print("\n[dim]（無記錄來源連結）[/dim]")
+
+    # Show existing feedback
+    feedback = db.get_feedback_for_target("collection", collection_id)
+    if feedback:
+        console.print("\n[dim]已記錄的評語：[/dim]")
+        for fb in feedback:
+            console.print(f"  [dim]• {fb['created_at'][:10]} — {fb['comment']}[/dim]")
+
 
 
 @cli.command()
