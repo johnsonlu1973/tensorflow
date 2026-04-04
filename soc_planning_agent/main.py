@@ -398,6 +398,152 @@ def view_article(collection_id: int, article_num: int):
 
 @cli.command()
 @click.argument("collection_id", type=int, required=False)
+@click.option("--all", "reanalyze_all", is_flag=True, help="Reanalyze all recent trend articles")
+@click.option("--days", default=7, help="Days range when using --all")
+def reanalyze(collection_id: int, reanalyze_all: bool, days: int):
+    """Re-run deep analysis on existing articles using the latest framework.
+
+    Uses stored full_text — no RSS re-fetch needed.
+
+    \b
+    Examples:
+      python main.py reanalyze 15          # one collection
+      python main.py reanalyze --all       # all recent collections
+    """
+    import anthropic as _anthropic
+    import time as _time
+    from github_collector import analyze_trend_article as _analyze
+
+    db, _ = _get_agent()
+
+    targets = []
+    if reanalyze_all:
+        targets = db.get_recent_collections(days=days)
+    elif collection_id:
+        item = db.get_collection_by_id(collection_id)
+        if not item:
+            console.print(f"[red]Collection #{collection_id} not found.[/red]")
+            return
+        targets = [item]
+    else:
+        console.print("[red]Specify a collection ID or --all.[/red]")
+        return
+
+    client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    total_updated = 0
+
+    for item in targets:
+        coll_id = item["id"]
+        articles = db.get_articles_by_collection(coll_id)
+        if not articles:
+            console.print(f"  [dim]#{coll_id} skipped (old format)[/dim]")
+            continue
+
+        trend_arts = [a for a in articles if a.get("article_type") == "trend"]
+        if not trend_arts:
+            console.print(f"  [dim]#{coll_id} [{item['category']}] — no trend articles[/dim]")
+            continue
+
+        console.print(f"\n[cyan]#{coll_id} [{item['category'].upper()}] — {len(trend_arts)} trend articles[/cyan]")
+
+        for a in trend_arts:
+            console.print(f"  ✍  {a['title'][:70]}")
+            # Build article dict compatible with analyze_trend_article
+            art_dict = {
+                "title":     a["title"],
+                "url":       a["url"],
+                "source":    a["source"],
+                "published": a["published"],
+                "summary":   a["rss_summary"],
+                # Use stored full_text if available, skip HTTP fetch
+                "_stored_full_text": a.get("full_text") or a.get("rss_summary", ""),
+            }
+            # Patch: override fetch with stored text
+            body = art_dict["_stored_full_text"][:2500]
+            # Call analysis prompt directly (reuse logic from github_collector)
+            from github_collector import (
+                COLLECTION_MODEL, MAX_ARTICLE_CHARS,
+            )
+            import anthropic as _anth
+
+            prompt_parts = _build_analysis_prompt(art_dict, body)
+            try:
+                resp = client.messages.create(
+                    model=COLLECTION_MODEL,
+                    max_tokens=2000,
+                    system=(
+                        "You are a SoC product planning expert. Be concise and evidence-based. "
+                        "CRITICAL RULE: Never fabricate numbers, statistics, or percentages. "
+                        "Only cite figures that appear verbatim in the provided article text. "
+                        "If no data exists in the article, write exactly '（原文未提及）'. "
+                        "Empty fields are acceptable."
+                    ),
+                    messages=[{"role": "user", "content": prompt_parts}],
+                )
+                new_analysis = resp.content[0].text.strip()
+                # Update DB
+                with db._connect() as conn:
+                    conn.execute(
+                        "UPDATE articles SET analysis=? WHERE id=?",
+                        (new_analysis, a["id"]),
+                    )
+                console.print(f"    [green]✓[/green] updated ({len(new_analysis)} chars)")
+                total_updated += 1
+            except Exception as e:
+                console.print(f"    [red]✗ {e}[/red]")
+            _time.sleep(3)
+
+    console.print(f"\n[green]✓ Reanalyzed {total_updated} articles[/green]")
+    if total_updated:
+        console.print("[dim]Run 'python main.py export-html --all' to regenerate HTML.[/dim]")
+
+
+def _build_analysis_prompt(article: dict, body: str) -> str:
+    """Build the 4-layer analysis prompt (shared by reanalyze and github_collector)."""
+    return (
+        f"Article: {article['title']}\n"
+        f"Source: {article.get('source','')} | Published: {article.get('published','')}\n"
+        f"URL: {article.get('url','')}\n\n"
+        f"Content:\n{body}\n\n"
+        f"This article represents a BREAKTHROUGH or INNOVATIVE development. "
+        f"Apply the 4-layer strategic analysis framework in Traditional Chinese "
+        f"(keep English technical terms). Follow EXACTLY this structure:\n\n"
+        f"⚠️ EMPTY FIELD RULE: If the article does not contain enough information "
+        f"to answer a specific field, write EXACTLY '（原文未提及）' for that field. "
+        f"Never fabricate, infer, or hallucinate content to fill gaps. "
+        f"It is perfectly acceptable to have empty fields.\n\n"
+        f"## 啟動層：趨勢 → 市場新機會\n"
+        f"**產業趨勢**：哪些技術突破或典範轉移正在發生？（從原文找依據）\n"
+        f"**市場新機會**：這個趨勢打破了哪個現有市場平衡？創造了什麼尚未被滿足的新機會？\n\n"
+        f"## 鎖定層：機會 → 目標客群與痛點\n"
+        f"**目標客群**：在這個新機會中，誰是最核心的目標客群？（直接客戶 vs 終端用戶）\n"
+        f"**最急迫的痛點**：他們目前最急迫的問題是什麼？\n"
+        f"**現有方案的不足**：為什麼現有解決方案無法解決？差距在哪裡？\n\n"
+        f"## 轉換層：痛點 → 客戶價值\n"
+        f"**解決方案**：這個新產品/技術具體如何解決痛點？\n"
+        f"**差異化優勢**：比競爭對手更好／更快／更便宜在哪裡？\n"
+        f"**客戶價值**：為客戶創造了什麼具體可感受的價值？\n"
+        f"⚠️ 數字規則：只引用原文明確出現的數字。原文無數字則定性描述。"
+        f"推估須標示「（推估）」並說明依據，禁止捏造數據。\n\n"
+        f"## 收成層：客戶價值 → 商業價值\n"
+        f"**商業模式**：如何將客戶價值轉換成公司收入？（硬體溢價／軟體訂閱／IP授權／平台費）\n"
+        f"**護城河**：什麼機制讓競爭對手難以複製？（生態綁定／技術壁壘／轉換成本／網絡效應）\n"
+        f"**商業價值**：對公司財務的預期影響（ASP提升／市佔擴大／毛利改善）\n"
+        f"⚠️ 同樣規則：財務數字只引原文，無原文數字則定性描述或標示「（推估）」\n\n"
+        f"## 產業鏈結構圖\n"
+        f"用 ASCII 畫出這個新機會涉及的產業結構，從消費端往上游延伸：\n"
+        f"```\n消費者／企業\n  ↓\nOEM／平台商\n  ↓\n晶片設計\n  ↓\nFoundry\n  ↓\nIP廠商\n```\n\n"
+        f"## 產業鏈誘因分析\n"
+        f"| 產業層級 | 誘因來源（承接下游商業價值） | 誘因強度 | 潛在障礙／利益衝突 | 態度 |\n"
+        f"|---------|--------------------------|--------|-----------------|------|\n"
+        f"誘因強度：🔴高 🟡中 🟢低\n"
+        f"態度：積極主導 / 積極支持 / 觀望 / 被動跟進 / 抵制\n\n"
+        f"最後補充：破壞性分析、既有廠商態度、新進入者機會窗口。\n"
+    )
+
+
+@cli.command()
+@click.argument("collection_id", type=int, required=False)
 @click.option("--all", "export_all", is_flag=True, help="Export all recent collections")
 @click.option("--days", default=7, help="Days to include when using --all")
 @click.option("--open", "open_browser", is_flag=True, help="Open in browser after export")
