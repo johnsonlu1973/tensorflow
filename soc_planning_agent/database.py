@@ -62,6 +62,23 @@ class Database:
                     priority TEXT DEFAULT 'medium',
                     status TEXT DEFAULT 'open'
                 );
+
+                CREATE TABLE IF NOT EXISTS articles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    collection_id INTEGER NOT NULL,
+                    category TEXT NOT NULL,
+                    collected_at TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    published TEXT DEFAULT '',
+                    article_type TEXT NOT NULL DEFAULT 'info',
+                    one_liner TEXT DEFAULT '',
+                    rss_summary TEXT DEFAULT '',
+                    full_text TEXT DEFAULT '',
+                    analysis TEXT DEFAULT '',
+                    FOREIGN KEY (collection_id) REFERENCES collections(id)
+                );
             """)
 
     # --- Collections ---
@@ -189,6 +206,42 @@ class Database:
     def update_insight_status(self, insight_id: int, status: str):
         with self._connect() as conn:
             conn.execute("UPDATE product_insights SET status=? WHERE id=?", (status, insight_id))
+
+    # --- Articles ---
+
+    def save_article(self, collection_id: int, category: str, title: str, url: str,
+                     source: str, published: str, article_type: str, one_liner: str,
+                     rss_summary: str = "", full_text: str = "", analysis: str = "") -> int:
+        with self._connect() as conn:
+            # Skip duplicate URLs within same collection
+            exists = conn.execute(
+                "SELECT id FROM articles WHERE collection_id=? AND url=?",
+                (collection_id, url),
+            ).fetchone()
+            if exists:
+                return exists["id"]
+            cur = conn.execute(
+                """INSERT INTO articles
+                   (collection_id, category, collected_at, title, url, source, published,
+                    article_type, one_liner, rss_summary, full_text, analysis)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (collection_id, category, datetime.now().isoformat(), title, url, source,
+                 published, article_type, one_liner, rss_summary, full_text, analysis),
+            )
+            return cur.lastrowid
+
+    def get_articles_by_collection(self, collection_id: int) -> list:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM articles WHERE collection_id=? ORDER BY id",
+                (collection_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_article_by_id(self, article_id: int) -> Optional[dict]:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM articles WHERE id=?", (article_id,)).fetchone()
+            return dict(row) if row else None
 
     # --- Stats ---
 

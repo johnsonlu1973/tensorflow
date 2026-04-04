@@ -254,37 +254,141 @@ def show_collections(days: int, category: Optional[str], limit: int):
 @cli.command()
 @click.argument("collection_id", type=int)
 def view_collection(collection_id: int):
-    """View full content and sources of a specific collection."""
-    db, agent = _get_agent()
+    """Overview of a collection: article list with type tag and one-liner.
+    Use view-article <collection_id> <num> to drill into a specific article.
+    """
+    db, _ = _get_agent()
     item = db.get_collection_by_id(collection_id)
 
     if not item:
         console.print(f"[red]Collection #{collection_id} not found.[/red]")
         return
 
-    # Display full content
-    sources = json.loads(item.get("sources", "[]"))
-    console.print(Panel(
-        Markdown(item["content"]),
-        title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
-        subtitle=f"[dim]{item['collected_at'][:16]}[/dim]",
-        border_style="blue",
-    ))
+    articles = db.get_articles_by_collection(collection_id)
 
-    # Display sources as clickable links
-    if sources:
-        console.print("\n[bold]📎 資料來源連結[/bold]")
-        for i, url in enumerate(sources, 1):
-            console.print(f"  {i}. [link={url}]{url}[/link]")
+    # ── New format: structured per-article ──
+    if articles:
+        table = Table(show_header=True, header_style="bold cyan", box=None, padding=(0, 1))
+        table.add_column("#",      width=3,  no_wrap=True)
+        table.add_column("類型",   width=6,  no_wrap=True)
+        table.add_column("標題",   width=50)
+        table.add_column("一句話", width=40)
+
+        for i, a in enumerate(articles, 1):
+            if a["article_type"] == "trend":
+                badge = "[green]趨勢[/green]"
+            else:
+                badge = "[dim]資訊[/dim]"
+            table.add_row(
+                str(i),
+                badge,
+                a["title"][:48],
+                a["one_liner"][:38] if a["one_liner"] else "[dim]—[/dim]",
+            )
+
+        n_trend = sum(1 for a in articles if a["article_type"] == "trend")
+        console.print(Panel(
+            table,
+            title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
+            subtitle=f"[dim]{item['collected_at'][:16]} | {len(articles)} 篇  {n_trend} 趨勢類[/dim]",
+            border_style="blue",
+        ))
+        console.print(
+            f"\n[dim]深度分析：python main.py view-article {collection_id} <#>[/dim]"
+        )
+
+    # ── Old format: plain text content ──
     else:
-        console.print("\n[dim]（無記錄來源連結）[/dim]")
+        sources = json.loads(item.get("sources", "[]"))
+        console.print(Panel(
+            Markdown(item["content"]),
+            title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
+            subtitle=f"[dim]{item['collected_at'][:16]}[/dim]",
+            border_style="blue",
+        ))
+        if sources:
+            console.print("\n[bold]📎 資料來源連結[/bold]")
+            for i, url in enumerate(sources, 1):
+                console.print(f"  {i}. [link={url}]{url}[/link]")
 
-    # Show existing feedback
+    # Show feedback
     feedback = db.get_feedback_for_target("collection", collection_id)
     if feedback:
         console.print("\n[dim]已記錄的評語：[/dim]")
         for fb in feedback:
             console.print(f"  [dim]• {fb['created_at'][:10]} — {fb['comment']}[/dim]")
+
+
+@cli.command()
+@click.argument("collection_id", type=int)
+@click.argument("article_num", type=int)
+def view_article(collection_id: int, article_num: int):
+    """View full detail of one article: original text + deep analysis + link.
+
+    COLLECTION_ID  — collection number (from show-collections)
+    ARTICLE_NUM    — article number within the collection (from view-collection)
+    """
+    db, _ = _get_agent()
+    articles = db.get_articles_by_collection(collection_id)
+
+    if not articles:
+        console.print(f"[red]No articles found for collection #{collection_id}.[/red]")
+        console.print("[dim]This collection uses the old format. Use view-collection instead.[/dim]")
+        return
+
+    if article_num < 1 or article_num > len(articles):
+        console.print(f"[red]Article #{article_num} not found. Range: 1–{len(articles)}[/red]")
+        return
+
+    a = articles[article_num - 1]
+    url = a.get("url", "")
+    is_trend = a["article_type"] == "trend"
+
+    # Header
+    badge = "[green]趨勢類[/green]" if is_trend else "[dim]資訊類[/dim]"
+    console.print(Panel(
+        f"{badge}  [bold]{a['title']}[/bold]\n"
+        f"[dim]{a.get('source','')} · {a.get('published','')[:10]}[/dim]",
+        border_style="green" if is_trend else "dim",
+    ))
+
+    # Clickable link
+    if url:
+        console.print(f"\n🔗 [link={url}]{url}[/link]\n")
+
+    if is_trend:
+        # Original text excerpt
+        full_text = a.get("full_text", "").strip()
+        if full_text:
+            console.print(Panel(
+                full_text[:1500] + ("…" if len(full_text) > 1500 else ""),
+                title="[yellow]原文摘錄[/yellow]",
+                border_style="yellow",
+            ))
+        else:
+            rss = a.get("rss_summary", "").strip()
+            if rss:
+                console.print(Panel(rss, title="[yellow]RSS 摘要（全文未取得）[/yellow]", border_style="yellow"))
+
+        # Deep analysis
+        analysis = a.get("analysis", "").strip()
+        if analysis:
+            console.print(Panel(
+                Markdown(analysis),
+                title="[cyan]深度分析[/cyan]",
+                border_style="cyan",
+            ))
+        else:
+            console.print("[dim]（此文章尚無深度分析）[/dim]")
+    else:
+        # Info article: just show one-liner + RSS summary
+        one_liner = a.get("one_liner", "")
+        rss = a.get("rss_summary", "").strip()
+        console.print(f"[dim]資訊類文章，不做深度分析。[/dim]\n")
+        if one_liner:
+            console.print(f"要點：{one_liner}\n")
+        if rss:
+            console.print(Panel(rss, title="[dim]RSS 摘要[/dim]", border_style="dim"))
 
 
 
@@ -475,28 +579,69 @@ def sync(days: int, pull: bool):
 
         collections = data.get("collections", [])
 
+        format_v2 = data.get("format_version", 1) == 2
+
         for item in collections:
             category = item.get("category", "unknown")
             topic    = item.get("topic", json_file.stem)
-            content  = item.get("content", "")
             sources  = item.get("sources", [])
 
-            if not content:
-                continue
-
-            # Check for duplicates (same topic already in DB)
+            # Check for duplicates
             existing = db.get_recent_collections(days=days, category=category)
             if any(e["topic"] == topic for e in existing):
                 skipped += 1
                 continue
 
-            coll_id = db.save_collection(
-                category=category,
-                topic=topic,
-                content=content,
-                sources=sources,
-            )
-            console.print(f"  [green]✓[/green] #{coll_id} [{category}] {topic[:60]}")
+            if format_v2:
+                # New format: per-article structured data
+                articles = item.get("articles", [])
+                if not articles:
+                    continue
+                # Build a plain-text summary for the collection content field
+                trend_titles = [a["title"] for a in articles if a.get("article_type") == "trend"]
+                content = (
+                    f"{len(articles)} articles ({item.get('trend_count',0)} 趨勢類)\n"
+                    + ("\n".join(f"• {t}" for t in trend_titles) if trend_titles else "（無趨勢類新聞）")
+                )
+                article_urls = [a.get("url","") for a in articles if a.get("url")]
+                coll_id = db.save_collection(
+                    category=category,
+                    topic=topic,
+                    content=content,
+                    sources=article_urls,
+                )
+                # Save individual articles
+                for a in articles:
+                    db.save_article(
+                        collection_id=coll_id,
+                        category=category,
+                        title=a.get("title", ""),
+                        url=a.get("url", ""),
+                        source=a.get("source", ""),
+                        published=a.get("published", ""),
+                        article_type=a.get("article_type", "info"),
+                        one_liner=a.get("one_liner", ""),
+                        rss_summary=a.get("rss_summary", ""),
+                        full_text=a.get("full_text", ""),
+                        analysis=a.get("analysis", ""),
+                    )
+                console.print(
+                    f"  [green]✓[/green] #{coll_id} [{category}] "
+                    f"{topic[:55]}  [dim]({len(articles)} articles)[/dim]"
+                )
+            else:
+                # Old format: plain text content
+                content = item.get("content", "")
+                if not content:
+                    continue
+                coll_id = db.save_collection(
+                    category=category,
+                    topic=topic,
+                    content=content,
+                    sources=sources,
+                )
+                console.print(f"  [green]✓[/green] #{coll_id} [{category}] {topic[:60]}")
+
             imported += 1
 
     console.print(f"\n[green]✓ Imported {imported} collection(s)[/green]", end="")

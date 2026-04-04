@@ -1,15 +1,15 @@
 """Standalone collector for GitHub Actions.
 
-Runs in GitHub Actions (full internet access, no proxy restrictions).
-Fetches RSS → fetches full article text → classifies → summarizes with Claude Haiku → writes JSON.
+Two-pass flow:
+  Pass 1 — Classify ALL articles using RSS title + summary only (no HTTP fetch)
+            Haiku returns: article_type ('trend'/'info') + one_liner
+  Pass 2 — For [trend] articles only: fetch full text → Haiku deep analysis
+            [info] articles: keep one_liner, skip full fetch
 
 Output: soc_planning_agent/data/YYYY-MM-DD.json
-This file is committed to the repo; local agent imports it with:
-  python main.py sync
+  Per-article structured data (title, url, type, one_liner, full_text, analysis)
 
-Usage (GitHub Actions):
-  pip install anthropic
-  python soc_planning_agent/github_collector.py
+Local agent imports with:  python main.py sync
 
 Environment variables required:
   ANTHROPIC_API_KEY
@@ -25,7 +25,6 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
-# Allow running from repo root or from soc_planning_agent/
 ROOT = Path(__file__).parent
 sys.path.insert(0, str(ROOT))
 
@@ -34,19 +33,15 @@ from rss_collector import RSSCollector
 
 COLLECTION_MODEL = "claude-haiku-4-5"
 DATA_DIR = ROOT / "data"
-
-# Max chars of article body to send to Haiku (keep token cost low)
-MAX_ARTICLE_CHARS = 2000
-FETCH_TIMEOUT = 10  # seconds per URL
+MAX_ARTICLE_CHARS = 2500  # chars sent to Haiku for deep analysis
+FETCH_TIMEOUT = 10
 
 
 # ---------------------------------------------------------------------------
-# HTML → plain text (stdlib only, no BeautifulSoup)
+# HTML → plain text
 # ---------------------------------------------------------------------------
 
 class _TextExtractor(HTMLParser):
-    """Strip HTML tags and extract visible text."""
-
     SKIP_TAGS = {"script", "style", "noscript", "nav", "footer", "header",
                  "aside", "form", "button", "svg", "meta", "link"}
 
@@ -76,140 +71,135 @@ def _html_to_text(html: str) -> str:
         parser.feed(html)
     except Exception:
         pass
-    raw = " ".join(parser.chunks)
-    # Collapse whitespace
-    return re.sub(r"\s{2,}", " ", raw).strip()
+    return re.sub(r"\s{2,}", " ", " ".join(parser.chunks)).strip()
 
-
-# ---------------------------------------------------------------------------
-# Full article fetcher
-# ---------------------------------------------------------------------------
 
 def fetch_full_text(url: str) -> str:
-    """Fetch article URL and return plain text body.
-
-    Returns empty string on any error (paywall, JS-heavy, timeout, etc.).
-    Falls back gracefully — caller uses RSS summary if this returns "".
-    """
+    """Fetch article and return plain text. Returns '' on failure."""
     if not url or not url.startswith("http"):
         return ""
     try:
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (compatible; SoCPlanningAgent/1.0; "
-                    "+https://github.com/johnsonlu1973/tensorflow)"
-                ),
-                "Accept": "text/html,application/xhtml+xml",
-                "Accept-Language": "en-US,en;q=0.9",
-            },
-        )
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; SoCPlanningAgent/1.0)",
+            "Accept": "text/html,application/xhtml+xml",
+        })
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
-            content_type = resp.headers.get("Content-Type", "")
-            if "html" not in content_type:
+            if "html" not in resp.headers.get("Content-Type", ""):
                 return ""
-            raw_html = resp.read(200_000).decode("utf-8", errors="replace")
-        return _html_to_text(raw_html)
+            return _html_to_text(resp.read(200_000).decode("utf-8", errors="replace"))
     except Exception:
         return ""
 
 
 # ---------------------------------------------------------------------------
-# Per-article enrichment
+# Pass 1 — Classify articles (RSS only, no fetch)
 # ---------------------------------------------------------------------------
 
-def enrich_articles(articles: list) -> list:
-    """Add 'full_text' field to each article by fetching the URL.
+def classify_articles(client: anthropic.Anthropic, category: str, articles: list) -> list:
+    """Ask Haiku to classify each article as 'trend' or 'info' and produce a one_liner.
 
-    Falls back to RSS 'summary' field if fetch fails or returns too little text.
+    Returns articles list with added fields: article_type, one_liner.
+    Uses RSS title + summary only — no full text needed.
     """
+    if not articles:
+        return []
+
+    lines = []
+    for i, a in enumerate(articles, 1):
+        lines.append(f"{i}. {a['title']}\n   {a.get('summary','')[:200]}")
+
+    prompt = (
+        f"Category: [{category}]. Classify each article as 'trend' or 'info'.\n\n"
+        f"Rules:\n"
+        f"  trend = new product launch, new technology, new standard, new architecture, "
+        f"new market entrant — signals a REAL industry direction change\n"
+        f"  info  = personnel change, price change, bug fix, minor feature update, "
+        f"earnings report, promotion/deal — operational or informational only\n\n"
+        f"Return a JSON array (no markdown, just raw JSON):\n"
+        f'[{{"index":1,"type":"trend","one_liner":"..."}},{{"index":2,"type":"info","one_liner":"..."}},...]\n\n'
+        f"one_liner: one concise sentence in Traditional Chinese explaining why it matters (or doesn't).\n\n"
+        f"Articles:\n" + "\n\n".join(lines)
+    )
+
+    try:
+        resp = client.messages.create(
+            model=COLLECTION_MODEL,
+            max_tokens=1500,
+            system="You are a SoC product planning expert. Return only valid JSON, no explanation.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.content[0].text.strip()
+        # Strip markdown code fences if present
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+        classifications = json.loads(raw)
+        lookup = {item["index"]: item for item in classifications}
+    except Exception as e:
+        print(f"    ⚠ Classification parse error: {e} — defaulting all to 'info'")
+        lookup = {}
+
     enriched = []
-    for i, article in enumerate(articles, 1):
-        url = article.get("url", "")
-        print(f"    [{i}/{len(articles)}] Fetching: {url[:80]}")
-        full = fetch_full_text(url)
-
-        # Use full text only if it's meaningfully longer than the RSS snippet
-        rss_summary = article.get("summary", "")
-        if len(full) > len(rss_summary) + 200:
-            article = dict(article)  # shallow copy
-            article["full_text"] = full[:MAX_ARTICLE_CHARS]
-            article["fetch_status"] = "ok"
-        else:
-            article = dict(article)
-            article["full_text"] = rss_summary  # RSS fallback
-            article["fetch_status"] = "fallback"
-
-        enriched.append(article)
-        time.sleep(0.5)  # polite crawl delay
-
-    ok = sum(1 for a in enriched if a["fetch_status"] == "ok")
-    print(f"    → {ok}/{len(enriched)} full texts fetched, {len(enriched)-ok} used RSS fallback")
+    for i, a in enumerate(articles, 1):
+        c = lookup.get(i, {})
+        enriched.append({
+            **a,
+            "article_type": c.get("type", "info"),
+            "one_liner": c.get("one_liner", ""),
+        })
     return enriched
 
 
 # ---------------------------------------------------------------------------
-# Haiku summarization with classification
+# Pass 2 — Deep analysis for trend articles only
 # ---------------------------------------------------------------------------
 
-def summarize_articles(client: anthropic.Anthropic, category: str, articles: list) -> str:
-    """Call Claude Haiku to classify and summarize articles.
+def analyze_trend_article(client: anthropic.Anthropic, article: dict) -> dict:
+    """Fetch full text and apply 5-dimension deep analysis framework."""
+    url = article.get("url", "")
+    print(f"    📄 Fetching full text: {url[:80]}")
+    full_text = fetch_full_text(url)
 
-    Classification rules (applied by Haiku):
-    [趨勢類] new product / new technology / new standard / new architecture / new market entrant
-    [資訊類] personnel change / price change / bug fix / minor feature update / earnings / promotions
+    # Fallback to RSS summary if fetch yields too little
+    rss_summary = article.get("summary", "")
+    if len(full_text) < len(rss_summary) + 200:
+        full_text = rss_summary
+        fetch_ok = False
+    else:
+        fetch_ok = True
 
-    Deep framework (目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因)
-    is applied ONLY to [趨勢類] articles.
-    """
-    if not articles:
-        return ""
+    body = full_text[:MAX_ARTICLE_CHARS]
 
-    today = datetime.now().strftime("%Y-%m-%d")
-    lines = []
-    for i, a in enumerate(articles[:20], 1):
-        body = a.get("full_text") or a.get("summary", "")
-        lines.append(
-            f"{i}. [{a['source']}] {a['title']}\n"
-            f"   Date: {a.get('published','')}\n"
-            f"   URL: {a['url']}\n"
-            f"   Content: {body[:MAX_ARTICLE_CHARS]}"
-        )
-
-    sources_str = ", ".join(sorted({a["source"] for a in articles[:5]}))
     prompt = (
-        f"Today is {today}. Category: [{category}]\n"
-        f"Below are {len(articles)} articles from credible sources ({sources_str} etc.).\n\n"
-        f"**STEP 1 — Classify each article into ONE of two types:**\n"
-        f"  [趨勢類] new product launch, new technology, new standard, new architecture, "
-        f"new market entrant — signals a REAL industry shift\n"
-        f"  [資訊類] personnel change, price change, bug fix / recall, minor feature update, "
-        f"earnings report, promotions / deals — informational only\n\n"
-        f"**STEP 2 — Output format (Traditional Chinese, keep English technical terms):**\n"
-        f"A. List ALL [趨勢類] articles:\n"
-        f"   - Title + URL + 2-3 bullet points\n"
-        f"   - For the TOP 1-2 most significant [趨勢類] articles, add a deep analysis table:\n"
-        f"     | 維度 | 內容 |\n"
-        f"     目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
-        f"     (IP→晶片→foundry→OEM→電信業者→消費者)\n\n"
-        f"B. List ALL [資訊類] articles:\n"
-        f"   - Title + one-sentence summary only. NO framework analysis.\n\n"
-        f"Articles:\n" + "\n\n".join(lines)
+        f"Article: {article['title']}\n"
+        f"Source: {article.get('source','')} | Published: {article.get('published','')}\n"
+        f"URL: {url}\n\n"
+        f"Content:\n{body}\n\n"
+        f"Apply the SoC product planning deep analysis framework in Traditional Chinese "
+        f"(keep English technical terms). Use this exact structure:\n\n"
+        f"## 目標對象\n（服務誰？消費者/企業/開發者/電信業者/基礎設施廠商）\n\n"
+        f"## 創造的價值\n（具體好處、量化指標優先）\n\n"
+        f"## 解決的痛點\n（解決了什麼現有問題？現有方案的不足）\n\n"
+        f"## 商業模式\n（誰付錢？一次性/訂閱/晶片銷售/IP授權）\n\n"
+        f"## 產業鏈誘因\n（IP→晶片→foundry→OEM→電信業者→消費者，每層動機與障礙）"
     )
 
-    response = client.messages.create(
-        model=COLLECTION_MODEL,
-        max_tokens=3000,
-        system=(
-            "You are a SoC product planning expert. "
-            "Your goal is to identify REAL technology trends from daily news. "
-            "Be precise: only apply the deep framework to news that genuinely signals "
-            "an industry direction change, not to operational or promotional news."
-        ),
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.content[0].text.strip()
+    try:
+        resp = client.messages.create(
+            model=COLLECTION_MODEL,
+            max_tokens=1500,
+            system="You are a SoC product planning expert. Be concise and evidence-based.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        analysis = resp.content[0].text.strip()
+    except Exception as e:
+        analysis = f"（分析失敗：{e}）"
+
+    return {
+        **article,
+        "full_text": body,
+        "fetch_ok": fetch_ok,
+        "analysis": analysis,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -224,57 +214,80 @@ def main():
 
     client = anthropic.Anthropic(api_key=api_key)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
     print(f"=== SOC Planning Agent — GitHub Actions Collector ({today}) ===\n")
 
-    # Step 1: Fetch RSS (GitHub Actions has full internet access)
+    # Step 1: Fetch RSS
     print("📡 Fetching RSS feeds (last 24h)...")
     collector = RSSCollector(max_age_days=1)
     category_articles = collector.collect_daily()
-
     total = sum(len(a) for a in category_articles.values())
-    print(f"\n✓ Fetched {total} articles across {len(category_articles)} categories\n")
+    print(f"✓ {total} articles across {len(category_articles)} categories\n")
 
     if total == 0:
-        print("⚠ No articles found. Check RSS source availability.")
+        print("⚠ No articles found.")
         DATA_DIR.mkdir(exist_ok=True)
         out = DATA_DIR / f"{today}.json"
         out.write_text(json.dumps(
             {"date": today, "collections": [], "total_articles": 0},
             ensure_ascii=False, indent=2,
         ))
-        print(f"Wrote empty result to {out}")
         return
 
-    # Step 2: Fetch full article text for each category
-    print("📄 Fetching full article texts...\n")
-    enriched_by_category = {}
+    # Step 2 (Pass 1): Classify all articles using RSS title + summary only
+    print("🏷  Pass 1 — Classifying articles (RSS only, no fetch)...")
+    classified_by_category = {}
     for category, articles in category_articles.items():
         if not articles:
             continue
-        print(f"  [{category}] — {len(articles)} articles")
-        enriched_by_category[category] = enrich_articles(articles)
+        print(f"  [{category}] {len(articles)} articles")
+        classified = classify_articles(client, category, articles)
+        n_trend = sum(1 for a in classified if a["article_type"] == "trend")
+        n_info  = sum(1 for a in classified if a["article_type"] == "info")
+        print(f"    → {n_trend} [趨勢類]  {n_info} [資訊類]")
+        classified_by_category[category] = classified
+        time.sleep(3)
 
-    # Step 3: Classify + summarize each category with Claude Haiku
-    print("\n✍  Summarizing with Claude Haiku (classify → framework)...\n")
+    # Step 3 (Pass 2): Fetch full text + deep analysis for trend articles only
+    print("\n🔬 Pass 2 — Deep analysis for [趨勢類] articles...")
+    final_by_category = {}
+    for category, articles in classified_by_category.items():
+        final = []
+        for a in articles:
+            if a["article_type"] == "trend":
+                a = analyze_trend_article(client, a)
+                time.sleep(2)
+            else:
+                # Info articles: keep RSS summary, no full text needed
+                a = {**a, "full_text": "", "analysis": ""}
+            final.append(a)
+        final_by_category[category] = final
+
+    # Step 4: Build output JSON
     collections = []
-    for category, articles in enriched_by_category.items():
-        print(f"  Summarizing [{category}] ({len(articles)} articles)...")
-        summary = summarize_articles(client, category, articles)
+    for category, articles in final_by_category.items():
+        n_trend = sum(1 for a in articles if a["article_type"] == "trend")
+        collections.append({
+            "category": category,
+            "topic": f"Daily RSS digest — {category} ({len(articles)} articles, {today})",
+            "article_count": len(articles),
+            "trend_count": n_trend,
+            "articles": [
+                {
+                    "title":        a["title"],
+                    "url":          a.get("url", ""),
+                    "source":       a.get("source", ""),
+                    "published":    a.get("published", ""),
+                    "article_type": a["article_type"],
+                    "one_liner":    a.get("one_liner", ""),
+                    "rss_summary":  a.get("summary", ""),
+                    "full_text":    a.get("full_text", ""),
+                    "analysis":     a.get("analysis", ""),
+                }
+                for a in articles
+            ],
+        })
+        print(f"  ✓ [{category}] {len(articles)} articles ({n_trend} trend)")
 
-        if summary:
-            collections.append({
-                "category": category,
-                "topic": f"Daily RSS digest — {category} ({len(articles)} articles, {today})",
-                "content": summary,
-                "sources": list(dict.fromkeys(a["url"] for a in articles if a.get("url"))),
-                "article_count": len(articles),
-            })
-            print(f"  ✓ [{category}] done ({len(summary)} chars)")
-
-        time.sleep(5)  # Haiku rate-limit buffer
-
-    # Step 4: Write JSON output
     DATA_DIR.mkdir(exist_ok=True)
     out_path = DATA_DIR / f"{today}.json"
     result = {
@@ -282,11 +295,10 @@ def main():
         "collected_at": datetime.now(timezone.utc).isoformat(),
         "total_articles": total,
         "collections": collections,
+        "format_version": 2,  # structured per-article format
     }
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-
     print(f"\n✅ Done! {len(collections)} categories → {out_path}")
-    print("   GitHub Actions will commit this file to the repo.")
 
 
 if __name__ == "__main__":
