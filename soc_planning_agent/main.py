@@ -397,6 +397,93 @@ def view_article(collection_id: int, article_num: int):
 
 
 @cli.command()
+@click.argument("collection_id", type=int, required=False)
+@click.option("--all", "export_all", is_flag=True, help="Export all recent collections")
+@click.option("--days", default=7, help="Days to include when using --all")
+@click.option("--open", "open_browser", is_flag=True, help="Open in browser after export")
+def export_html(collection_id: int, export_all: bool, days: int, open_browser: bool):
+    """Export collection(s) to GitHub Pages HTML reports in docs/.
+
+    \b
+    Examples:
+      python main.py export-html 11          # single collection
+      python main.py export-html --all       # all collections from last 7 days
+      python main.py export-html --all --open
+    """
+    from export_html import generate_collection_html, generate_index_html
+
+    db, _ = _get_agent()
+    docs_dir = Path(__file__).parent.parent / "docs"
+    docs_dir.mkdir(exist_ok=True)
+
+    targets = []
+    if export_all:
+        targets = db.get_recent_collections(days=days)
+    elif collection_id:
+        item = db.get_collection_by_id(collection_id)
+        if not item:
+            console.print(f"[red]Collection #{collection_id} not found.[/red]")
+            return
+        targets = [item]
+    else:
+        console.print("[red]Specify a collection ID or use --all.[/red]")
+        return
+
+    collections_info = []
+    for item in targets:
+        coll_id = item["id"]
+        articles = db.get_articles_by_collection(coll_id)
+        if not articles:
+            console.print(f"[dim]  #{coll_id} skipped (old format, no article data)[/dim]")
+            continue
+
+        html = generate_collection_html(item, articles)
+        date = item.get("collected_at", "")[:10]
+        category = item.get("category", "unknown")
+        fname = f"collection_{coll_id}_{category}_{date}.html"
+        out = docs_dir / fname
+        out.write_text(html, encoding="utf-8")
+        console.print(f"  [green]✓[/green] {fname}")
+
+        collections_info.append({
+            "id": coll_id,
+            "category": category,
+            "date": date,
+            "total": len(articles),
+            "trend": sum(1 for a in articles if a.get("article_type") == "trend"),
+            "filename": fname,
+        })
+
+    # Regenerate index page with ALL existing collection HTMLs
+    existing = []
+    for f in docs_dir.glob("collection_*.html"):
+        parts = f.stem.split("_")
+        if len(parts) >= 4:
+            existing.append({
+                "id": parts[1],
+                "category": parts[2],
+                "date": parts[3],
+                "total": "—",
+                "trend": "—",
+                "filename": f.name,
+            })
+    # Merge with fresh info
+    fresh_fnames = {c["filename"] for c in collections_info}
+    merged = collections_info + [e for e in existing if e["filename"] not in fresh_fnames]
+    index_html = generate_index_html(merged)
+    (docs_dir / "index.html").write_text(index_html, encoding="utf-8")
+    console.print(f"  [green]✓[/green] index.html updated ({len(merged)} reports)")
+
+    pages_url = "https://johnsonlu1973.github.io/tensorflow"
+    console.print(f"\n[cyan]📄 GitHub Pages URL:[/cyan] {pages_url}")
+    console.print(f"[dim]After git push, reports will be live in ~30 seconds.[/dim]")
+
+    if open_browser:
+        import webbrowser
+        webbrowser.open(str(docs_dir / "index.html"))
+
+
+@cli.command()
 @click.option("--days", default=30, help="Show analyses from last N days")
 def show_analyses(days: int):
     """Show recent product planning analyses."""
