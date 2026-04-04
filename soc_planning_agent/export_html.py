@@ -107,7 +107,40 @@ h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
 .ana-ul li { margin-bottom: 3px; line-height: 1.5; }
 .ana-ul li::marker { color: #58a6ff; }
 
-/* ── Per-audience card ── */
+/* ── 4-layer flow header ── */
+.layer-flow {
+  display: flex; align-items: center; gap: 0;
+  margin: 12px 0 16px; flex-wrap: wrap;
+}
+.layer-chip {
+  padding: 4px 10px; border-radius: 4px; font-size: 0.72em; font-weight: 700;
+  white-space: nowrap;
+}
+.layer-arrow { color: #8b949e; padding: 0 4px; font-size: 0.9em; }
+.layer-1 { background: #1a3a5c; color: #79c0ff; }
+.layer-2 { background: #3d2b00; color: #e3b341; }
+.layer-3 { background: #1a4731; color: #3fb950; }
+.layer-4 { background: #3d1f1f; color: #f85149; }
+
+/* ── Layer section cards ── */
+.layer-section {
+  border-radius: 6px; margin-bottom: 12px; overflow: hidden;
+  border-left: 3px solid;
+}
+.layer-section-1 { border-color: #388bfd; background: #0d1926; }
+.layer-section-2 { border-color: #e3b341; background: #1a1300; }
+.layer-section-3 { border-color: #3fb950; background: #0d1a12; }
+.layer-section-4 { border-color: #f85149; background: #1a0d0d; }
+.layer-section-title {
+  padding: 7px 12px; font-size: 0.78em; font-weight: 700;
+}
+.layer-section-1 .layer-section-title { color: #79c0ff; }
+.layer-section-2 .layer-section-title { color: #e3b341; }
+.layer-section-3 .layer-section-title { color: #3fb950; }
+.layer-section-4 .layer-section-title { color: #f85149; }
+.layer-section-body { padding: 10px 14px; }
+
+/* ── Per-audience card (kept for fallback) ── */
 .audience-card {
   border: 1px solid #30363d; border-radius: 6px;
   margin-bottom: 12px; overflow: hidden;
@@ -182,17 +215,47 @@ function toggleArticle(id) {
 # Markdown → HTML (minimal, focused on analysis output format)
 # ---------------------------------------------------------------------------
 
+LAYER_META = {
+    '啟動層': ('layer-section-1', '🔵 啟動層：趨勢 → 市場新機會', 1),
+    '鎖定層': ('layer-section-2', '🟡 鎖定層：機會 → 目標客群與痛點', 2),
+    '轉換層': ('layer-section-3', '🟢 轉換層：痛點 → 客戶價值', 3),
+    '收成層': ('layer-section-4', '🔴 收成層：客戶價值 → 商業價值', 4),
+}
+
+LAYER_FLOW_HTML = """
+<div class="layer-flow">
+  <span class="layer-chip layer-1">🔵 趨勢</span>
+  <span class="layer-arrow">→</span>
+  <span class="layer-chip layer-1">機會</span>
+  <span class="layer-arrow">→</span>
+  <span class="layer-chip layer-2">🟡 痛點</span>
+  <span class="layer-arrow">→</span>
+  <span class="layer-chip layer-3">🟢 客戶價值</span>
+  <span class="layer-arrow">→</span>
+  <span class="layer-chip layer-4">🔴 商業價值</span>
+</div>
+"""
+
 def _md_to_analysis_html(text: str) -> str:
     """Convert analysis markdown to structured HTML.
 
-    Recognises four section types:
-      ## 目標對象總覽     → overview table
-      ## 逐一分析        → per-audience cards (### sub-sections)
-      ## 產業鏈結構圖    → styled ASCII diagram
-      ## 產業鏈誘因分析  → incentive table + free-text notes
+    New 4-layer framework:
+      ## 啟動層  → blue layer card
+      ## 鎖定層  → yellow layer card
+      ## 轉換層  → green layer card
+      ## 收成層  → red layer card
+      ## 產業鏈結構圖  → ASCII diagram
+      ## 產業鏈誘因分析 → incentive table
+
+    Legacy sections still supported as fallback.
     """
     sections = re.split(r'^## ', text, flags=re.MULTILINE)
     html_parts = ['<div class="analysis-body">']
+
+    # Detect if this uses the new 4-layer framework
+    is_new_framework = any('啟動層' in s or '鎖定層' in s for s in sections)
+    if is_new_framework:
+        html_parts.append(LAYER_FLOW_HTML)
 
     for sec in sections:
         if not sec.strip():
@@ -201,21 +264,70 @@ def _md_to_analysis_html(text: str) -> str:
         title = lines[0].strip()
         body  = lines[1].strip() if len(lines) > 1 else ""
 
-        html_parts.append(f'<div class="ana-section"><div class="ana-title">{title}</div>')
+        # Match layer sections
+        matched_layer = None
+        for key, (css_cls, display_title, _) in LAYER_META.items():
+            if key in title:
+                matched_layer = (css_cls, display_title)
+                break
 
-        if '逐一分析' in title:
-            html_parts.append(_render_audience_cards(body))
+        if matched_layer:
+            css_cls, display_title = matched_layer
+            body_html = _render_layer_body(body)
+            html_parts.append(
+                f'<div class="layer-section {css_cls}">'
+                f'<div class="layer-section-title">{display_title}</div>'
+                f'<div class="layer-section-body">{body_html}</div>'
+                f'</div>'
+            )
         elif '結構圖' in title:
+            html_parts.append(f'<div class="ana-section"><div class="ana-title">🗺 {title}</div>')
             html_parts.append(_render_diagram(body))
+            html_parts.append('</div>')
         elif '誘因' in title:
+            html_parts.append(f'<div class="ana-section"><div class="ana-title">⛓ {title}</div>')
             html_parts.append(_render_incentive_section(body))
+            html_parts.append('</div>')
+        elif '逐一分析' in title:
+            html_parts.append(f'<div class="ana-section"><div class="ana-title">{title}</div>')
+            html_parts.append(_render_audience_cards(body))
+            html_parts.append('</div>')
         else:
+            html_parts.append(f'<div class="ana-section"><div class="ana-title">{title}</div>')
             html_parts.append(_render_body(body))
-
-        html_parts.append('</div>')
+            html_parts.append('</div>')
 
     html_parts.append('</div>')
     return ''.join(html_parts)
+
+
+def _render_layer_body(text: str) -> str:
+    """Render a layer body: **Label**：content pairs as labelled rows."""
+    # Split on **bold label**: pattern
+    parts = re.split(r'\*\*(.+?)\*\*[：:]', text)
+    if len(parts) < 3:
+        return _render_body(text)
+
+    rows_html = ""
+    # parts = [pre_text, label1, content1, label2, content2, ...]
+    i = 1
+    while i + 1 < len(parts):
+        label   = parts[i].strip().lstrip('⚠️').strip()
+        content = parts[i + 1].strip()
+        # Skip rule annotations (lines starting with ⚠️ or -)
+        if label.startswith('⚠') or label == '':
+            i += 2
+            continue
+        content_html = _render_body(content)
+        rows_html += (
+            f'<div class="audience-row">'
+            f'<div class="row-label" style="min-width:72px">{label}</div>'
+            f'<div class="row-content">{content_html}</div>'
+            f'</div>'
+        )
+        i += 2
+
+    return rows_html if rows_html else _render_body(text)
 
 
 def _render_audience_cards(text: str) -> str:
