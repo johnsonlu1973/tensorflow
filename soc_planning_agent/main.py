@@ -219,16 +219,384 @@ def show_collections(days: int, category: Optional[str], limit: int):
 
     console.print(table)
 
-    if Confirm.ask("\nView a specific collection?", default=False):
-        coll_id = int(Prompt.ask("Enter collection ID"))
-        item = db.get_collection_by_id(coll_id)
-        if item:
-            _display_collection(item)
-            if Confirm.ask("Add feedback on this item?", default=False):
-                comment = Prompt.ask("Feedback")
-                db, agent = _get_agent()
-                agent.learn_from_feedback("collection", coll_id, comment)
-                console.print("[green]✓ Feedback saved.[/green]")
+
+
+@cli.command()
+@click.argument("collection_id", type=int)
+def view_collection(collection_id: int):
+    """Overview of a collection: article list with type tag and one-liner.
+    Use view-article <collection_id> <num> to drill into a specific article.
+    """
+    db, _ = _get_agent()
+    item = db.get_collection_by_id(collection_id)
+
+    if not item:
+        console.print(f"[red]Collection #{collection_id} not found.[/red]")
+        return
+
+    articles = db.get_articles_by_collection(collection_id)
+
+    # ── New format: structured per-article ──
+    if articles:
+        from rich.box import SIMPLE
+        table = Table(show_header=True, header_style="bold cyan", box=SIMPLE, padding=(0, 1))
+        table.add_column("#",      width=3,  no_wrap=True)
+        table.add_column("類型",   width=5,  no_wrap=True)
+        table.add_column("標題",   min_width=30, max_width=45, no_wrap=True)
+        table.add_column("一句話", min_width=25, max_width=40)
+
+        for i, a in enumerate(articles, 1):
+            atype = a.get("article_type", "info")
+            if atype == "trend":
+                badge = "[green]趨勢[/green]"
+            elif atype == "trend_summary":
+                badge = "[yellow]趨勢[/yellow]"
+            else:
+                badge = "[dim]資訊[/dim]"
+            table.add_row(
+                str(i),
+                badge,
+                a["title"][:43],
+                (a["one_liner"] or "[dim]—[/dim]")[:38],
+            )
+
+        n_trend = sum(1 for a in articles if a["article_type"] == "trend")
+        console.print(Panel(
+            table,
+            title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
+            subtitle=f"[dim]{item['collected_at'][:16]} | {len(articles)} 篇  {n_trend} 趨勢類[/dim]",
+            border_style="blue",
+        ))
+        console.print(
+            f"\n[dim]深度分析：python main.py view-article {collection_id} <#>[/dim]"
+        )
+
+    # ── Old format: plain text content ──
+    else:
+        sources = json.loads(item.get("sources", "[]"))
+        console.print(Panel(
+            Markdown(item["content"]),
+            title=f"[cyan]#{item['id']} [{item['category'].upper()}] {item['topic']}[/cyan]",
+            subtitle=f"[dim]{item['collected_at'][:16]}[/dim]",
+            border_style="blue",
+        ))
+        if sources:
+            console.print("\n[bold]📎 資料來源連結[/bold]")
+            for i, url in enumerate(sources, 1):
+                console.print(f"  {i}. [link={url}]{url}[/link]")
+
+    # Show feedback
+    feedback = db.get_feedback_for_target("collection", collection_id)
+    if feedback:
+        console.print("\n[dim]已記錄的評語：[/dim]")
+        for fb in feedback:
+            console.print(f"  [dim]• {fb['created_at'][:10]} — {fb['comment']}[/dim]")
+
+
+@cli.command()
+@click.argument("collection_id", type=int)
+@click.argument("article_num", type=int)
+def view_article(collection_id: int, article_num: int):
+    """View full detail of one article: original text + deep analysis + link.
+
+    COLLECTION_ID  — collection number (from show-collections)
+    ARTICLE_NUM    — article number within the collection (from view-collection)
+    """
+    db, _ = _get_agent()
+    articles = db.get_articles_by_collection(collection_id)
+
+    if not articles:
+        console.print(f"[red]No articles found for collection #{collection_id}.[/red]")
+        console.print("[dim]This collection uses the old format. Use view-collection instead.[/dim]")
+        return
+
+    if article_num < 1 or article_num > len(articles):
+        console.print(f"[red]Article #{article_num} not found. Range: 1–{len(articles)}[/red]")
+        return
+
+    a = articles[article_num - 1]
+    url = a.get("url", "")
+    is_trend = a["article_type"] == "trend"
+
+    # Header
+    badge = "[green]趨勢類[/green]" if is_trend else "[dim]資訊類[/dim]"
+    console.print(Panel(
+        f"{badge}  [bold]{a['title']}[/bold]\n"
+        f"[dim]{a.get('source','')} · {a.get('published','')[:10]}[/dim]",
+        border_style="green" if is_trend else "dim",
+    ))
+
+    # Clickable link
+    if url:
+        console.print(f"\n🔗 [link={url}]{url}[/link]\n")
+
+    if is_trend:
+        # Original text excerpt
+        full_text = a.get("full_text", "").strip()
+        if full_text:
+            console.print(Panel(
+                full_text[:1500] + ("…" if len(full_text) > 1500 else ""),
+                title="[yellow]原文摘錄[/yellow]",
+                border_style="yellow",
+            ))
+        else:
+            rss = a.get("rss_summary", "").strip()
+            if rss:
+                console.print(Panel(rss, title="[yellow]RSS 摘要（全文未取得）[/yellow]", border_style="yellow"))
+
+        # Deep analysis
+        analysis = a.get("analysis", "").strip()
+        if analysis:
+            console.print(Panel(
+                Markdown(analysis),
+                title="[cyan]深度分析[/cyan]",
+                border_style="cyan",
+            ))
+        else:
+            console.print("[dim]（此文章尚無深度分析）[/dim]")
+    else:
+        # Info article: just show one-liner + RSS summary
+        one_liner = a.get("one_liner", "")
+        rss = a.get("rss_summary", "").strip()
+        console.print(f"[dim]資訊類文章，不做深度分析。[/dim]\n")
+        if one_liner:
+            console.print(f"要點：{one_liner}\n")
+        if rss:
+            console.print(Panel(rss, title="[dim]RSS 摘要[/dim]", border_style="dim"))
+
+
+
+@cli.command()
+@click.argument("collection_id", type=int, required=False)
+@click.option("--all", "reanalyze_all", is_flag=True, help="Reanalyze all recent trend articles")
+@click.option("--days", default=7, help="Days range when using --all")
+def reanalyze(collection_id: int, reanalyze_all: bool, days: int):
+    """Re-run deep analysis on existing articles using the latest framework.
+
+    Uses stored full_text — no RSS re-fetch needed.
+
+    \b
+    Examples:
+      python main.py reanalyze 15          # one collection
+      python main.py reanalyze --all       # all recent collections
+    """
+    import anthropic as _anthropic
+    import time as _time
+    from github_collector import analyze_trend_article as _analyze
+
+    db, _ = _get_agent()
+
+    targets = []
+    if reanalyze_all:
+        targets = db.get_recent_collections(days=days)
+    elif collection_id:
+        item = db.get_collection_by_id(collection_id)
+        if not item:
+            console.print(f"[red]Collection #{collection_id} not found.[/red]")
+            return
+        targets = [item]
+    else:
+        console.print("[red]Specify a collection ID or --all.[/red]")
+        return
+
+    client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    total_updated = 0
+
+    for item in targets:
+        coll_id = item["id"]
+        articles = db.get_articles_by_collection(coll_id)
+        if not articles:
+            console.print(f"  [dim]#{coll_id} skipped (old format)[/dim]")
+            continue
+
+        trend_arts = [a for a in articles if a.get("article_type") == "trend"]
+        if not trend_arts:
+            console.print(f"  [dim]#{coll_id} [{item['category']}] — no trend articles[/dim]")
+            continue
+
+        console.print(f"\n[cyan]#{coll_id} [{item['category'].upper()}] — {len(trend_arts)} trend articles[/cyan]")
+
+        for a in trend_arts:
+            console.print(f"  ✍  {a['title'][:70]}")
+            # Build article dict compatible with analyze_trend_article
+            art_dict = {
+                "title":     a["title"],
+                "url":       a["url"],
+                "source":    a["source"],
+                "published": a["published"],
+                "summary":   a["rss_summary"],
+                # Use stored full_text if available, skip HTTP fetch
+                "_stored_full_text": a.get("full_text") or a.get("rss_summary", ""),
+            }
+            # Patch: override fetch with stored text
+            body = art_dict["_stored_full_text"][:2500]
+            # Call analysis prompt directly (reuse logic from github_collector)
+            from github_collector import (
+                COLLECTION_MODEL, MAX_ARTICLE_CHARS,
+            )
+            import anthropic as _anth
+
+            prompt_parts = _build_analysis_prompt(art_dict, body)
+            try:
+                resp = client.messages.create(
+                    model=COLLECTION_MODEL,
+                    max_tokens=2000,
+                    system=(
+                        "You are a SoC product planning expert. Be concise and evidence-based. "
+                        "CRITICAL RULE: Never fabricate numbers, statistics, or percentages. "
+                        "Only cite figures that appear verbatim in the provided article text. "
+                        "If no data exists in the article, write exactly '（原文未提及）'. "
+                        "Empty fields are acceptable."
+                    ),
+                    messages=[{"role": "user", "content": prompt_parts}],
+                )
+                new_analysis = resp.content[0].text.strip()
+                # Update DB
+                with db._connect() as conn:
+                    conn.execute(
+                        "UPDATE articles SET analysis=? WHERE id=?",
+                        (new_analysis, a["id"]),
+                    )
+                console.print(f"    [green]✓[/green] updated ({len(new_analysis)} chars)")
+                total_updated += 1
+            except Exception as e:
+                console.print(f"    [red]✗ {e}[/red]")
+            _time.sleep(3)
+
+    console.print(f"\n[green]✓ Reanalyzed {total_updated} articles[/green]")
+    if total_updated:
+        console.print("[dim]Run 'python main.py export-html --all' to regenerate HTML.[/dim]")
+
+
+def _build_analysis_prompt(article: dict, body: str) -> str:
+    """Build the 4-layer analysis prompt (shared by reanalyze and github_collector)."""
+    return (
+        f"Article: {article['title']}\n"
+        f"Source: {article.get('source','')} | Published: {article.get('published','')}\n"
+        f"URL: {article.get('url','')}\n\n"
+        f"Content:\n{body}\n\n"
+        f"This article represents a BREAKTHROUGH or INNOVATIVE development. "
+        f"Apply the 4-layer strategic analysis framework in Traditional Chinese "
+        f"(keep English technical terms). Follow EXACTLY this structure:\n\n"
+        f"⚠️ EMPTY FIELD RULE: If the article does not contain enough information "
+        f"to answer a specific field, write EXACTLY '（原文未提及）' for that field. "
+        f"Never fabricate, infer, or hallucinate content to fill gaps. "
+        f"It is perfectly acceptable to have empty fields.\n\n"
+        f"## 啟動層：趨勢 → 市場新機會\n"
+        f"**產業趨勢**：哪些技術突破或典範轉移正在發生？（從原文找依據）\n"
+        f"**市場新機會**：這個趨勢打破了哪個現有市場平衡？創造了什麼尚未被滿足的新機會？\n\n"
+        f"## 鎖定層：機會 → 目標客群與痛點\n"
+        f"**目標客群**：在這個新機會中，誰是最核心的目標客群？（直接客戶 vs 終端用戶）\n"
+        f"**最急迫的痛點**：他們目前最急迫的問題是什麼？\n"
+        f"**現有方案的不足**：為什麼現有解決方案無法解決？差距在哪裡？\n\n"
+        f"## 轉換層：痛點 → 客戶價值\n"
+        f"**解決方案**：這個新產品/技術具體如何解決痛點？\n"
+        f"**差異化優勢**：比競爭對手更好／更快／更便宜在哪裡？\n"
+        f"**客戶價值**：為客戶創造了什麼具體可感受的價值？\n"
+        f"⚠️ 數字規則：只引用原文明確出現的數字。原文無數字則定性描述。"
+        f"推估須標示「（推估）」並說明依據，禁止捏造數據。\n\n"
+        f"## 收成層：客戶價值 → 商業價值\n"
+        f"**商業模式**：如何將客戶價值轉換成公司收入？（硬體溢價／軟體訂閱／IP授權／平台費）\n"
+        f"**護城河**：什麼機制讓競爭對手難以複製？（生態綁定／技術壁壘／轉換成本／網絡效應）\n"
+        f"**商業價值**：對公司財務的預期影響（ASP提升／市佔擴大／毛利改善）\n"
+        f"⚠️ 同樣規則：財務數字只引原文，無原文數字則定性描述或標示「（推估）」\n\n"
+        f"## 產業鏈結構圖\n"
+        f"用 ASCII 畫出這個新機會涉及的產業結構，從消費端往上游延伸：\n"
+        f"```\n消費者／企業\n  ↓\nOEM／平台商\n  ↓\n晶片設計\n  ↓\nFoundry\n  ↓\nIP廠商\n```\n\n"
+        f"## 產業鏈誘因分析\n"
+        f"| 產業層級 | 誘因來源（承接下游商業價值） | 誘因強度 | 潛在障礙／利益衝突 | 態度 |\n"
+        f"|---------|--------------------------|--------|-----------------|------|\n"
+        f"誘因強度：🔴高 🟡中 🟢低\n"
+        f"態度：積極主導 / 積極支持 / 觀望 / 被動跟進 / 抵制\n\n"
+        f"最後補充：破壞性分析、既有廠商態度、新進入者機會窗口。\n"
+    )
+
+
+@cli.command()
+@click.argument("collection_id", type=int, required=False)
+@click.option("--all", "export_all", is_flag=True, help="Export all recent collections")
+@click.option("--days", default=7, help="Days to include when using --all")
+@click.option("--open", "open_browser", is_flag=True, help="Open in browser after export")
+def export_html(collection_id: int, export_all: bool, days: int, open_browser: bool):
+    """Export collection(s) to GitHub Pages HTML reports in docs/.
+
+    \b
+    Examples:
+      python main.py export-html 11          # single collection
+      python main.py export-html --all       # all collections from last 7 days
+      python main.py export-html --all --open
+    """
+    from export_html import generate_collection_html, generate_index_html
+
+    db, _ = _get_agent()
+    docs_dir = Path(__file__).parent.parent / "docs"
+    docs_dir.mkdir(exist_ok=True)
+
+    targets = []
+    if export_all:
+        targets = db.get_recent_collections(days=days)
+    elif collection_id:
+        item = db.get_collection_by_id(collection_id)
+        if not item:
+            console.print(f"[red]Collection #{collection_id} not found.[/red]")
+            return
+        targets = [item]
+    else:
+        console.print("[red]Specify a collection ID or use --all.[/red]")
+        return
+
+    collections_info = []
+    for item in targets:
+        coll_id = item["id"]
+        articles = db.get_articles_by_collection(coll_id)
+        if not articles:
+            console.print(f"[dim]  #{coll_id} skipped (old format, no article data)[/dim]")
+            continue
+
+        html = generate_collection_html(item, articles)
+        date = item.get("collected_at", "")[:10]
+        category = item.get("category", "unknown")
+        fname = f"collection_{coll_id}_{category}_{date}.html"
+        out = docs_dir / fname
+        out.write_text(html, encoding="utf-8")
+        console.print(f"  [green]✓[/green] {fname}")
+
+        collections_info.append({
+            "id": coll_id,
+            "category": category,
+            "date": date,
+            "total": len(articles),
+            "trend": sum(1 for a in articles if a.get("article_type") == "trend"),
+            "filename": fname,
+        })
+
+    # Regenerate index page with ALL existing collection HTMLs
+    existing = []
+    for f in docs_dir.glob("collection_*.html"):
+        parts = f.stem.split("_")
+        if len(parts) >= 4:
+            existing.append({
+                "id": parts[1],
+                "category": parts[2],
+                "date": parts[3],
+                "total": "—",
+                "trend": "—",
+                "filename": f.name,
+            })
+    # Merge with fresh info
+    fresh_fnames = {c["filename"] for c in collections_info}
+    merged = collections_info + [e for e in existing if e["filename"] not in fresh_fnames]
+    index_html = generate_index_html(merged)
+    (docs_dir / "index.html").write_text(index_html, encoding="utf-8")
+    console.print(f"  [green]✓[/green] index.html updated ({len(merged)} reports)")
+
+    pages_url = "https://johnsonlu1973.github.io/tensorflow"
+    console.print(f"\n[cyan]📄 GitHub Pages URL:[/cyan] {pages_url}")
+    console.print(f"[dim]After git push, reports will be live in ~30 seconds.[/dim]")
+
+    if open_browser:
+        import webbrowser
+        webbrowser.open(str(docs_dir / "index.html"))
 
 
 @cli.command()
