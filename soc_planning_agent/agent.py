@@ -54,7 +54,10 @@ For EVERY technology, product, or market topic you analyze, structure your respo
      IP 供應商 → 晶片設計廠（fabless） → 晶圓廠（foundry） → ODM/OEM → 電信業者 → 終端消費者
    - 每一層採用這個技術/產品的動機與障礙
 
-Always apply this framework whether you are summarizing a 3GPP standard, a competitor product launch, or a market trend.
+IMPORTANT: Only apply this framework to news that signals a genuine industry shift:
+✅ Apply framework to: new products, new technologies, new standards, new architectures, new market entrants
+❌ Skip framework for: personnel changes, price increases, product recalls/fixes, minor feature updates, earnings reports, promotions/deals
+
 When collecting data, always cite sources. When analyzing, connect multiple data points across the framework.
 When you don't know something, say so rather than hallucinating specifications.
 """
@@ -224,11 +227,16 @@ class SOCPlanningAgent:
 
         prompt = (
             f"以下是今日 [{category}] 領域的最新新聞（來自可信來源）。\n"
-            f"請為 SoC 產品規劃做重點摘要：\n"
-            f"1. 列出最重要的 3~5 則新聞及其要點（2~3 bullet points 每則）\n"
-            f"2. 對最重要的新聞，用以下框架簡析：\n"
+            f"請為 SoC 產品規劃做重點摘要：\n\n"
+            f"**步驟 1：新聞分類**\n"
+            f"先將所有新聞分為兩類：\n"
+            f"  [趨勢類] 新產品發布、新技術、新標準、新架構、新市場進入者 → 代表真實趨勢\n"
+            f"  [資訊類] 人事異動、漲/降價、功能修復/更新、財報、促銷活動 → 僅速覽，不做深度分析\n\n"
+            f"**步驟 2：輸出格式**\n"
+            f"A. 列出所有 [趨勢類] 新聞（2~3 bullet points 每則，保留 URL）\n"
+            f"B. 對 [趨勢類] 中最重要的 1~2 則，套用深度分析框架：\n"
             f"   目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
-            f"3. 請保留原文連結（URL）\n\n"
+            f"C. [資訊類] 新聞僅列標題 + 一句話要點，不做框架分析\n\n"
             f"新聞列表：\n{articles_text}"
         )
 
@@ -270,11 +278,15 @@ class SOCPlanningAgent:
                     f"- Always show the exact publication date (YYYY-MM-DD) for each article\n"
                     f"- If no articles from the past 3 days are found from these specific sites, "
                     f"clearly state 'No recent articles found' rather than showing older content\n\n"
-                    f"For each article found, provide:\n"
-                    f"- Title, URL, and exact publication date\n"
-                    f"- 2-3 bullet point summary\n"
-                    f"For the top 2 most relevant, apply:\n"
-                    f"目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
+                    f"For each article found, provide title, URL, exact publication date, and 2-3 bullet summary.\n\n"
+                    f"CLASSIFICATION RULE — before analysis, classify each article:\n"
+                    f"  [TREND] new product launch, new technology, new standard, new architecture, new market entrant\n"
+                    f"  [INFO]  personnel change, price change, bug fix, minor feature update, earnings, promotions\n\n"
+                    f"Output format:\n"
+                    f"A. List all [TREND] articles with bullets + URL\n"
+                    f"B. Apply deep framework to top 1-2 [TREND] articles only:\n"
+                    f"   目標對象 / 創造的價值 / 解決的痛點 / 商業模式 / 產業鏈誘因\n"
+                    f"C. List [INFO] articles as title + one-liner only (no framework)\n"
                     f"Exclude generic blog posts — only established news outlets."
                 )
                 text, sources = self._run_with_search(prompt, model=COLLECTION_MODEL)
