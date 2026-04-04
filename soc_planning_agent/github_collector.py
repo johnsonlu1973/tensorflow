@@ -196,8 +196,13 @@ def analyze_trend_article(client: anthropic.Anthropic, article: dict) -> dict:
         f"針對每個目標對象，輸出以下固定格式（每組之間加分隔線）：\n\n"
         f"### 🎯 [目標對象名稱]\n"
         f"**痛點**：目前面對什麼具體問題？現有方案為何不夠？\n"
-        f"**創造的價值**：這個新技術/產品如何解決？量化改善幅度（速度/成本/效率）？\n"
-        f"**商業模式**：為了解決這個痛點，此對象願意付多少？以什麼方式付費（一次性/訂閱/授權費）？帶出哪些新的商業行為？\n\n"
+        f"**創造的價值**：這個新技術/產品如何解決？\n"
+        f"  ⚠️ 數字規則（嚴格執行）：\n"
+        f"  - 只能引用原文中明確出現的數字或統計\n"
+        f"  - 若原文無數字，描述定性改善即可，禁止自行推算或捏造數據\n"
+        f"  - 若要提供推估，必須標示「（推估）」且說明推估依據\n"
+        f"**商業模式**：為了解決這個痛點，此對象願意付多少？以什麼方式付費（一次性/訂閱/授權費）？帶出哪些新的商業行為？\n"
+        f"  ⚠️ 同樣規則：價格/市場規模數字只引用原文，無原文數字則用定性描述或標示「（推估）」\n\n"
 
         f"## 產業鏈結構圖\n"
         f"用 ASCII 畫出本技術/產品涉及的產業結構，從消費端往上游延伸，同時標出旁支 ecosystem。\n"
@@ -230,7 +235,13 @@ def analyze_trend_article(client: anthropic.Anthropic, article: dict) -> dict:
         resp = client.messages.create(
             model=COLLECTION_MODEL,
             max_tokens=1500,
-            system="You are a SoC product planning expert. Be concise and evidence-based.",
+            system=(
+                "You are a SoC product planning expert. Be concise and evidence-based. "
+                "CRITICAL RULE: Never fabricate numbers, statistics, or percentages. "
+                "Only cite figures that appear verbatim in the provided article text. "
+                "If no data exists in the article, use qualitative descriptions only. "
+                "If you must estimate, clearly label it as （推估） and explain the basis."
+            ),
             messages=[{"role": "user", "content": prompt}],
         )
         analysis = resp.content[0].text.strip()
