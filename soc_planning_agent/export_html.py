@@ -107,6 +107,44 @@ h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
 .ana-ul li { margin-bottom: 3px; line-height: 1.5; }
 .ana-ul li::marker { color: #58a6ff; }
 
+/* ── Per-audience card ── */
+.audience-card {
+  border: 1px solid #30363d; border-radius: 6px;
+  margin-bottom: 12px; overflow: hidden;
+}
+.audience-header {
+  background: #1c2128; padding: 8px 12px;
+  font-size: 0.85em; font-weight: 700; color: #e6edf3;
+}
+.audience-body { padding: 10px 12px; }
+.audience-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.audience-row:last-child { margin-bottom: 0; }
+.row-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #8b949e; min-width: 56px;
+  padding-top: 2px; flex-shrink: 0;
+}
+.row-content { font-size: 0.83em; line-height: 1.6; color: #c9d1d9; flex: 1; }
+
+/* ── Industry diagram ── */
+.industry-diagram {
+  background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+  padding: 14px 16px; margin: 8px 0;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.82em; line-height: 1.8; color: #8b949e;
+  white-space: pre; overflow-x: auto;
+}
+.industry-diagram .node { color: #e6edf3; font-weight: 600; }
+.industry-diagram .arrow { color: #58a6ff; }
+
+/* Incentive table emphasis */
+.incentive-high { color: #f85149; font-weight: 600; }
+.incentive-mid  { color: #e3b341; font-weight: 600; }
+.incentive-low  { color: #3fb950; }
+.attitude-pos   { color: #3fb950; }
+.attitude-watch { color: #e3b341; }
+.attitude-neg   { color: #f85149; }
+
 /* ── Index page ── */
 .index-card {
   background: #161b22; border: 1px solid #30363d; border-radius: 8px;
@@ -145,23 +183,168 @@ function toggleArticle(id) {
 # ---------------------------------------------------------------------------
 
 def _md_to_analysis_html(text: str) -> str:
-    """Convert analysis markdown to clean HTML with section cards."""
+    """Convert analysis markdown to structured HTML.
+
+    Recognises four section types:
+      ## 目標對象總覽     → overview table
+      ## 逐一分析        → per-audience cards (### sub-sections)
+      ## 產業鏈結構圖    → styled ASCII diagram
+      ## 產業鏈誘因分析  → incentive table + free-text notes
+    """
     sections = re.split(r'^## ', text, flags=re.MULTILINE)
-    html_parts = []
+    html_parts = ['<div class="analysis-body">']
+
     for sec in sections:
         if not sec.strip():
             continue
         lines = sec.strip().split('\n', 1)
         title = lines[0].strip()
-        body = lines[1].strip() if len(lines) > 1 else ""
-        body_html = _render_body(body)
-        html_parts.append(
-            f'<div class="ana-section">'
-            f'<div class="ana-title">{title}</div>'
-            f'<div>{body_html}</div>'
+        body  = lines[1].strip() if len(lines) > 1 else ""
+
+        html_parts.append(f'<div class="ana-section"><div class="ana-title">{title}</div>')
+
+        if '逐一分析' in title:
+            html_parts.append(_render_audience_cards(body))
+        elif '結構圖' in title:
+            html_parts.append(_render_diagram(body))
+        elif '誘因' in title:
+            html_parts.append(_render_incentive_section(body))
+        else:
+            html_parts.append(_render_body(body))
+
+        html_parts.append('</div>')
+
+    html_parts.append('</div>')
+    return ''.join(html_parts)
+
+
+def _render_audience_cards(text: str) -> str:
+    """Render ### sub-sections as per-audience cards with pain/value/biz rows."""
+    chunks = re.split(r'^### ', text, flags=re.MULTILINE)
+    html = []
+    for chunk in chunks:
+        if not chunk.strip():
+            continue
+        lines = chunk.strip().split('\n', 1)
+        header = lines[0].strip().lstrip('🎯').strip()
+        body   = lines[1].strip() if len(lines) > 1 else ""
+
+        rows_html = ""
+        # Parse **Label**：content pairs
+        # Also handle separator lines (---)
+        body = re.sub(r'^[-─]+$', '', body, flags=re.MULTILINE)
+        parts = re.split(r'\*\*(.+?)\*\*[：:]', body)
+        # parts = [pre, label1, content1, label2, content2, ...]
+        if len(parts) >= 3:
+            i = 1
+            while i + 1 < len(parts):
+                label   = parts[i].strip()
+                content = parts[i + 1].strip()
+                content_html = _inline(content).replace('\n', '<br>')
+                rows_html += (
+                    f'<div class="audience-row">'
+                    f'<div class="row-label">{label}</div>'
+                    f'<div class="row-content">{content_html}</div>'
+                    f'</div>'
+                )
+                i += 2
+        else:
+            rows_html = f'<div class="row-content">{_inline(body)}</div>'
+
+        html.append(
+            f'<div class="audience-card">'
+            f'<div class="audience-header">🎯 {header}</div>'
+            f'<div class="audience-body">{rows_html}</div>'
             f'</div>'
         )
-    return '<div class="analysis-body">' + ''.join(html_parts) + '</div>'
+    return ''.join(html) if html else _render_body(text)
+
+
+def _render_diagram(text: str) -> str:
+    """Render ASCII industry structure diagram in styled pre block."""
+    # Extract code fence content if present
+    fence = re.search(r'```[^\n]*\n(.*?)```', text, re.DOTALL)
+    diagram = fence.group(1).rstrip() if fence else text.strip()
+    # Escape HTML
+    diagram = diagram.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    # Highlight arrows and nodes
+    diagram = re.sub(r'(↓|→|←|↑|⟶|➔)', r'<span class="arrow">\1</span>', diagram)
+    # Highlight bracketed nodes [xxx] or plain CAPS words
+    diagram = re.sub(r'\[([^\]]+)\]', r'[<span class="node">\1</span>]', diagram)
+    return f'<div class="industry-diagram">{diagram}</div>'
+
+
+def _render_incentive_section(text: str) -> str:
+    """Render incentive analysis: table + free-text notes."""
+    html = []
+    lines = text.split('\n')
+    table_lines = []
+    note_lines  = []
+    in_table = False
+
+    for line in lines:
+        if line.strip().startswith('|'):
+            in_table = True
+            table_lines.append(line)
+        else:
+            if in_table and table_lines:
+                html.append(_render_incentive_table(table_lines))
+                table_lines = []
+                in_table = False
+            note_lines.append(line)
+
+    if table_lines:
+        html.append(_render_incentive_table(table_lines))
+    if note_lines:
+        notes = '\n'.join(note_lines).strip()
+        if notes:
+            html.append(_render_body(notes))
+
+    return ''.join(html)
+
+
+def _render_incentive_table(lines: list) -> str:
+    """Render incentive markdown table with colour-coded strength and attitude."""
+    rows = []
+    for line in lines:
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        rows.append(cells)
+
+    data_rows = [r for r in rows if not all(re.match(r'^[-:\s]+$', c) for c in r)]
+    if not data_rows:
+        return ""
+
+    header = data_rows[0]
+    body_rows = data_rows[1:]
+
+    def style_cell(text: str, col_idx: int, header_row: list) -> str:
+        col_name = header_row[col_idx].lower() if col_idx < len(header_row) else ""
+        t = _inline(text)
+        if '強度' in col_name or 'strength' in col_name:
+            if '🔴' in t or '高' in t:
+                return f'<span class="incentive-high">{t}</span>'
+            elif '🟡' in t or '中' in t:
+                return f'<span class="incentive-mid">{t}</span>'
+            elif '🟢' in t or '低' in t:
+                return f'<span class="incentive-low">{t}</span>'
+        if '態度' in col_name or 'attitude' in col_name:
+            if any(w in t for w in ['積極', '支持', '主導']):
+                return f'<span class="attitude-pos">{t}</span>'
+            elif any(w in t for w in ['觀望', '被動', '跟進']):
+                return f'<span class="attitude-watch">{t}</span>'
+            elif any(w in t for w in ['抵制', '抵抗', '反對']):
+                return f'<span class="attitude-neg">{t}</span>'
+        return t
+
+    th = ''.join(f'<th>{_inline(c)}</th>' for c in header)
+    trs = ''
+    for row in body_rows:
+        tds = ''
+        for ci, cell in enumerate(row):
+            tds += f'<td>{style_cell(cell, ci, header)}</td>'
+        trs += f'<tr>{tds}</tr>'
+
+    return f'<table class="ana-table"><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table>'
 
 
 def _render_body(text: str) -> str:
