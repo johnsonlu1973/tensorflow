@@ -1,11 +1,4 @@
-"""HTML report generator for SOC Planning Agent collections.
-
-Generates a dark-themed, mobile-friendly HTML report with:
-- Overview table (article num, type badge, title, one-liner)
-- Expandable panels for trend articles: original text + deep analysis
-- Clickable links to original articles
-"""
-import json
+"""HTML report generator for SOC Planning Agent collections."""
 import re
 from datetime import datetime
 from pathlib import Path
@@ -20,127 +13,239 @@ CATEGORY_EMOJI = {
 }
 
 CSS = """
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0f1117; color: #e0e0e0;
-  padding: 16px; max-width: 900px; margin: 0 auto;
+  background: #0d1117; color: #c9d1d9;
+  padding: 16px 12px; max-width: 860px; margin: 0 auto; line-height: 1.6;
 }
-h1 { color: #58a6ff; font-size: 1.25em; padding-bottom: 10px;
-     border-bottom: 1px solid #30363d; margin-bottom: 6px; }
-.meta { color: #8b949e; font-size: 0.82em; margin-bottom: 20px; }
-.back { color: #58a6ff; text-decoration: none; font-size: 0.85em; display: inline-block; margin-bottom: 14px; }
+
+/* ── Nav ── */
+.back { color: #58a6ff; text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
 .back:hover { text-decoration: underline; }
 
-/* Overview table */
-table { width: 100%; border-collapse: collapse; }
-th {
-  background: #161b22; color: #8b949e; text-align: left;
-  padding: 9px 10px; font-size: 0.75em; text-transform: uppercase;
-  letter-spacing: 0.05em; border-bottom: 1px solid #30363d;
-}
-td { padding: 9px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
-tr:hover td { background: #161b22; }
-.num { color: #8b949e; width: 28px; font-size: 0.85em; }
-.badge-trend {
-  background: #1a4731; color: #3fb950;
-  padding: 2px 8px; border-radius: 12px; font-size: 0.72em; font-weight: 600;
-  white-space: nowrap;
-}
-.badge-info {
-  background: #21262d; color: #8b949e;
-  padding: 2px 8px; border-radius: 12px; font-size: 0.72em;
-  white-space: nowrap;
-}
-.title-link { color: #e0e0e0; text-decoration: none; font-size: 0.88em; line-height: 1.4; }
-.title-link:hover { color: #58a6ff; text-decoration: underline; }
-.source-tag { color: #8b949e; font-size: 0.73em; margin-top: 2px; }
-.one-liner { color: #8b949e; font-size: 0.83em; line-height: 1.5; }
+/* ── Page header ── */
+h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: #8b949e; font-size: 0.8em; margin-bottom: 20px; }
+.trend-pill { color: #3fb950; font-weight: 600; }
 
-/* Expand button */
-.toggle-btn {
-  display: inline-block; margin-top: 6px;
-  background: #1a4731; color: #3fb950;
-  border: none; padding: 3px 10px; border-radius: 6px;
-  cursor: pointer; font-size: 0.75em; font-weight: 600;
+/* ── Article card ── */
+.article {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  margin-bottom: 10px; overflow: hidden;
 }
-.toggle-btn.info-btn { background: #21262d; color: #8b949e; }
-.toggle-btn:hover { opacity: 0.8; }
+.article-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; cursor: pointer; user-select: none;
+}
+.article-header:hover { background: #1c2128; }
+.art-num { color: #8b949e; font-size: 0.8em; min-width: 22px; padding-top: 2px; }
+.badge {
+  padding: 2px 9px; border-radius: 12px; font-size: 0.7em;
+  font-weight: 700; white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+}
+.badge-trend { background: #1a4731; color: #3fb950; }
+.badge-info  { background: #21262d; color: #8b949e; }
+.art-right { flex: 1; min-width: 0; }
+.art-title { color: #e6edf3; font-size: 0.9em; font-weight: 600;
+             line-height: 1.4; margin-bottom: 3px; }
+.art-title a { color: inherit; text-decoration: none; }
+.art-title a:hover { color: #58a6ff; }
+.art-meta { color: #8b949e; font-size: 0.75em; margin-bottom: 5px; }
+.art-summary { color: #8b949e; font-size: 0.82em; line-height: 1.5; }
+.expand-icon { color: #8b949e; font-size: 0.8em; flex-shrink: 0; padding-top: 2px; }
 
-/* Detail panel */
-.detail-row td { padding: 0 10px 12px; }
-.detail { display: none; background: #161b22; border: 1px solid #30363d;
-          border-radius: 8px; overflow: hidden; }
-.detail.open { display: block; }
-.detail-section { padding: 14px 16px; }
-.detail-section + .detail-section { border-top: 1px solid #30363d; }
-.section-title { color: #e3b341; font-size: 0.78em; font-weight: 700;
-                 text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-.excerpt {
-  font-size: 0.82em; line-height: 1.7; color: #c9d1d9;
+/* ── Detail panel ── */
+.article-detail { display: none; border-top: 1px solid #30363d; }
+.article-detail.open { display: block; }
+
+.detail-block { padding: 14px 16px; }
+.detail-block + .detail-block { border-top: 1px solid #21262d; }
+.block-label {
+  font-size: 0.7em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; margin-bottom: 8px;
+}
+.label-excerpt  { color: #e3b341; }
+.label-analysis { color: #58a6ff; }
+
+.excerpt-text {
+  font-size: 0.82em; line-height: 1.7; color: #b0bac5;
   white-space: pre-wrap; word-break: break-word;
 }
-.analysis { font-size: 0.84em; line-height: 1.75; color: #c9d1d9; }
-.analysis h2 {
-  color: #58a6ff; font-size: 0.88em; margin: 14px 0 4px;
-  padding-bottom: 3px; border-bottom: 1px solid #30363d;
-}
-.analysis table { margin: 8px 0; }
-.analysis th { font-size: 0.8em; padding: 6px 8px; }
-.analysis td { font-size: 0.8em; padding: 6px 8px; color: #c9d1d9; }
 .orig-link {
-  display: inline-block; margin-top: 10px;
-  color: #58a6ff; font-size: 0.8em; text-decoration: none;
+  display: inline-block; margin-top: 8px; font-size: 0.78em;
+  color: #58a6ff; text-decoration: none;
 }
 .orig-link:hover { text-decoration: underline; }
 
-/* Index page */
-.card {
-  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-  padding: 14px 16px; margin-bottom: 10px; text-decoration: none;
-  display: block; transition: border-color 0.15s;
+/* ── Analysis sections ── */
+.analysis-body { font-size: 0.84em; color: #c9d1d9; }
+
+.ana-section { margin-bottom: 18px; }
+.ana-section:last-child { margin-bottom: 0; }
+.ana-title {
+  color: #58a6ff; font-size: 0.85em; font-weight: 700;
+  border-bottom: 1px solid #21262d; padding-bottom: 4px; margin-bottom: 8px;
 }
-.card:hover { border-color: #58a6ff; }
-.card h2 { color: #58a6ff; font-size: 1em; margin-bottom: 4px; }
-.card .card-meta { color: #8b949e; font-size: 0.8em; }
-.card .trend-count { color: #3fb950; font-weight: 600; }
+
+/* Tables inside analysis */
+.ana-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 0.9em; }
+.ana-table th {
+  background: #1c2128; color: #8b949e; text-align: left;
+  padding: 6px 10px; font-weight: 600; font-size: 0.85em;
+  border: 1px solid #30363d;
+}
+.ana-table td {
+  padding: 6px 10px; border: 1px solid #21262d;
+  vertical-align: top; line-height: 1.5;
+}
+.ana-table tr:nth-child(even) td { background: #1c2128; }
+
+/* Lists inside analysis */
+.ana-ul { padding-left: 16px; margin: 4px 0; }
+.ana-ul li { margin-bottom: 3px; line-height: 1.5; }
+.ana-ul li::marker { color: #58a6ff; }
+
+/* ── Index page ── */
+.index-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 10px; text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: #58a6ff; background: #1c2128; }
+.index-card h2 { color: #58a6ff; font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: #8b949e; font-size: 0.8em; }
+.trend-count { color: #3fb950; font-weight: 600; }
 
 @media (max-width: 600px) {
-  body { padding: 10px; }
-  th, td { padding: 8px 6px; }
-  .one-liner { display: none; }
+  h1 { font-size: 1.05em; }
+  .art-title { font-size: 0.85em; }
+  .detail-block { padding: 10px 12px; }
 }
 """
 
 JS = """
-function toggle(id) {
-  var d = document.getElementById('detail-' + id);
-  var btn = document.getElementById('btn-' + id);
-  if (d.classList.contains('open')) {
-    d.classList.remove('open');
-    btn.textContent = btn.textContent.replace('▼', '▶');
+function toggleArticle(id) {
+  var detail = document.getElementById('d' + id);
+  var icon   = document.getElementById('i' + id);
+  if (detail.classList.contains('open')) {
+    detail.classList.remove('open');
+    icon.textContent = '▶';
   } else {
-    d.classList.add('open');
-    btn.textContent = btn.textContent.replace('▶', '▼');
+    detail.classList.add('open');
+    icon.textContent = '▼';
   }
 }
 """
 
 
-def _md_to_html(text: str) -> str:
-    """Minimal markdown → HTML conversion for analysis text."""
-    # Headers
-    text = re.sub(r'^## (.+)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
-    text = re.sub(r'^### (.+)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
-    # Bold
+# ---------------------------------------------------------------------------
+# Markdown → HTML (minimal, focused on analysis output format)
+# ---------------------------------------------------------------------------
+
+def _md_to_analysis_html(text: str) -> str:
+    """Convert analysis markdown to clean HTML with section cards."""
+    sections = re.split(r'^## ', text, flags=re.MULTILINE)
+    html_parts = []
+    for sec in sections:
+        if not sec.strip():
+            continue
+        lines = sec.strip().split('\n', 1)
+        title = lines[0].strip()
+        body = lines[1].strip() if len(lines) > 1 else ""
+        body_html = _render_body(body)
+        html_parts.append(
+            f'<div class="ana-section">'
+            f'<div class="ana-title">{title}</div>'
+            f'<div>{body_html}</div>'
+            f'</div>'
+        )
+    return '<div class="analysis-body">' + ''.join(html_parts) + '</div>'
+
+
+def _render_body(text: str) -> str:
+    """Render section body: detect tables, bullet lists, and plain paragraphs."""
+    blocks = []
+    current = []
+
+    def flush():
+        if current:
+            blocks.append(('para', '\n'.join(current)))
+            current.clear()
+
+    lines = text.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Table detection: line starts with |
+        if line.strip().startswith('|'):
+            flush()
+            table_lines = []
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                table_lines.append(lines[i])
+                i += 1
+            blocks.append(('table', table_lines))
+            continue
+        # Bullet list
+        if re.match(r'^\s*[-•·*]\s', line) or re.match(r'^\s{2,}[-•·*]\s', line):
+            flush()
+            items = []
+            while i < len(lines) and (re.match(r'^\s*[-•·*]\s', lines[i]) or re.match(r'^\s{2,}[-•·*]\s', lines[i])):
+                items.append(re.sub(r'^\s*[-•·*]\s*', '', lines[i]))
+                i += 1
+            blocks.append(('ul', items))
+            continue
+        current.append(line)
+        i += 1
+    flush()
+
+    result = []
+    for kind, data in blocks:
+        if kind == 'table':
+            result.append(_render_table(data))
+        elif kind == 'ul':
+            items_html = ''.join(f'<li>{_inline(item)}</li>' for item in data if item.strip())
+            result.append(f'<ul class="ana-ul">{items_html}</ul>')
+        else:
+            para = _inline(data.strip())
+            if para:
+                result.append(f'<p style="margin:4px 0 8px">{para}</p>')
+    return ''.join(result)
+
+
+def _render_table(lines: list) -> str:
+    """Render markdown table to HTML."""
+    rows = []
+    for line in lines:
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        rows.append(cells)
+    if not rows:
+        return ""
+    # Second row is usually separator (---|---), skip it
+    data_rows = [r for r in rows if not all(re.match(r'^[-:\s]+$', c) for c in r)]
+    if not data_rows:
+        return ""
+    header = data_rows[0]
+    body_rows = data_rows[1:]
+    th = ''.join(f'<th>{_inline(c)}</th>' for c in header)
+    trs = ''
+    for row in body_rows:
+        tds = ''.join(f'<td>{_inline(c)}</td>' for c in row)
+        trs += f'<tr>{tds}</tr>'
+    return f'<table class="ana-table"><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table>'
+
+
+def _inline(text: str) -> str:
+    """Inline markdown: bold, code."""
     text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
-    # Bullet lists
-    text = re.sub(r'^\s*[•·\-\*] (.+)$', r'<li>\1</li>', text, flags=re.MULTILINE)
-    text = re.sub(r'(<li>.*?</li>\n?)+', lambda m: '<ul>' + m.group(0) + '</ul>', text, flags=re.DOTALL)
-    # Line breaks
-    text = text.replace('\n\n', '<br><br>')
+    text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
     return text
 
+
+# ---------------------------------------------------------------------------
+# Collection HTML generator
+# ---------------------------------------------------------------------------
 
 def generate_collection_html(item: dict, articles: list) -> str:
     category = item.get("category", "")
@@ -149,70 +254,69 @@ def generate_collection_html(item: dict, articles: list) -> str:
     date = item.get("collected_at", "")[:10]
     n_trend = sum(1 for a in articles if a.get("article_type") == "trend")
 
-    rows = ""
+    cards_html = ""
     for i, a in enumerate(articles, 1):
         atype = a.get("article_type", "info")
         is_trend = atype == "trend"
-        url = a.get("url", "")
+        url = a.get("url", "") or ""
         title = a.get("title", "")
         source = a.get("source", "")
-        one_liner = a.get("one_liner", "") or "—"
+        published = a.get("published", "")[:16]
+        one_liner = a.get("one_liner", "") or ""
+        rss_summary = (a.get("rss_summary") or a.get("summary") or "").strip()
+        full_text = (a.get("full_text") or "").strip()
+        analysis_raw = (a.get("analysis") or "").strip()
 
-        badge = (
-            '<span class="badge-trend">趨勢</span>' if is_trend
-            else '<span class="badge-info">資訊</span>'
-        )
-        title_html = (
-            f'<a class="title-link" href="{url}" target="_blank">{title}</a>'
-            if url else f'<span class="title-link">{title}</span>'
-        )
+        badge_cls = "badge-trend" if is_trend else "badge-info"
+        badge_txt = "趨勢" if is_trend else "資訊"
+        title_html = (f'<a href="{url}" target="_blank">{title}</a>'
+                      if url else title)
 
-        btn_html = ""
-        detail_html = ""
+        # Summary text to show (full_text if available, else rss_summary)
+        display_summary = full_text if (full_text and len(full_text) > len(rss_summary)) else rss_summary
+        summary_escaped = display_summary[:2000].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-        full_text = (a.get("full_text") or a.get("rss_summary", ""))[:1500]
-        analysis_raw = a.get("analysis", "").strip()
+        has_detail = bool(display_summary or analysis_raw)
+        expand_icon = f'<span class="expand-icon" id="i{i}">▶</span>' if has_detail else ''
+        header_onclick = f' onclick="toggleArticle({i})"' if has_detail else ''
 
-        if is_trend and analysis_raw:
-            btn_html = f'<br><button class="toggle-btn" id="btn-{i}" onclick="toggle({i})">▶ 深度分析</button>'
-            excerpt_html = full_text.replace("<", "&lt;").replace(">", "&gt;")
-            analysis_html = _md_to_html(analysis_raw)
-            orig_link = f'<a class="orig-link" href="{url}" target="_blank">🔗 開啟原文</a>' if url else ""
-            detail_html = f"""
-<tr class="detail-row"><td colspan="4">
-  <div class="detail" id="detail-{i}">
-    <div class="detail-section">
-      <div class="section-title">📄 原文摘錄</div>
-      <div class="excerpt">{excerpt_html}</div>
-      {orig_link}
+        # Build detail panel
+        detail_inner = ""
+        if display_summary:
+            orig_link = f'<a class="orig-link" href="{url}" target="_blank">🔗 開啟原文 →</a>' if url else ""
+            detail_inner += f"""
+<div class="detail-block">
+  <div class="block-label label-excerpt">📄 原文摘錄</div>
+  <div class="excerpt-text">{summary_escaped}</div>
+  {orig_link}
+</div>"""
+
+        if analysis_raw:
+            analysis_html = _md_to_analysis_html(analysis_raw)
+            detail_inner += f"""
+<div class="detail-block">
+  <div class="block-label label-analysis">🔬 深度分析</div>
+  {analysis_html}
+</div>"""
+
+        detail_panel = ""
+        if has_detail:
+            detail_panel = f'<div class="article-detail" id="d{i}">{detail_inner}</div>'
+
+        cards_html += f"""
+<div class="article">
+  <div class="article-header"{header_onclick}>
+    <span class="art-num">{i}</span>
+    <span class="badge {badge_cls}">{badge_txt}</span>
+    <div class="art-right">
+      <div class="art-title">{title_html}</div>
+      <div class="art-meta">{source}{'&nbsp;·&nbsp;' + published if published else ''}</div>
+      {f'<div class="art-summary">{one_liner}</div>' if one_liner else ''}
     </div>
-    <div class="detail-section">
-      <div class="section-title">🔬 深度分析</div>
-      <div class="analysis">{analysis_html}</div>
-    </div>
+    {expand_icon}
   </div>
-</td></tr>"""
-
-        elif not is_trend:
-            rss = (a.get("rss_summary", "") or "")[:400]
-            if rss:
-                btn_html = f'<br><button class="toggle-btn info-btn" id="btn-{i}" onclick="toggle({i})">▶ RSS 摘要</button>'
-                rss_escaped = rss.replace("<", "&lt;").replace(">", "&gt;")
-                detail_html = f"""
-<tr class="detail-row"><td colspan="4">
-  <div class="detail" id="detail-{i}">
-    <div class="detail-section">
-      <div class="excerpt">{rss_escaped}</div>
-    </div>
-  </div>
-</td></tr>"""
-
-        rows += f"""<tr>
-  <td class="num">{i}</td>
-  <td>{badge}</td>
-  <td>{title_html}<div class="source-tag">{source}</div>{btn_html}</td>
-  <td class="one-liner">{one_liner}</td>
-</tr>{detail_html}"""
+  {detail_panel}
+</div>"""
 
     return f"""<!DOCTYPE html>
 <html lang="zh-TW">
@@ -225,26 +329,30 @@ def generate_collection_html(item: dict, articles: list) -> str:
 <body>
 <a class="back" href="index.html">← 返回總覽</a>
 <h1>{emoji} {topic}</h1>
-<div class="meta">{date} &nbsp;|&nbsp; {len(articles)} 篇 &nbsp;|&nbsp; <span style="color:#3fb950">{n_trend} 趨勢類</span></div>
-<table>
-  <thead><tr><th>#</th><th>類型</th><th>標題</th><th>一句話</th></tr></thead>
-  <tbody>{rows}</tbody>
-</table>
+<div class="page-meta">{date} &nbsp;·&nbsp; {len(articles)} 篇 &nbsp;·&nbsp;
+  <span class="trend-pill">{n_trend} 趨勢類</span>
+  &nbsp;·&nbsp; 點擊文章展開詳情
+</div>
+{cards_html}
 <script>{JS}</script>
 </body></html>"""
 
 
+# ---------------------------------------------------------------------------
+# Index page generator
+# ---------------------------------------------------------------------------
+
 def generate_index_html(collections_info: list) -> str:
-    """Generate index page listing all available collection reports."""
     cards = ""
-    for info in sorted(collections_info, key=lambda x: x["date"], reverse=True):
+    for info in sorted(collections_info, key=lambda x: (x["date"], x.get("category","")), reverse=True):
         emoji = CATEGORY_EMOJI.get(info["category"], "📰")
+        total = info.get("total", "—")
+        trend = info.get("trend", "—")
         cards += f"""
-<a class="card" href="{info['filename']}">
+<a class="index-card" href="{info['filename']}">
   <h2>{emoji} {info['category'].upper()} — {info['date']}</h2>
   <div class="card-meta">
-    {info['total']} 篇 &nbsp;|&nbsp;
-    <span class="trend-count">{info['trend']} 趨勢類</span>
+    {total} 篇 &nbsp;·&nbsp; <span class="trend-count">{trend} 趨勢類</span>
   </div>
 </a>"""
 
@@ -257,8 +365,8 @@ def generate_index_html(collections_info: list) -> str:
 <style>{CSS}</style>
 </head>
 <body>
-<h1>📊 SOC Planning Agent — News Reports</h1>
-<div class="meta">Generated {datetime.now().strftime('%Y-%m-%d %H:%M')}</div>
+<h1>📊 SOC Planning Agent</h1>
+<div class="page-meta">最後更新：{datetime.now().strftime('%Y-%m-%d %H:%M')}</div>
 <br>
 {cards}
 </body></html>"""
