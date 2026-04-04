@@ -268,22 +268,26 @@ def view_collection(collection_id: int):
 
     # ── New format: structured per-article ──
     if articles:
-        table = Table(show_header=True, header_style="bold cyan", box=None, padding=(0, 1))
+        from rich.box import SIMPLE
+        table = Table(show_header=True, header_style="bold cyan", box=SIMPLE, padding=(0, 1))
         table.add_column("#",      width=3,  no_wrap=True)
-        table.add_column("類型",   width=6,  no_wrap=True)
-        table.add_column("標題",   width=50)
-        table.add_column("一句話", width=40)
+        table.add_column("類型",   width=5,  no_wrap=True)
+        table.add_column("標題",   min_width=30, max_width=45, no_wrap=True)
+        table.add_column("一句話", min_width=25, max_width=40)
 
         for i, a in enumerate(articles, 1):
-            if a["article_type"] == "trend":
+            atype = a.get("article_type", "info")
+            if atype == "trend":
                 badge = "[green]趨勢[/green]"
+            elif atype == "trend_summary":
+                badge = "[yellow]趨勢[/yellow]"
             else:
                 badge = "[dim]資訊[/dim]"
             table.add_row(
                 str(i),
                 badge,
-                a["title"][:48],
-                a["one_liner"][:38] if a["one_liner"] else "[dim]—[/dim]",
+                a["title"][:43],
+                (a["one_liner"] or "[dim]—[/dim]")[:38],
             )
 
         n_trend = sum(1 for a in articles if a["article_type"] == "trend")
