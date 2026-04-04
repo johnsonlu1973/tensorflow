@@ -192,6 +192,10 @@ def analyze_trend_article(client: anthropic.Anthropic, article: dict) -> dict:
         f"This article represents a BREAKTHROUGH or INNOVATIVE development. "
         f"Apply the 4-layer strategic analysis framework in Traditional Chinese "
         f"(keep English technical terms). Follow EXACTLY this structure:\n\n"
+        f"⚠️ EMPTY FIELD RULE: If the article does not contain enough information "
+        f"to answer a specific field, write EXACTLY '（原文未提及）' for that field. "
+        f"Never fabricate, infer, or hallucinate content to fill gaps. "
+        f"It is perfectly acceptable to have empty fields.\n\n"
 
         f"## 啟動層：趨勢 → 市場新機會\n"
         f"**產業趨勢**：哪些技術突破或典範轉移正在發生？（從原文找依據）\n"

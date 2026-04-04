@@ -159,6 +159,22 @@ h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
 }
 .row-content { font-size: 0.83em; line-height: 1.6; color: #c9d1d9; flex: 1; }
 
+/* ── Search button ── */
+.search-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  margin-left: 6px; padding: 1px 7px; border-radius: 4px;
+  font-size: 0.72em; text-decoration: none; vertical-align: middle;
+  border: 1px solid; transition: opacity 0.15s;
+}
+.search-btn:hover { opacity: 0.75; }
+.search-btn-empty {
+  background: #2d1f00; border-color: #e3b341; color: #e3b341;
+}
+.search-btn-fill {
+  background: #161b22; border-color: #30363d; color: #8b949e;
+}
+.empty-field { color: #8b949e; font-style: italic; font-size: 0.83em; }
+
 /* ── Industry diagram ── */
 .industry-diagram {
   background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
@@ -236,7 +252,7 @@ LAYER_FLOW_HTML = """
 </div>
 """
 
-def _md_to_analysis_html(text: str) -> str:
+def _md_to_analysis_html(text: str, article_title: str = "") -> str:
     """Convert analysis markdown to structured HTML.
 
     New 4-layer framework:
@@ -247,12 +263,12 @@ def _md_to_analysis_html(text: str) -> str:
       ## 產業鏈結構圖  → ASCII diagram
       ## 產業鏈誘因分析 → incentive table
 
-    Legacy sections still supported as fallback.
+    Empty fields (原文未提及) show 🔍 search button.
+    Legacy sections supported as fallback.
     """
     sections = re.split(r'^## ', text, flags=re.MULTILINE)
     html_parts = ['<div class="analysis-body">']
 
-    # Detect if this uses the new 4-layer framework
     is_new_framework = any('啟動層' in s or '鎖定層' in s for s in sections)
     if is_new_framework:
         html_parts.append(LAYER_FLOW_HTML)
@@ -264,7 +280,6 @@ def _md_to_analysis_html(text: str) -> str:
         title = lines[0].strip()
         body  = lines[1].strip() if len(lines) > 1 else ""
 
-        # Match layer sections
         matched_layer = None
         for key, (css_cls, display_title, _) in LAYER_META.items():
             if key in title:
@@ -273,7 +288,7 @@ def _md_to_analysis_html(text: str) -> str:
 
         if matched_layer:
             css_cls, display_title = matched_layer
-            body_html = _render_layer_body(body)
+            body_html = _render_layer_body(body, article_title)
             html_parts.append(
                 f'<div class="layer-section {css_cls}">'
                 f'<div class="layer-section-title">{display_title}</div>'
@@ -301,28 +316,64 @@ def _md_to_analysis_html(text: str) -> str:
     return ''.join(html_parts)
 
 
-def _render_layer_body(text: str) -> str:
-    """Render a layer body: **Label**：content pairs as labelled rows."""
-    # Split on **bold label**: pattern
+EMPTY_MARKERS = ('（原文未提及）', '原文未提及', '（未提及）', '無相關資訊', 'N/A', '')
+
+
+def _search_url(query: str) -> str:
+    import urllib.parse
+    return "https://www.google.com/search?q=" + urllib.parse.quote(query)
+
+
+def _search_btn(label: str, article_title: str, is_empty: bool) -> str:
+    query = f"{article_title} {label}"
+    url = _search_url(query)
+    if is_empty:
+        return (f'<a class="search-btn search-btn-empty" href="{url}" target="_blank">'
+                f'🔍 搜尋補充</a>')
+    else:
+        return (f'<a class="search-btn search-btn-fill" href="{url}" target="_blank">'
+                f'🔍</a>')
+
+
+def _is_empty(content: str) -> bool:
+    c = content.strip()
+    return not c or any(m in c for m in EMPTY_MARKERS)
+
+
+def _render_layer_body(text: str, article_title: str = "") -> str:
+    """Render a layer body: **Label**：content pairs as labelled rows.
+
+    Empty fields (原文未提及 or blank) show a prominent 🔍 search button.
+    Non-empty fields show a subtle 🔍 icon for optional supplementary search.
+    """
     parts = re.split(r'\*\*(.+?)\*\*[：:]', text)
     if len(parts) < 3:
         return _render_body(text)
 
     rows_html = ""
-    # parts = [pre_text, label1, content1, label2, content2, ...]
     i = 1
     while i + 1 < len(parts):
         label   = parts[i].strip().lstrip('⚠️').strip()
         content = parts[i + 1].strip()
-        # Skip rule annotations (lines starting with ⚠️ or -)
+
         if label.startswith('⚠') or label == '':
             i += 2
             continue
-        content_html = _render_body(content)
+
+        empty = _is_empty(content)
+        if empty:
+            content_html = f'<span class="empty-field">（原文未提及）</span>'
+        else:
+            # Strip the empty marker if mixed with actual content
+            cleaned = content.replace('（原文未提及）', '').strip()
+            content_html = _render_body(cleaned)
+
+        btn = _search_btn(label, article_title, empty) if article_title else ""
+
         rows_html += (
             f'<div class="audience-row">'
             f'<div class="row-label" style="min-width:72px">{label}</div>'
-            f'<div class="row-content">{content_html}</div>'
+            f'<div class="row-content">{content_html}{btn}</div>'
             f'</div>'
         )
         i += 2
@@ -587,7 +638,7 @@ def generate_collection_html(item: dict, articles: list) -> str:
 </div>"""
 
         if analysis_raw:
-            analysis_html = _md_to_analysis_html(analysis_raw)
+            analysis_html = _md_to_analysis_html(analysis_raw, article_title=title)
             detail_inner += f"""
 <div class="detail-block">
   <div class="block-label label-analysis">🔬 深度分析</div>
