@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import time
+import socket
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -75,9 +76,15 @@ def _html_to_text(html: str) -> str:
 
 
 def fetch_full_text(url: str) -> str:
-    """Fetch article and return plain text. Returns '' on failure."""
+    """Fetch article and return plain text. Returns '' on failure.
+
+    Uses socket-level default timeout as a hard backstop — urllib's timeout
+    parameter only covers the initial connection, not the full read.
+    """
     if not url or not url.startswith("http"):
         return ""
+    old_timeout = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(FETCH_TIMEOUT)
     try:
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (compatible; SoCPlanningAgent/1.0)",
@@ -89,6 +96,8 @@ def fetch_full_text(url: str) -> str:
             return _html_to_text(resp.read(200_000).decode("utf-8", errors="replace"))
     except Exception:
         return ""
+    finally:
+        socket.setdefaulttimeout(old_timeout)
 
 
 # ---------------------------------------------------------------------------
@@ -248,16 +257,22 @@ def main():
         time.sleep(3)
 
     # Step 3 (Pass 2): Fetch full text + deep analysis for trend articles only
-    print("\n🔬 Pass 2 — Deep analysis for [趨勢類] articles...")
+    # Cap at MAX_TREND_PER_CATEGORY per category to keep runtime predictable
+    MAX_TREND_PER_CATEGORY = 3
+    print(f"\n🔬 Pass 2 — Deep analysis for [趨勢類] articles (max {MAX_TREND_PER_CATEGORY}/category)...")
     final_by_category = {}
     for category, articles in classified_by_category.items():
         final = []
+        trend_count = 0
         for a in articles:
-            if a["article_type"] == "trend":
+            if a["article_type"] == "trend" and trend_count < MAX_TREND_PER_CATEGORY:
                 a = analyze_trend_article(client, a)
+                trend_count += 1
                 time.sleep(2)
+            elif a["article_type"] == "trend":
+                # Over cap: downgrade to info display (keep one_liner, skip fetch)
+                a = {**a, "full_text": "", "analysis": "", "article_type": "trend_summary"}
             else:
-                # Info articles: keep RSS summary, no full text needed
                 a = {**a, "full_text": "", "analysis": ""}
             final.append(a)
         final_by_category[category] = final
