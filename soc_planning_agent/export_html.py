@@ -159,20 +159,6 @@ h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
 }
 .row-content { font-size: 0.83em; line-height: 1.6; color: #c9d1d9; flex: 1; }
 
-/* ── Search button ── */
-.search-btn {
-  display: inline-flex; align-items: center; gap: 3px;
-  margin-left: 6px; padding: 1px 7px; border-radius: 4px;
-  font-size: 0.72em; text-decoration: none; vertical-align: middle;
-  border: 1px solid; transition: opacity 0.15s;
-}
-.search-btn:hover { opacity: 0.75; }
-.search-btn-empty {
-  background: #2d1f00; border-color: #e3b341; color: #e3b341;
-}
-.search-btn-fill {
-  background: #161b22; border-color: #30363d; color: #8b949e;
-}
 .empty-field { color: #8b949e; font-style: italic; font-size: 0.83em; }
 
 /* ── Industry diagram ── */
@@ -263,7 +249,7 @@ def _md_to_analysis_html(text: str, article_title: str = "") -> str:
       ## 產業鏈結構圖  → ASCII diagram
       ## 產業鏈誘因分析 → incentive table
 
-    Empty fields (原文未提及) show 🔍 search button.
+    Empty fields (原文未提及) shown as italic placeholder.
     Legacy sections supported as fallback.
     """
     sections = re.split(r'^## ', text, flags=re.MULTILINE)
@@ -319,33 +305,13 @@ def _md_to_analysis_html(text: str, article_title: str = "") -> str:
 EMPTY_MARKERS = ('（原文未提及）', '原文未提及', '（未提及）', '無相關資訊', 'N/A', '')
 
 
-def _search_url(query: str) -> str:
-    import urllib.parse
-    return "https://www.google.com/search?q=" + urllib.parse.quote(query)
-
-
-def _search_btn(label: str, article_title: str, is_empty: bool) -> str:
-    query = f"{article_title} {label}"
-    url = _search_url(query)
-    if is_empty:
-        return (f'<a class="search-btn search-btn-empty" href="{url}" target="_blank">'
-                f'🔍 搜尋補充</a>')
-    else:
-        return (f'<a class="search-btn search-btn-fill" href="{url}" target="_blank">'
-                f'🔍</a>')
-
-
 def _is_empty(content: str) -> bool:
     c = content.strip()
     return not c or any(m in c for m in EMPTY_MARKERS)
 
 
 def _render_layer_body(text: str, article_title: str = "") -> str:
-    """Render a layer body: **Label**：content pairs as labelled rows.
-
-    Empty fields (原文未提及 or blank) show a prominent 🔍 search button.
-    Non-empty fields show a subtle 🔍 icon for optional supplementary search.
-    """
+    """Render a layer body: **Label**：content pairs as labelled rows."""
     parts = re.split(r'\*\*(.+?)\*\*[：:]', text)
     if len(parts) < 3:
         return _render_body(text)
@@ -364,16 +330,13 @@ def _render_layer_body(text: str, article_title: str = "") -> str:
         if empty:
             content_html = f'<span class="empty-field">（原文未提及）</span>'
         else:
-            # Strip the empty marker if mixed with actual content
             cleaned = content.replace('（原文未提及）', '').strip()
             content_html = _render_body(cleaned)
-
-        btn = _search_btn(label, article_title, empty) if article_title else ""
 
         rows_html += (
             f'<div class="audience-row">'
             f'<div class="row-label" style="min-width:72px">{label}</div>'
-            f'<div class="row-content">{content_html}{btn}</div>'
+            f'<div class="row-content">{content_html}</div>'
             f'</div>'
         )
         i += 2
