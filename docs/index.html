@@ -5,27 +5,231 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SOC Planning Agent — Reports</title>
 <style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0d1117; color: #c9d1d9;
-  padding: 16px 12px; max-width: 860px; margin: 0 auto; line-height: 1.6;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
 }
-h1 { color: #58a6ff; font-size: 1.2em; margin-bottom: 4px; }
-.page-meta { color: #8b949e; font-size: 0.8em; margin-bottom: 20px; }
-.empty-state {
-  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-  padding: 40px 20px; text-align: center; color: #8b949e; margin-top: 20px;
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
 }
-.empty-state .icon { font-size: 2em; margin-bottom: 10px; }
-.empty-state p { font-size: 0.88em; line-height: 1.7; }
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
 </style>
 </head>
 <body>
 <h1>📊 SOC Planning Agent</h1>
-<div class="page-meta">每 2 小時自動收集 RSS，有新文章時自動更新</div>
-<div class="empty-state">
-  <div class="icon">📡</div>
-  <p>等待 RSS 收集中⋯<br>有新文章時報告將自動出現，並通知 Slack。</p>
-</div>
+<div class="page-meta">最後更新：2026-04-07 05:47 &nbsp;·&nbsp; 每 2 小時自動更新</div>
+<br>
+
+<a class="index-card" href="collection_1_chips_soc_2026-04-07.html">
+  <h2>💾 Chips / SoC — 2026-04-07</h2>
+  <div class="card-meta">
+    17 篇 &nbsp;·&nbsp;
+    <span class="new-count">+17 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_2_mobile_2026-04-07.html">
+  <h2>📱 Mobile — 2026-04-07</h2>
+  <div class="card-meta">
+    97 篇 &nbsp;·&nbsp;
+    <span class="new-count">+97 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_3_agentic_ai_2026-04-07.html">
+  <h2>🤖 Agentic AI — 2026-04-07</h2>
+  <div class="card-meta">
+    11 篇 &nbsp;·&nbsp;
+    <span class="new-count">+11 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_4_5g_cpe_2026-04-07.html">
+  <h2>📡 5G / CPE — 2026-04-07</h2>
+  <div class="card-meta">
+    32 篇 &nbsp;·&nbsp;
+    <span class="new-count">+32 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_5_csp_cloud_2026-04-07.html">
+  <h2>☁️ CSP / Cloud — 2026-04-07</h2>
+  <div class="card-meta">
+    5 篇 &nbsp;·&nbsp;
+    <span class="new-count">+5 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_6_tech_general_2026-04-07.html">
+  <h2>🌐 Tech — 2026-04-07</h2>
+  <div class="card-meta">
+    55 篇 &nbsp;·&nbsp;
+    <span class="new-count">+55 新</span>
+  </div>
+</a>
+<a class="index-card" href="collection_7_taiwan_2026-04-07.html">
+  <h2>🇹🇼 台灣 — 2026-04-07</h2>
+  <div class="card-meta">
+    70 篇 &nbsp;·&nbsp;
+    <span class="new-count">+70 新</span>
+  </div>
+</a>
 </body></html>
