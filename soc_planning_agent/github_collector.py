@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 import anthropic
 from rss_collector import RSSCollector
 
-MODEL         = "claude-haiku-4-5"
+MODEL         = "claude-haiku-4-5-20251001"
 DATA_DIR      = ROOT / "data"
 ARCHIVE_DIR   = ROOT / "archive" / "rss"
 SEEN_FILE     = ROOT / "archive" / "seen_urls.json"
