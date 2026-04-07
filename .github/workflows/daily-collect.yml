@@ -18,13 +18,12 @@ jobs:
   # 有新文章才觸發後續 HTML 更新 + Slack 通知
   # ────────────────────────────────────────────────
   collect:
-    name: Fetch RSS & Summarize
+    name: Fetch RSS & Translate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
       new_articles: ${{ steps.run_collector.outputs.new_articles }}
       today: ${{ steps.run_collector.outputs.today }}
-      trend_count: ${{ steps.run_collector.outputs.trend_count }}
 
     permissions:
       contents: write
@@ -46,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: pip install anthropic>=0.40.0
 
-      - name: Run RSS collection & Claude summarization
+      - name: Run RSS collection & translation
         id: run_collector
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -55,28 +54,25 @@ jobs:
           TODAY=$(date -u +%Y-%m-%d)
           echo "today=$TODAY" >> $GITHUB_OUTPUT
 
-          # Run collector (writes new_articles to GITHUB_OUTPUT itself)
+          # Run collector (translate + archive + generate HTML)
           python soc_planning_agent/github_collector.py || true
 
-          # Fallback: read new_articles + trend_count from JSON (more reliable)
-          FILE="soc_planning_agent/data/${TODAY}.json"
-          if [ -f "$FILE" ]; then
-            NEW=$(python3 -c "import json; d=json.load(open('$FILE')); print(d.get('new_articles', 0))")
-            TREND=$(python3 -c "import json; d=json.load(open('$FILE')); print(sum(c.get('trend_count',0) for c in d.get('collections',[])))")
-            echo "new_articles=$NEW"   >> $GITHUB_OUTPUT
-            echo "trend_count=$TREND" >> $GITHUB_OUTPUT
-            echo "✅ new_articles=$NEW  trend=$TREND"
+          # Read new_articles from archive JSON (more reliable than GITHUB_OUTPUT from Python)
+          ARCHIVE="soc_planning_agent/archive/rss/${TODAY}.json"
+          if [ -f "$ARCHIVE" ]; then
+            NEW=$(python3 -c "import json; d=json.load(open('$ARCHIVE')); print(d.get('new_this_run', 0))")
+            echo "new_articles=$NEW" >> $GITHUB_OUTPUT
+            echo "✅ new_articles=$NEW (from archive)"
           else
-            echo "new_articles=0"  >> $GITHUB_OUTPUT
-            echo "trend_count=0"   >> $GITHUB_OUTPUT
-            echo "⚠️ No JSON file found for $TODAY"
+            echo "new_articles=0" >> $GITHUB_OUTPUT
+            echo "⚠️ No archive file found for $TODAY"
           fi
 
-      - name: Commit JSON + seen_urls cache
+      - name: Commit archive + HTML
         run: |
           git config user.name  "SOC Planning Agent"
           git config user.email "soc-agent@github-actions[bot]"
-          git add soc_planning_agent/data/
+          git add soc_planning_agent/archive/ docs/
           git diff --staged --quiet || git commit -m \
             "collect: +${{ steps.run_collector.outputs.new_articles }} new articles (${{ steps.run_collector.outputs.today }})"
           git push || true
@@ -86,66 +82,38 @@ jobs:
           NEW="${{ steps.run_collector.outputs.new_articles }}"
           echo "### Collection Result" >> $GITHUB_STEP_SUMMARY
           if [ "${NEW}" != "0" ] && [ -n "${NEW}" ]; then
-            echo "✅ **New articles:** ${NEW} (${{ steps.run_collector.outputs.trend_count }} trend)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **New articles:** ${NEW}" >> $GITHUB_STEP_SUMMARY
             echo "📅 **Date:** ${{ steps.run_collector.outputs.today }}" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **Pages:** https://johnsonlu1973.github.io/tensorflow" >> $GITHUB_STEP_SUMMARY
           else
-            echo "ℹ️ No new articles this run — HTML & Slack skipped." >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ No new articles this run — nothing to publish." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ────────────────────────────────────────────────
-  # Job 2: HTML 更新 + Slack 通知
+  # Job 2: Slack 通知
   # 只在有新文章時執行（new_articles > 0）
   # ────────────────────────────────────────────────
-  publish:
-    name: Generate HTML & Notify Slack
+  notify:
+    name: Notify Slack
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     needs: collect
     if: needs.collect.outputs.new_articles != '0' && needs.collect.outputs.new_articles != ''
 
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Generate HTML reports
-        id: gen_html
-        run: |
-          cd $GITHUB_WORKSPACE
-          python soc_planning_agent/generate_html.py
-
-      - name: Commit HTML to docs/
-        run: |
-          git config user.name  "SOC Planning Agent"
-          git config user.email "soc-agent@github-actions[bot]"
-          git add docs/
-          git diff --staged --quiet || git commit -m \
-            "publish: HTML reports ${{ steps.gen_html.outputs.date }} (${{ steps.gen_html.outputs.new_reports }} reports, ${{ steps.gen_html.outputs.trend_total }} trend)"
-          git push
-
-      - name: Notify Slack
-        if: env.SLACK_WEBHOOK_URL != ''
+      - name: Send Slack notification
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NEW_ARTICLES: ${{ needs.collect.outputs.new_articles }}
+          TODAY: ${{ needs.collect.outputs.today }}
         run: |
-          DATE="${{ steps.gen_html.outputs.date }}"
-          REPORTS="${{ steps.gen_html.outputs.new_reports }}"
-          TREND="${{ steps.gen_html.outputs.trend_total }}"
-          NEW="${{ needs.collect.outputs.new_articles }}"
-          URL="${{ steps.gen_html.outputs.pages_url }}"
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "⚠️ SLACK_WEBHOOK_URL not set — skipping"
+            exit 0
+          fi
 
-          # Taiwan time label (UTC+8)
           TW_TIME=$(TZ=Asia/Taipei date +"%Y-%m-%d %H:%M")
+          PAGES_URL="https://johnsonlu1973.github.io/tensorflow"
 
           PAYLOAD=$(cat <<EOF
           {
@@ -157,19 +125,24 @@ jobs:
               {
                 "type": "section",
                 "fields": [
-                  { "type": "mrkdwn", "text": "*📅 時間*\n${TW_TIME} (台灣時間)" },
-                  { "type": "mrkdwn", "text": "*🆕 新文章*\n${NEW} 篇" },
-                  { "type": "mrkdwn", "text": "*🔥 趨勢分析*\n${TREND} 篇深度分析完成" },
-                  { "type": "mrkdwn", "text": "*🔗 查看報告*\n<${URL}|開啟 Dashboard>" }
+                  { "type": "mrkdwn", "text": "*📅 台灣時間*\n${TW_TIME}" },
+                  { "type": "mrkdwn", "text": "*🆕 新文章*\n${NEW_ARTICLES} 篇" }
                 ]
               },
               {
-                "type": "divider"
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": { "type": "plain_text", "text": "📊 查看 Dashboard" },
+                    "url": "${PAGES_URL}"
+                  }
+                ]
               },
               {
                 "type": "context",
                 "elements": [
-                  { "type": "mrkdwn", "text": "SOC Planning Agent · 每 2 小時自動檢查 RSS · <${URL}|GitHub Pages>" }
+                  { "type": "mrkdwn", "text": "SOC Planning Agent · 每 2 小時自動檢查 RSS" }
                 ]
               }
             ]
@@ -180,88 +153,4 @@ jobs:
           curl -s -X POST "$SLACK_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
-
-      - name: Summary
-        run: |
-          echo "### Publish Result" >> $GITHUB_STEP_SUMMARY
-          echo "📄 **Reports generated:** ${{ steps.gen_html.outputs.new_reports }}" >> $GITHUB_STEP_SUMMARY
-          echo "🔥 **Trend articles:** ${{ steps.gen_html.outputs.trend_total }}" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **Pages URL:** ${{ steps.gen_html.outputs.pages_url }}" >> $GITHUB_STEP_SUMMARY
-
-  # ────────────────────────────────────────────────
-  # 週一台灣時間 06:00 — 3GPP 專項收集
-  # (UTC Sunday 22:00 = Taiwan Monday 06:00)
-  # ────────────────────────────────────────────────
-  collect-3gpp:
-    name: Weekly 3GPP Collection
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # Only run on Sunday UTC (= Monday Taiwan time)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'schedule' && startsWith(github.event.schedule, '0 22 * * *') &&
-       toJSON(github.event) != '' )
-    # Simpler: just check day of week in the run step
-
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: master
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check if Monday (Taiwan time)
-        id: day_check
-        run: |
-          TW_DAY=$(TZ=Asia/Taipei date +%u)   # 1=Mon … 7=Sun
-          echo "tw_day=$TW_DAY" >> $GITHUB_OUTPUT
-          if [ "$TW_DAY" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "run_3gpp=true" >> $GITHUB_OUTPUT
-          else
-            echo "run_3gpp=false" >> $GITHUB_OUTPUT
-          fi
-
-      - uses: actions/setup-python@v5
-        if: steps.day_check.outputs.run_3gpp == 'true'
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        if: steps.day_check.outputs.run_3gpp == 'true'
-        run: pip install anthropic>=0.40.0
-
-      - name: Run 3GPP collection
-        if: steps.day_check.outputs.run_3gpp == 'true'
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          cd $GITHUB_WORKSPACE
-          python -c "
-          import sys; sys.path.insert(0,'soc_planning_agent')
-          from rss_collector import RSSCollector
-          import json, os
-          from pathlib import Path
-          from datetime import datetime, timezone
-          collector = RSSCollector(max_age_days=7)
-          results = collector.collect_3gpp_vendors()
-          total = sum(len(a) for a in results.values())
-          today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-          out = Path('soc_planning_agent/data') / f'3gpp-{today}.json'
-          out.parent.mkdir(exist_ok=True)
-          out.write_text(json.dumps({'date': today, 'type': '3gpp_weekly',
-            'total_articles': total,
-            'collections': [{'category': cat, 'articles': arts} for cat, arts in results.items()]},
-            ensure_ascii=False, indent=2))
-          print(f'3GPP: {total} articles -> {out}')
-          "
-
-      - name: Commit 3GPP results
-        if: steps.day_check.outputs.run_3gpp == 'true'
-        run: |
-          git config user.name  "SOC Planning Agent"
-          git config user.email "soc-agent@github-actions[bot]"
-          git add soc_planning_agent/data/
-          git diff --staged --quiet || git commit -m "collect: weekly 3GPP digest $(date -u +%Y-%m-%d)"
-          git push
+          echo "✅ Slack notified"
