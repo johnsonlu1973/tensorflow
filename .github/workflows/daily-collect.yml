@@ -1,9 +1,10 @@
-name: SOC Planning — Daily RSS Collection
+name: SOC Planning — RSS Collection & Publish
 
 on:
   schedule:
-    # ── 台灣時間 06:00 每日執行 (UTC 22:00 前一天) ──
-    - cron: '0 22 * * *'
+    # ── 每 2 小時檢查一次 RSS，有新文章才更新 HTML + 通知 Slack ──
+    # UTC 時間：0,2,4,6,8,10,12,14,16,18,20,22 點整
+    - cron: '0 */2 * * *'
   workflow_dispatch:
     inputs:
       force_all_categories:
@@ -13,12 +14,17 @@ on:
 
 jobs:
   # ────────────────────────────────────────────────
-  # Job 1: RSS 收集 (台灣 06:00)
+  # Job 1: RSS 收集（每 2 小時）
+  # 有新文章才觸發後續 HTML 更新 + Slack 通知
   # ────────────────────────────────────────────────
   collect:
     name: Fetch RSS & Summarize
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      new_articles: ${{ steps.run_collector.outputs.new_articles }}
+      today: ${{ steps.run_collector.outputs.today }}
+      trend_count: ${{ steps.run_collector.outputs.trend_count }}
 
     permissions:
       contents: write
@@ -41,56 +47,55 @@ jobs:
         run: pip install anthropic>=0.40.0
 
       - name: Run RSS collection & Claude summarization
+        id: run_collector
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd $GITHUB_WORKSPACE
-          python soc_planning_agent/github_collector.py
-
-      - name: Check if new data was produced
-        id: check_data
-        run: |
           TODAY=$(date -u +%Y-%m-%d)
+          echo "today=$TODAY" >> $GITHUB_OUTPUT
+          python soc_planning_agent/github_collector.py
+          # Read trend count from merged JSON
           FILE="soc_planning_agent/data/${TODAY}.json"
           if [ -f "$FILE" ]; then
-            COUNT=$(python3 -c "import json; d=json.load(open('$FILE')); print(d.get('total_articles',0))")
             TREND=$(python3 -c "import json; d=json.load(open('$FILE')); print(sum(c.get('trend_count',0) for c in d.get('collections',[])))")
-            echo "file_exists=true"    >> $GITHUB_OUTPUT
-            echo "article_count=$COUNT" >> $GITHUB_OUTPUT
-            echo "trend_count=$TREND"  >> $GITHUB_OUTPUT
-            echo "today=$TODAY"        >> $GITHUB_OUTPUT
+            echo "trend_count=$TREND" >> $GITHUB_OUTPUT
           else
-            echo "file_exists=false"  >> $GITHUB_OUTPUT
+            echo "trend_count=0" >> $GITHUB_OUTPUT
           fi
+          # new_articles is written by github_collector.py itself
 
-      - name: Commit JSON data
-        if: steps.check_data.outputs.file_exists == 'true'
+      - name: Commit JSON + seen_urls cache
+        if: steps.run_collector.outputs.new_articles != '0'
         run: |
           git config user.name  "SOC Planning Agent"
           git config user.email "soc-agent@github-actions[bot]"
           git add soc_planning_agent/data/
           git diff --staged --quiet || git commit -m \
-            "collect: daily RSS digest ${{ steps.check_data.outputs.today }} (${{ steps.check_data.outputs.article_count }} articles)"
+            "collect: +${{ steps.run_collector.outputs.new_articles }} new articles (${{ steps.run_collector.outputs.today }})"
           git push
 
       - name: Summary
         run: |
+          NEW="${{ steps.run_collector.outputs.new_articles }}"
           echo "### Collection Result" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.check_data.outputs.file_exists }}" == "true" ]; then
-            echo "✅ **Articles:** ${{ steps.check_data.outputs.article_count }} (${{ steps.check_data.outputs.trend_count }} trend)" >> $GITHUB_STEP_SUMMARY
-            echo "📅 **Date:** ${{ steps.check_data.outputs.today }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${NEW}" != "0" ] && [ -n "${NEW}" ]; then
+            echo "✅ **New articles:** ${NEW} (${{ steps.run_collector.outputs.trend_count }} trend)" >> $GITHUB_STEP_SUMMARY
+            echo "📅 **Date:** ${{ steps.run_collector.outputs.today }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ No data file produced." >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ No new articles this run — HTML & Slack skipped." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ────────────────────────────────────────────────
-  # Job 2: HTML 更新 + Slack 通知 (台灣 06:30)
+  # Job 2: HTML 更新 + Slack 通知
+  # 只在有新文章時執行（new_articles > 0）
   # ────────────────────────────────────────────────
   publish:
     name: Generate HTML & Notify Slack
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: collect
+    if: needs.collect.outputs.new_articles != '0' && needs.collect.outputs.new_articles != ''
 
     permissions:
       contents: write
@@ -130,6 +135,7 @@ jobs:
           DATE="${{ steps.gen_html.outputs.date }}"
           REPORTS="${{ steps.gen_html.outputs.new_reports }}"
           TREND="${{ steps.gen_html.outputs.trend_total }}"
+          NEW="${{ needs.collect.outputs.new_articles }}"
           URL="${{ steps.gen_html.outputs.pages_url }}"
 
           # Taiwan time label (UTC+8)
@@ -140,15 +146,15 @@ jobs:
             "blocks": [
               {
                 "type": "header",
-                "text": { "type": "plain_text", "text": "📊 SOC Planning Agent — 每日市場情報", "emoji": true }
+                "text": { "type": "plain_text", "text": "📡 SOC Planning Agent — 發現新市場情報！", "emoji": true }
               },
               {
                 "type": "section",
                 "fields": [
-                  { "type": "mrkdwn", "text": "*📅 日期*\n${TW_TIME} (台灣時間)" },
-                  { "type": "mrkdwn", "text": "*📁 新增報告*\n${REPORTS} 份" },
-                  { "type": "mrkdwn", "text": "*🔥 趨勢文章*\n${TREND} 篇深度分析完成" },
-                  { "type": "mrkdwn", "text": "*🔗 查看報告*\n<${URL}|GitHub Pages>" }
+                  { "type": "mrkdwn", "text": "*📅 時間*\n${TW_TIME} (台灣時間)" },
+                  { "type": "mrkdwn", "text": "*🆕 新文章*\n${NEW} 篇" },
+                  { "type": "mrkdwn", "text": "*🔥 趨勢分析*\n${TREND} 篇深度分析完成" },
+                  { "type": "mrkdwn", "text": "*🔗 查看報告*\n<${URL}|開啟 Dashboard>" }
                 ]
               },
               {
@@ -157,7 +163,7 @@ jobs:
               {
                 "type": "context",
                 "elements": [
-                  { "type": "mrkdwn", "text": "SOC Planning Agent · GitHub Actions · <${URL}|開啟 Dashboard>" }
+                  { "type": "mrkdwn", "text": "SOC Planning Agent · 每 2 小時自動檢查 RSS · <${URL}|GitHub Pages>" }
                 ]
               }
             ]

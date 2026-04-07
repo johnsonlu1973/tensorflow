@@ -36,6 +36,8 @@ COLLECTION_MODEL = "claude-haiku-4-5"
 DATA_DIR = ROOT / "data"
 MAX_ARTICLE_CHARS = 2500  # chars sent to Haiku for deep analysis
 FETCH_TIMEOUT = 10
+SEEN_URLS_FILE = DATA_DIR / "seen_urls.json"
+SEEN_URLS_KEEP_DAYS = 7  # prune URLs older than this
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +274,90 @@ def analyze_trend_article(client: anthropic.Anthropic, article: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Seen-URL deduplication (incremental collection across multiple daily runs)
+# ---------------------------------------------------------------------------
+
+def _load_seen_urls() -> dict:
+    """Load {url: date_str} mapping. Returns empty dict if file missing."""
+    if SEEN_URLS_FILE.exists():
+        try:
+            return json.loads(SEEN_URLS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_seen_urls(seen: dict, today: str):
+    """Persist seen URLs, pruning entries older than SEEN_URLS_KEEP_DAYS."""
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+    cutoff = (_dt.now(_tz.utc) - _td(days=SEEN_URLS_KEEP_DAYS)).strftime("%Y-%m-%d")
+    pruned = {u: d for u, d in seen.items() if d >= cutoff}
+    DATA_DIR.mkdir(exist_ok=True)
+    SEEN_URLS_FILE.write_text(json.dumps(pruned, ensure_ascii=False, indent=2), encoding="utf-8")
+    return pruned
+
+
+def _merge_today_json(today: str, new_collections: list) -> tuple[dict, int]:
+    """Merge new_collections into today's existing JSON file.
+
+    Returns (merged_result_dict, truly_new_article_count).
+    """
+    out_path = DATA_DIR / f"{today}.json"
+    existing: dict = {}
+    if out_path.exists():
+        try:
+            existing = json.loads(out_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # Build lookup: category → {url: article}
+    existing_by_cat: dict = {}
+    for coll in existing.get("collections", []):
+        cat = coll["category"]
+        existing_by_cat[cat] = {a["url"]: a for a in coll.get("articles", [])}
+
+    new_count = 0
+    merged_collections = []
+    for coll in new_collections:
+        cat = coll["category"]
+        existing_articles = existing_by_cat.get(cat, {})
+        merged_articles = dict(existing_articles)  # copy existing
+
+        for art in coll["articles"]:
+            url = art["url"]
+            if url not in merged_articles:
+                merged_articles[url] = art
+                new_count += 1
+
+        art_list = list(merged_articles.values())
+        n_trend = sum(1 for a in art_list if a.get("article_type") == "trend")
+        merged_collections.append({
+            "category": cat,
+            "topic": f"Daily RSS digest — {cat} ({len(art_list)} articles, {today})",
+            "article_count": len(art_list),
+            "trend_count": n_trend,
+            "articles": art_list,
+        })
+
+    # Also keep existing categories not in new run
+    new_cats = {c["category"] for c in new_collections}
+    for coll in existing.get("collections", []):
+        if coll["category"] not in new_cats:
+            merged_collections.append(coll)
+
+    total = sum(c["article_count"] for c in merged_collections)
+    result = {
+        "date": today,
+        "collected_at": datetime.now(timezone.utc).isoformat(),
+        "total_articles": total,
+        "new_articles": new_count,
+        "collections": merged_collections,
+        "format_version": 2,
+    }
+    return result, new_count
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -285,21 +371,44 @@ def main():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     print(f"=== SOC Planning Agent — GitHub Actions Collector ({today}) ===\n")
 
+    # Load already-processed URLs to skip duplicates across multiple daily runs
+    seen_urls = _load_seen_urls()
+    print(f"📋 Known URLs (dedup cache): {len(seen_urls)}")
+
     # Step 1: Fetch RSS
     print("📡 Fetching RSS feeds (last 24h)...")
     collector = RSSCollector(max_age_days=1)
     category_articles = collector.collect_daily()
+
+    # Filter out already-seen articles
+    for cat in list(category_articles.keys()):
+        before = len(category_articles[cat])
+        category_articles[cat] = [
+            a for a in category_articles[cat]
+            if a.get("url", "") not in seen_urls
+        ]
+        skipped = before - len(category_articles[cat])
+        if skipped:
+            print(f"  [{cat}] skipped {skipped} already-seen articles")
+
     total = sum(len(a) for a in category_articles.values())
-    print(f"✓ {total} articles across {len(category_articles)} categories\n")
+    print(f"✓ {total} NEW articles across {len(category_articles)} categories\n")
 
     if total == 0:
-        print("⚠ No articles found.")
+        print("⚠ No new articles found — nothing to do.")
+        # Write a minimal marker so the Actions step knows we ran
         DATA_DIR.mkdir(exist_ok=True)
         out = DATA_DIR / f"{today}.json"
-        out.write_text(json.dumps(
-            {"date": today, "collections": [], "total_articles": 0},
-            ensure_ascii=False, indent=2,
-        ))
+        if not out.exists():
+            out.write_text(json.dumps(
+                {"date": today, "collections": [], "total_articles": 0, "new_articles": 0},
+                ensure_ascii=False, indent=2,
+            ))
+        # Signal 0 new articles for the workflow condition
+        gh_out = os.environ.get("GITHUB_OUTPUT")
+        if gh_out:
+            with open(gh_out, "a") as f:
+                f.write("new_articles=0\n")
         return
 
     # Step 2 (Pass 1): Classify all articles using RSS title + summary only
@@ -337,11 +446,11 @@ def main():
             final.append(a)
         final_by_category[category] = final
 
-    # Step 4: Build output JSON
-    collections = []
+    # Step 4: Build new collections list
+    new_collections = []
     for category, articles in final_by_category.items():
         n_trend = sum(1 for a in articles if a["article_type"] == "trend")
-        collections.append({
+        new_collections.append({
             "category": category,
             "topic": f"Daily RSS digest — {category} ({len(articles)} articles, {today})",
             "article_count": len(articles),
@@ -363,17 +472,27 @@ def main():
         })
         print(f"  ✓ [{category}] {len(articles)} articles ({n_trend} trend)")
 
+    # Step 5: Merge with today's existing JSON (accumulate across runs)
     DATA_DIR.mkdir(exist_ok=True)
+    result, new_count = _merge_today_json(today, new_collections)
     out_path = DATA_DIR / f"{today}.json"
-    result = {
-        "date": today,
-        "collected_at": datetime.now(timezone.utc).isoformat(),
-        "total_articles": total,
-        "collections": collections,
-        "format_version": 2,  # structured per-article format
-    }
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n✅ Done! {len(collections)} categories → {out_path}")
+    print(f"\n✅ Done! {new_count} truly new articles → {out_path}")
+
+    # Step 6: Update seen_urls cache with all newly processed URLs
+    for coll in new_collections:
+        for art in coll["articles"]:
+            url = art.get("url", "")
+            if url:
+                seen_urls[url] = today
+    _save_seen_urls(seen_urls, today)
+    print(f"   Seen URLs cache updated: {len(seen_urls)} total")
+
+    # Step 7: Signal new article count for workflow condition check
+    gh_out = os.environ.get("GITHUB_OUTPUT")
+    if gh_out:
+        with open(gh_out, "a") as f:
+            f.write(f"new_articles={new_count}\n")
 
 
 if __name__ == "__main__":
