@@ -66,6 +66,7 @@ FEEDS = {
         {"url": "https://www.inside.com.tw/rss",               "name": "Inside 台灣"},
         {"url": "https://www.bnext.com.tw/rss",                "name": "數位時代"},
         {"url": "https://www.ctimes.com.tw/rss/rss-news.xml",  "name": "CTIMES"},
+        {"url": "https://www.digitimes.com.tw/rss/rss.xml",    "name": "電子時報 Digitimes"},
     ],
 }
 
