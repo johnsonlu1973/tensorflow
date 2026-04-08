@@ -778,7 +778,7 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
         key=_importance_score,
         reverse=True,
     )
-    hot_articles = [a for a in scored if _importance_score(a) > 0][:10]
+    hot_articles = [a for a in scored if _importance_score(a) >= 3][:8]
 
     # Load user interest articles (bookmarks + fulltext)
     interest_articles = _load_user_interest()
@@ -844,9 +844,12 @@ def rebuild_from_archive():
     for f in DOCS_DIR.glob("collection_*.html"):
         f.unlink()
 
-    all_reports, articles_flat, coll_id = [], [], 1
+    all_reports, coll_id = [], 1
+    latest_articles = []   # only most-recent day → hot news
 
-    for archive_file in sorted(ARCHIVE_RSS_DIR.glob("*.json")):
+    archive_files = sorted(ARCHIVE_RSS_DIR.glob("*.json"))
+    for idx, archive_file in enumerate(archive_files):
+        is_latest = (idx == len(archive_files) - 1)
         try:
             data     = json.loads(archive_file.read_text(encoding="utf-8"))
             date_str = data.get("date", archive_file.stem)
@@ -864,11 +867,13 @@ def rebuild_from_archive():
             print(f"  ✓ {fname} ({len(arts)} articles)")
             all_reports.append({"filename": fname, "category": cat,
                                  "date": date_str, "total": len(arts), "new": 0})
-            articles_flat.extend(arts)
+            if is_latest:
+                latest_articles.extend(arts)
             coll_id += 1
 
     interest = _load_user_interest()
-    hot      = sorted(articles_flat, key=_importance_score, reverse=True)
+    hot = [a for a in sorted(latest_articles, key=_importance_score, reverse=True)
+           if _importance_score(a) >= 3][:8]
     (DOCS_DIR / "index.html").write_text(
         _index_page(all_reports, hot_articles=hot, interest_articles=interest), encoding="utf-8"
     )
