@@ -1052,6 +1052,22 @@ def _update_pinned(all_articles_flat: list) -> dict:
     pinned["hot_news"]   = _prune_expired(pinned.get("hot_news",   []))
     pinned["headlines"]  = _prune_expired(pinned.get("headlines",  []))
 
+    # Build set of already-bookmarked/saved URLs — exclude from headlines
+    already_saved: set = set()
+    for subdir in (BOOKMARK_DIR, FULLTEXT_DIR, MANUAL_DIR):
+        if subdir.exists():
+            for f in subdir.glob("*.json"):
+                try:
+                    d = json.loads(f.read_text(encoding="utf-8"))
+                    if d.get("url"):
+                        already_saved.add(d["url"])
+                except Exception:
+                    pass
+
+    # Remove any existing headline cards whose URL is now in already_saved
+    pinned["headlines"] = [c for c in pinned["headlines"]
+                           if c["article"].get("url") not in already_saved]
+
     existing_hot_urls  = {c["article"].get("url") for c in pinned["hot_news"]}
     existing_hl_urls   = {c["article"].get("url") for c in pinned["headlines"]}
 
@@ -1066,7 +1082,7 @@ def _update_pinned(all_articles_flat: list) -> dict:
     # ── Add new 頭條消息 (user-interest based) ──
     kws = _interest_keywords()
     if kws:
-        all_used = existing_hot_urls | existing_hl_urls
+        all_used = existing_hot_urls | existing_hl_urls | already_saved
         candidates = []
         for a in all_articles_flat:
             if a.get("url") in all_used:
