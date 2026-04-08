@@ -17,12 +17,16 @@ Card design per article:
 """
 import json
 import os
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 ROOT     = Path(__file__).parent
 DOCS_DIR = ROOT.parent / "docs"
-ARCHIVE_ANALYSIS_DIR = ROOT / "archive" / "analysis"
+PINNED_FILE  = ROOT / "data" / "pinned_cards.json"
+BOOKMARK_DIR = ROOT / "archive" / "bookmarks"
+FULLTEXT_DIR = ROOT / "archive" / "fulltext"
+MANUAL_DIR   = ROOT / "archive" / "manual"
 
 GITHUB_REPO   = "johnsonlu1973/tensorflow"
 GITHUB_BRANCH = "master"
@@ -129,26 +133,100 @@ def _importance_score(article: dict) -> int:
 
 
 def _load_user_interest() -> list:
-    """Load articles from archive/fulltext/ and archive/bookmarks/."""
+    """Load articles from archive/fulltext/, archive/bookmarks/, archive/manual/."""
     articles = []
-    for subdir in ("fulltext", "bookmarks"):
-        d = ROOT / "archive" / subdir
-        if d.exists():
-            for f in sorted(d.glob("*.json"), reverse=True)[:30]:
+    for subdir in (FULLTEXT_DIR, BOOKMARK_DIR, MANUAL_DIR):
+        if subdir.exists():
+            for f in sorted(subdir.glob("*.json"), reverse=True)[:30]:
                 try:
                     data = json.loads(f.read_text(encoding="utf-8"))
-                    data["_interest_type"] = subdir
+                    data["_interest_type"] = subdir.name
                     articles.append(data)
                 except Exception:
                     pass
-    # Deduplicate by URL
     seen, result = set(), []
     for a in articles:
         url = a.get("url", "")
         if url and url not in seen:
-            seen.add(url)
-            result.append(a)
+            seen.add(url); result.append(a)
     return result[:15]
+
+
+# ---------------------------------------------------------------------------
+# Persistent pinned cards (24-hour TTL)
+# ---------------------------------------------------------------------------
+
+def _load_pinned() -> dict:
+    if PINNED_FILE.exists():
+        try:
+            return json.loads(PINNED_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {"hot_news": [], "headlines": []}
+
+
+def _save_pinned(pinned: dict):
+    PINNED_FILE.parent.mkdir(exist_ok=True)
+    PINNED_FILE.write_text(json.dumps(pinned, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _prune_expired(cards: list, max_age_hours: int = 24) -> list:
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
+    kept = []
+    for c in cards:
+        try:
+            added = datetime.fromisoformat(c["added_at"].replace("Z", "+00:00"))
+            if added.tzinfo is None:
+                added = added.replace(tzinfo=timezone.utc)
+            if added > cutoff:
+                kept.append(c)
+        except Exception:
+            kept.append(c)
+    return kept
+
+
+# ---------------------------------------------------------------------------
+# Headline scoring (user-interest based)
+# ---------------------------------------------------------------------------
+
+def _interest_keywords() -> set:
+    """Extract keywords from user bookmarks / fulltext / manual saves."""
+    import re as _re
+    kws: set = set()
+    STOP = {"with","from","that","this","they","will","have","been","more",
+            "than","when","also","into","their","would","about","which"}
+    for subdir in (BOOKMARK_DIR, FULLTEXT_DIR, MANUAL_DIR):
+        if not subdir.exists():
+            continue
+        for f in sorted(subdir.glob("*.json"), reverse=True)[:20]:
+            try:
+                d = json.loads(f.read_text(encoding="utf-8"))
+                title = (d.get("title_en","") or d.get("title","")) + " " + d.get("title_zh","")
+                # English words ≥ 4 chars
+                words = set(w.lower() for w in _re.findall(r'\b[a-zA-Z]{4,}\b', title))
+                kws.update(words - STOP)
+                # Chinese bigrams
+                for i in range(len(title)-1):
+                    bg = title[i:i+2]
+                    if all('\u4e00' <= c <= '\u9fff' for c in bg):
+                        kws.add(bg)
+            except Exception:
+                pass
+    return kws
+
+
+def _headline_score(article: dict, interest_kws: set) -> int:
+    if not interest_kws:
+        return 0
+    text = (article.get("title","") + " " + article.get("title_zh","")).lower()
+    zh   = article.get("title_zh","")
+    score = 0
+    for kw in interest_kws:
+        if len(kw) >= 4 and kw in text:
+            score += 1
+        elif len(kw) == 2 and kw in zh:
+            score += 1
+    return score
 
 
 # ---------------------------------------------------------------------------
@@ -725,24 +803,29 @@ def _compact_interest_html(articles: list, empty_msg: str) -> str:
     return html
 
 
-def _index_page(reports: list, hot_articles: list = None, interest_articles: list = None) -> str:
+def _index_page(reports: list, hot_articles: list = None,
+                headline_articles: list = None, interest_articles: list = None) -> str:
     if hot_articles is None:
         hot_articles = []
+    if headline_articles is None:
+        headline_articles = []
     if interest_articles is None:
         interest_articles = []
 
     prompt_js = json.dumps(ANALYSIS_PROMPT_TEMPLATE)
 
-    # 🔥 重大消息 — full article cards with all buttons
+    # 🔥 重大消息 — full article cards
     hot_cards_html = ""
     for i, a in enumerate(hot_articles):
         hot_cards_html += _article_card(a, f"hot{i}", prompt_js)
 
-    # ⭐ 我的關注 — compact server-side + dynamic client-side placeholder
-    interest_html = _compact_interest_html(
-        interest_articles,
-        empty_msg="⬇ 載入中..."  # replaced by JS below
-    )
+    # 📰 頭條消息 — full article cards
+    hl_cards_html = ""
+    for i, a in enumerate(headline_articles):
+        hl_cards_html += _article_card(a, f"hl{i}", prompt_js)
+
+    # ⭐ 我的關注 — compact server-side fallback; JS overwrites from localStorage
+    interest_html = _compact_interest_html(interest_articles, empty_msg="載入中...")
 
     # Report index cards
     report_cards = ""
@@ -758,8 +841,6 @@ def _index_page(reports: list, hot_articles: list = None, interest_articles: lis
 
     now_tw = datetime.now(TW_TZ).strftime('%Y-%m-%d %H:%M')
 
-    # JS to dynamically render 我的關注 from localStorage bookmarks
-    # and handle the manual-paste modal
     index_js = f"""
 // ── Dynamic 我的關注 from localStorage ──
 function renderMyInterest() {{
@@ -767,20 +848,28 @@ function renderMyInterest() {{
   const container = document.getElementById('my-interest-body');
   if (!container) return;
   if (!stored.length) {{
-    container.innerHTML = '<div class="hot-empty">尚無關注文章 — 在新聞卡片按「⭐ 加入關注」</div>';
+    container.innerHTML = '<div class="hot-empty">尚無關注文章 — 在新聞卡片按「⭐ 加入關注」即可加入</div>';
+    document.getElementById('my-interest-count').textContent = '0 篇';
     return;
   }}
   document.getElementById('my-interest-count').textContent = stored.length + ' 篇';
   let html = '';
   stored.forEach(a => {{
-    html += `<a class="hot-card" href="${{a.url}}" target="_blank" style="border-left-color:#e8a317">
+    // Use encodeURI to ensure URL is safe for href
+    const safeUrl = a.url ? encodeURI(a.url) : '#';
+    const titleEn = (a.title_en || a.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const titleZh = (a.title_zh || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const src  = (a.source || '').replace(/</g,'&lt;');
+    const date = (a.date || '').slice(0,10);
+    html += `<a class="hot-card" href="${{safeUrl}}" target="_blank" rel="noopener"
+              style="border-left-color:#e8a317;cursor:pointer">
   <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-    <span class="hot-source">${{a.source||''}}</span>
-    <span class="hot-date">${{(a.date||'').slice(0,10)}}</span>
+    <span class="hot-source">${{src}}</span>
+    <span class="hot-date">${{date}}</span>
     <span style="font-size:0.65em;color:#e8a317">⭐</span>
   </div>
-  <div class="hot-title-en">${{a.title_en||a.title||''}}</div>
-  ${{a.title_zh ? '<div class="hot-title-zh">'+a.title_zh+'</div>' : ''}}
+  <div class="hot-title-en">${{titleEn}}</div>
+  ${{titleZh ? '<div class="hot-title-zh">'+titleZh+'</div>' : ''}}
 </a>`;
   }});
   container.innerHTML = html;
@@ -918,15 +1007,23 @@ window.addEventListener('DOMContentLoaded', () => {{
 <div class="hot-section">
   <div class="hot-header">
     <span class="hot-icon">🔥</span><h2>重大消息</h2>
-    <span class="hot-count">{len(hot_articles)} 篇</span>
+    <span class="hot-count">{len(hot_articles)} 篇（最近 24 小時）</span>
   </div>
-  {hot_cards_html if hot_cards_html else '<div class="hot-empty">本次無重大消息偵測</div>'}
+  {hot_cards_html if hot_cards_html else '<div class="hot-empty">目前無重大消息</div>'}
+</div>
+
+<div class="hot-section" style="margin-top:14px">
+  <div class="hot-header">
+    <span class="hot-icon">📰</span><h2>頭條消息</h2>
+    <span class="hot-count">{len(headline_articles)} 篇（依你的關注偏好推薦）</span>
+  </div>
+  {hl_cards_html if hl_cards_html else '<div class="hot-empty">偏好資料不足 — 請先加入關注或貼入全文</div>'}
 </div>
 
 <div class="hot-section" style="margin-top:14px">
   <div class="hot-header">
     <span class="hot-icon">⭐</span><h2>我的關注</h2>
-    <span class="hot-count" id="my-interest-count">{len(interest_articles)} 篇</span>
+    <span class="hot-count" id="my-interest-count">0 篇</span>
   </div>
   <div id="my-interest-body">{interest_html}</div>
 </div>
@@ -946,9 +1043,91 @@ window.addEventListener('DOMContentLoaded', () => {{
 # Entry point called by github_collector.py
 # ---------------------------------------------------------------------------
 
+def _update_pinned(all_articles_flat: list) -> dict:
+    """Load pinned_cards.json, prune expired, add new hot/headline cards, save."""
+    now_iso  = datetime.now(timezone.utc).isoformat()
+    pinned   = _load_pinned()
+
+    # Prune cards older than 24 hours
+    pinned["hot_news"]   = _prune_expired(pinned.get("hot_news",   []))
+    pinned["headlines"]  = _prune_expired(pinned.get("headlines",  []))
+
+    existing_hot_urls  = {c["article"].get("url") for c in pinned["hot_news"]}
+    existing_hl_urls   = {c["article"].get("url") for c in pinned["headlines"]}
+
+    # ── Add new 重大消息 ──
+    for a in all_articles_flat:
+        if a.get("url") in existing_hot_urls:
+            continue
+        if _importance_score(a) >= 3:
+            pinned["hot_news"].append({"article": a, "added_at": now_iso, "hits": 0})
+            existing_hot_urls.add(a.get("url"))
+
+    # ── Add new 頭條消息 (user-interest based) ──
+    kws = _interest_keywords()
+    if kws:
+        all_used = existing_hot_urls | existing_hl_urls
+        candidates = []
+        for a in all_articles_flat:
+            if a.get("url") in all_used:
+                continue
+            sc = _headline_score(a, kws)
+            if sc >= 2:
+                candidates.append((sc, a))
+        # Sort by score, add top 10 new headlines
+        candidates.sort(key=lambda x: -x[0])
+        for sc, a in candidates[:10]:
+            pinned["headlines"].append({
+                "article": a, "added_at": now_iso,
+                "score": sc, "hits": 0,
+            })
+            existing_hl_urls.add(a.get("url"))
+
+    # Keep top 10 headlines by score
+    pinned["headlines"].sort(key=lambda c: c.get("score", 0), reverse=True)
+    pinned["headlines"] = pinned["headlines"][:10]
+
+    # Update hits: cross-reference with archive/bookmarks + archive/fulltext
+    _update_hits(pinned)
+
+    _save_pinned(pinned)
+    print(f"  📌 pinned: {len(pinned['hot_news'])} hot, {len(pinned['headlines'])} headlines")
+    return pinned
+
+
+def _update_hits(pinned: dict):
+    """Count bookmark/fulltext hits on pinned cards to strengthen scoring."""
+    user_urls: set = set()
+    for subdir in (BOOKMARK_DIR, FULLTEXT_DIR, MANUAL_DIR):
+        if subdir.exists():
+            for f in subdir.glob("*.json"):
+                try:
+                    d = json.loads(f.read_text(encoding="utf-8"))
+                    if d.get("url"):
+                        user_urls.add(d["url"])
+                except Exception:
+                    pass
+    for section in ("hot_news", "headlines"):
+        for card in pinned.get(section, []):
+            url = card["article"].get("url", "")
+            if url and url in user_urls:
+                card["hits"] = card.get("hits", 0) + 1
+
+
 def generate_reports(articles_by_category: dict, date: str) -> list:
     """Write collection HTML pages + update index. Returns list of report info dicts."""
     DOCS_DIR.mkdir(exist_ok=True)
+
+    # Flatten all new articles
+    all_articles_flat = [a for arts in articles_by_category.values() for a in arts]
+
+    # Update persistent pinned cards (24h TTL, new hot+headlines added)
+    pinned = _update_pinned(all_articles_flat)
+    hot_articles      = [c["article"] for c in pinned["hot_news"]]
+    headline_articles = [c["article"] for c in pinned["headlines"]]
+
+    # Load user interest articles (bookmarks + fulltext + manual)
+    interest_articles = _load_user_interest()
 
     # Find next collection ID
     existing_ids = []
@@ -957,20 +1136,6 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
         if len(parts) >= 2 and parts[1].isdigit():
             existing_ids.append(int(parts[1]))
     next_id = max(existing_ids, default=0) + 1
-
-    # Compute hot news from all articles in this run
-    all_articles_flat = []
-    for articles in articles_by_category.values():
-        all_articles_flat.extend(articles)
-    scored = sorted(
-        all_articles_flat,
-        key=_importance_score,
-        reverse=True,
-    )
-    hot_articles = [a for a in scored if _importance_score(a) >= 3][:8]
-
-    # Load user interest articles (bookmarks + fulltext)
-    interest_articles = _load_user_interest()
 
     new_reports = []
     for i, (category, articles) in enumerate(articles_by_category.items()):
@@ -1003,27 +1168,25 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
 
     all_reports = new_reports + existing_reports
     (DOCS_DIR / "index.html").write_text(
-        _index_page(all_reports, hot_articles=hot_articles, interest_articles=interest_articles),
+        _index_page(all_reports,
+                    hot_articles=hot_articles,
+                    headline_articles=headline_articles,
+                    interest_articles=interest_articles),
         encoding="utf-8",
     )
-    print(f"  ✓ index.html ({len(all_reports)} reports)")
+    print(f"  ✓ index.html ({len(all_reports)} reports, "
+          f"{len(hot_articles)} hot, {len(headline_articles)} headlines)")
 
     # Write output vars for GitHub Actions
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out:
-        # Build hot news summary for Slack (title_zh preferred, max 5 items)
-        hot_lines = []
-        for a in hot_articles[:5]:
-            title = a.get("title_zh") or a.get("title", "")
-            src   = a.get("source", "")
-            hot_lines.append(f"• [{src}] {title}")
-        hot_summary = "\n".join(hot_lines) if hot_lines else ""
-
+        hot_lines = [f"• [{a.get('source','')}] {a.get('title_zh') or a.get('title','')}"
+                     for a in hot_articles[:5]]
+        hot_summary = "\n".join(hot_lines)
         with open(gh_out, "a") as f:
             f.write(f"new_reports={len(new_reports)}\n")
             f.write(f"pages_url={PAGES_URL}\n")
             f.write(f"hot_count={len(hot_articles)}\n")
-            # Multiline output using heredoc syntax
             f.write(f"hot_summary<<HOTNEWSEOF\n{hot_summary}\nHOTNEWSEOF\n")
 
     return new_reports
@@ -1071,13 +1234,21 @@ def rebuild_from_archive():
                 latest_articles.extend(arts)
             coll_id += 1
 
-    interest = _load_user_interest()
-    hot = [a for a in sorted(latest_articles, key=_importance_score, reverse=True)
-           if _importance_score(a) >= 3][:8]
+    # Update pinned cards (24h TTL) using the most recent archive day
+    pinned            = _update_pinned(latest_articles)
+    hot_articles      = [c["article"] for c in pinned["hot_news"]]
+    headline_articles = [c["article"] for c in pinned["headlines"]]
+    interest          = _load_user_interest()
+
     (DOCS_DIR / "index.html").write_text(
-        _index_page(all_reports, hot_articles=hot, interest_articles=interest), encoding="utf-8"
+        _index_page(all_reports,
+                    hot_articles=hot_articles,
+                    headline_articles=headline_articles,
+                    interest_articles=interest),
+        encoding="utf-8"
     )
-    print(f"\n✅ Rebuilt {len(all_reports)} pages + index.html")
+    print(f"\n✅ Rebuilt {len(all_reports)} pages + index.html "
+          f"({len(hot_articles)} hot, {len(headline_articles)} headlines)")
 
 
 if __name__ == "__main__":
