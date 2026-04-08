@@ -567,12 +567,13 @@ def _article_card(article: dict, card_id: str, prompt_template_js: str) -> str:
 
     lang_tag = '<span class="lang-tag">EN→中</span>' if is_en else '<span class="lang-tag">中文</span>'
 
-    meta_js = json.dumps({
+    # HTML-escape the JSON so double quotes don't break onclick="..." attributes
+    meta_js = _esc(json.dumps({
         "url": url, "title_en": article.get("title",""),
         "title_zh": article.get("title_zh",""),
         "source": article.get("source",""),
         "date": pub, "category": category,
-    })
+    }))
 
     summary_block = ""
     if sum_en:
@@ -809,3 +810,69 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
             f.write(f"date={date}\n")
 
     return new_reports
+
+
+# ---------------------------------------------------------------------------
+# Rebuild all pages from archive (fixes existing pages after code changes)
+# ---------------------------------------------------------------------------
+
+def rebuild_from_archive():
+    """Re-generate all collection HTML pages from archive/rss/*.json data."""
+    ARCHIVE_RSS_DIR = ROOT / "archive" / "rss"
+    if not ARCHIVE_RSS_DIR.exists():
+        print("No archive data found.")
+        return
+
+    DOCS_DIR.mkdir(exist_ok=True)
+
+    # Delete old collection pages
+    for f in DOCS_DIR.glob("collection_*.html"):
+        f.unlink()
+
+    all_reports   = []
+    articles_flat = []
+    coll_id       = 1
+
+    for archive_file in sorted(ARCHIVE_RSS_DIR.glob("*.json")):
+        try:
+            data     = json.loads(archive_file.read_text(encoding="utf-8"))
+            date_str = data.get("date", archive_file.stem)
+            articles = data.get("articles", [])
+        except Exception as e:
+            print(f"  ⚠ skip {archive_file.name}: {e}")
+            continue
+
+        # Group by category
+        by_cat: dict = {}
+        for a in articles:
+            cat = a.get("category", "unknown")
+            by_cat.setdefault(cat, []).append(a)
+
+        for cat, arts in by_cat.items():
+            html  = _collection_page(cat, arts, date_str)
+            fname = f"collection_{coll_id}_{cat}_{date_str}.html"
+            (DOCS_DIR / fname).write_text(html, encoding="utf-8")
+            print(f"  ✓ {fname} ({len(arts)} articles)")
+            all_reports.append({
+                "filename": fname, "category": cat,
+                "date": date_str, "total": len(arts), "new": 0,
+            })
+            articles_flat.extend(arts)
+            coll_id += 1
+
+    # Rebuild index
+    interest_articles = _load_user_interest()
+    (DOCS_DIR / "index.html").write_text(
+        _index_page(all_reports, articles_flat, interest_articles),
+        encoding="utf-8",
+    )
+    print(f"\n✅ Rebuilt {len(all_reports)} collection pages + index.html")
+
+
+if __name__ == "__main__":
+    import sys
+    if "--rebuild" in sys.argv:
+        print("🔨 Rebuilding all HTML from archive data...")
+        rebuild_from_archive()
+    else:
+        print("Usage: python generate_html.py --rebuild")
