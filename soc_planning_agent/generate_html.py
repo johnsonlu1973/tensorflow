@@ -94,6 +94,12 @@ HOT_KEYWORDS_ZH = {
 }
 HOT_SOURCES = {"Bloomberg", "Reuters", "電子時報", "SemiAnalysis", "Digitimes"}
 
+# Tech keywords: each hit +1 (relevance signal, not urgency)
+TECH_KEYWORDS = {
+    "ai", "5g", "6g", "soc", "tops", "latency", "ghz",
+    "tokens", "benchmark", "orchestration", "multi-agent",
+}
+
 
 def _importance_score(article: dict) -> int:
     score = 0
@@ -104,6 +110,9 @@ def _importance_score(article: dict) -> int:
     for kw in HOT_KEYWORDS_ZH:
         if kw in text:
             score += 2
+    for kw in TECH_KEYWORDS:
+        if kw in text:
+            score += 1
     if article.get("source", "") in HOT_SOURCES:
         score += 1
     return score
