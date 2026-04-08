@@ -24,6 +24,8 @@ jobs:
     outputs:
       new_articles: ${{ steps.run_collector.outputs.new_articles }}
       today: ${{ steps.run_collector.outputs.today }}
+      hot_count: ${{ steps.run_collector.outputs.hot_count }}
+      hot_summary: ${{ steps.run_collector.outputs.hot_summary }}
 
     permissions:
       contents: write
@@ -111,6 +113,8 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           NEW_ARTICLES: ${{ needs.collect.outputs.new_articles }}
           TODAY: ${{ needs.collect.outputs.today }}
+          HOT_COUNT: ${{ needs.collect.outputs.hot_count }}
+          HOT_SUMMARY: ${{ needs.collect.outputs.hot_summary }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "⚠️ SLACK_WEBHOOK_URL not set — skipping"
@@ -120,39 +124,41 @@ jobs:
           TW_TIME=$(TZ=Asia/Taipei date +"%Y-%m-%d %H:%M")
           PAGES_URL="https://johnsonlu1973.github.io/tensorflow"
 
-          PAYLOAD=$(cat <<EOF
-          {
-            "blocks": [
-              {
-                "type": "header",
-                "text": { "type": "plain_text", "text": "📡 SOC Planning Agent — 發現新市場情報！", "emoji": true }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  { "type": "mrkdwn", "text": "*📅 台灣時間*\n${TW_TIME}" },
-                  { "type": "mrkdwn", "text": "*🆕 新文章*\n${NEW_ARTICLES} 篇" }
-                ]
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": { "type": "plain_text", "text": "📊 查看 Dashboard" },
-                    "url": "${PAGES_URL}"
-                  }
-                ]
-              },
-              {
-                "type": "context",
-                "elements": [
-                  { "type": "mrkdwn", "text": "SOC Planning Agent · 每 2 小時自動檢查 RSS" }
-                ]
-              }
-            ]
-          }
-          EOF
+          # Use Python to safely build JSON payload with hot news
+          PAYLOAD=$(python3 - <<'PYEOF'
+import json, os
+new_articles = os.environ.get("NEW_ARTICLES", "0")
+hot_count    = os.environ.get("HOT_COUNT", "0")
+hot_summary  = os.environ.get("HOT_SUMMARY", "").strip()
+tw_time      = os.environ.get("TW_TIME", "")
+pages_url    = os.environ.get("PAGES_URL", "")
+
+blocks = [
+  {"type": "header",
+   "text": {"type": "plain_text", "text": "📡 SOC Planning Agent — 發現新市場情報！", "emoji": True}},
+  {"type": "section", "fields": [
+    {"type": "mrkdwn", "text": f"*📅 台灣時間*\n{tw_time}"},
+    {"type": "mrkdwn", "text": f"*🆕 新文章*\n{new_articles} 篇"},
+    {"type": "mrkdwn", "text": f"*🔥 重大消息*\n{hot_count} 篇"},
+  ]},
+]
+if hot_summary:
+  blocks.append({"type": "divider"})
+  blocks.append({"type": "section",
+    "text": {"type": "mrkdwn", "text": f"*🔥 重大消息*\n{hot_summary}"}})
+
+blocks += [
+  {"type": "actions", "elements": [
+    {"type": "button",
+     "text": {"type": "plain_text", "text": "📊 查看 Dashboard"},
+     "url": pages_url}
+  ]},
+  {"type": "context", "elements": [
+    {"type": "mrkdwn", "text": "SOC Planning Agent · 每 2 小時自動檢查 RSS"}
+  ]},
+]
+print(json.dumps({"blocks": blocks}))
+PYEOF
           )
 
           curl -s -X POST "$SLACK_WEBHOOK_URL" \

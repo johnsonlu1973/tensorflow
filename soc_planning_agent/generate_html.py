@@ -761,8 +761,6 @@ def _index_page(reports: list, hot_articles: list = None, interest_articles: lis
     # JS to dynamically render 我的關注 from localStorage bookmarks
     # and handle the manual-paste modal
     index_js = f"""
-const PROMPT_TEMPLATE = {prompt_js};
-
 // ── Dynamic 我的關注 from localStorage ──
 function renderMyInterest() {{
   const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
@@ -1013,9 +1011,20 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
     # Write output vars for GitHub Actions
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out:
+        # Build hot news summary for Slack (title_zh preferred, max 5 items)
+        hot_lines = []
+        for a in hot_articles[:5]:
+            title = a.get("title_zh") or a.get("title", "")
+            src   = a.get("source", "")
+            hot_lines.append(f"• [{src}] {title}")
+        hot_summary = "\n".join(hot_lines) if hot_lines else ""
+
         with open(gh_out, "a") as f:
             f.write(f"new_reports={len(new_reports)}\n")
             f.write(f"pages_url={PAGES_URL}\n")
+            f.write(f"hot_count={len(hot_articles)}\n")
+            # Multiline output using heredoc syntax
+            f.write(f"hot_summary<<HOTNEWSEOF\n{hot_summary}\nHOTNEWSEOF\n")
 
     return new_reports
 
