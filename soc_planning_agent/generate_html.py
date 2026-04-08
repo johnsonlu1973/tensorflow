@@ -550,6 +550,12 @@ async function bookmarkArticle(cardId, articleMeta) {
       btn.disabled = true;
       btn.classList.add('bookmarked');
       localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
     } else {
       const err = await res.json();
       btn.textContent = '⭐ 加入關注';
@@ -696,34 +702,27 @@ def _collection_page(category: str, articles: list, date: str) -> str:
 </body></html>"""
 
 
-def _hot_section_html(icon: str, title: str, articles: list) -> str:
-    """Render a hot-section block (🔥 重大消息 or ⭐ 我的關注)."""
-    count = len(articles)
-    if articles:
-        cards_html = ""
-        for a in articles:
-            url      = _esc(a.get("url", "#"))
-            source   = _esc(a.get("source", ""))
-            date     = _esc((a.get("date", "") or a.get("published", "") or "")[:10])
-            title_en = _esc(a.get("title", "") or a.get("title_en", ""))
-            title_zh = _esc(a.get("title_zh", ""))
-            cards_html += f"""<a class="hot-card" href="{url}" target="_blank">
-  <span class="hot-source">{source}</span><span class="hot-date">{date}</span>
-  <div class="hot-title-en">{title_en}</div>
-  {f'<div class="hot-title-zh">{title_zh}</div>' if title_zh else ""}
-</a>
-"""
-    else:
-        cards_html = '<div class="hot-empty">尚無資料</div>'
-
-    return f"""<div class="hot-section">
-  <div class="hot-header">
-    <span class="hot-icon">{icon}</span>
-    <h2>{title}</h2>
-    <span class="hot-count">{count} 篇</span>
+def _compact_interest_html(articles: list, empty_msg: str) -> str:
+    """Compact card list for 我的關注 (server-side rendered)."""
+    if not articles:
+        return f'<div class="hot-empty">{empty_msg}</div>'
+    html = ""
+    for a in articles:
+        url      = _esc(a.get("url", "#"))
+        source   = _esc(a.get("source", ""))
+        pub      = _esc((a.get("date","") or a.get("published","") or a.get("bookmarked_at",""))[:10])
+        title_en = _esc(a.get("title","") or a.get("title_en",""))
+        title_zh = _esc(a.get("title_zh",""))
+        itype    = "📄" if a.get("_interest_type") == "fulltext" else "⭐"
+        html += f"""<a class="hot-card" href="{url}" target="_blank" style="border-left-color:#e8a317">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+    <span class="hot-source">{source}</span><span class="hot-date">{pub}</span>
+    <span style="font-size:0.65em;color:#e8a317">{itype}</span>
   </div>
-  {cards_html}
-</div>"""
+  <div class="hot-title-en">{title_en}</div>
+  {f'<div class="hot-title-zh">{title_zh}</div>' if title_zh and title_zh != title_en else ""}
+</a>"""
+    return html
 
 
 def _index_page(reports: list, hot_articles: list = None, interest_articles: list = None) -> str:
@@ -732,43 +731,216 @@ def _index_page(reports: list, hot_articles: list = None, interest_articles: lis
     if interest_articles is None:
         interest_articles = []
 
-    # Hot News section
-    hot_section = _hot_section_html("🔥", "重大消息", hot_articles)
-    interest_section = (
-        '<div class="hot-section" style="margin-top:16px">\n'
-        + _hot_section_html("⭐", "我的關注", interest_articles)[len('<div class="hot-section">\n'):]
+    prompt_js = json.dumps(ANALYSIS_PROMPT_TEMPLATE)
+
+    # 🔥 重大消息 — full article cards with all buttons
+    hot_cards_html = ""
+    for i, a in enumerate(hot_articles):
+        hot_cards_html += _article_card(a, f"hot{i}", prompt_js)
+
+    # ⭐ 我的關注 — compact server-side + dynamic client-side placeholder
+    interest_html = _compact_interest_html(
+        interest_articles,
+        empty_msg="⬇ 載入中..."  # replaced by JS below
     )
 
-    # Report cards
-    cards = ""
+    # Report index cards
+    report_cards = ""
     for r in sorted(reports, key=lambda x: x["date"], reverse=True):
         emoji, label = CATEGORY_LABEL.get(r["category"], ("📰", r["category"]))
-        cards += f"""
+        report_cards += f"""
 <a class="index-card" href="{_esc(r['filename'])}">
   <h2>{emoji} {label} — {r['date']}</h2>
-  <div class="card-meta">
-    {r['total']} 篇 &nbsp;·&nbsp;
-    <span class="new-count">+{r.get('new',r['total'])} 新</span>
+  <div class="card-meta">{r['total']} 篇 &nbsp;·&nbsp;
+    <span class="new-count">+{r.get('new', r['total'])} 新</span>
   </div>
 </a>"""
 
     now_tw = datetime.now(TW_TZ).strftime('%Y-%m-%d %H:%M')
+
+    # JS to dynamically render 我的關注 from localStorage bookmarks
+    # and handle the manual-paste modal
+    index_js = f"""
+const PROMPT_TEMPLATE = {prompt_js};
+
+// ── Dynamic 我的關注 from localStorage ──
+function renderMyInterest() {{
+  const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+  const container = document.getElementById('my-interest-body');
+  if (!container) return;
+  if (!stored.length) {{
+    container.innerHTML = '<div class="hot-empty">尚無關注文章 — 在新聞卡片按「⭐ 加入關注」</div>';
+    return;
+  }}
+  document.getElementById('my-interest-count').textContent = stored.length + ' 篇';
+  let html = '';
+  stored.forEach(a => {{
+    html += `<a class="hot-card" href="${{a.url}}" target="_blank" style="border-left-color:#e8a317">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+    <span class="hot-source">${{a.source||''}}</span>
+    <span class="hot-date">${{(a.date||'').slice(0,10)}}</span>
+    <span style="font-size:0.65em;color:#e8a317">⭐</span>
+  </div>
+  <div class="hot-title-en">${{a.title_en||a.title||''}}</div>
+  ${{a.title_zh ? '<div class="hot-title-zh">'+a.title_zh+'</div>' : ''}}
+</a>`;
+  }});
+  container.innerHTML = html;
+}}
+
+// ── Manual paste modal ──
+function openManualModal() {{
+  document.getElementById('manual-modal').style.display = 'flex';
+}}
+function closeManualModal() {{
+  document.getElementById('manual-modal').style.display = 'none';
+}}
+
+async function saveManualArticle() {{
+  const token = getToken();
+  if (!token) {{ alert('請先設定 GitHub Token'); return; }}
+
+  const title = document.getElementById('m-title').value.trim();
+  const text  = document.getElementById('m-text').value.trim();
+  if (!title) {{ alert('請輸入標題'); return; }}
+  if (!text)  {{ alert('請貼上文章內容'); return; }}
+
+  const statusEl = document.getElementById('m-status');
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date     = document.getElementById('m-date').value || new Date().toISOString().slice(0,10);
+  const url      = document.getElementById('m-url').value.trim();
+  const source   = document.getElementById('m-source').value.trim();
+  const category = document.getElementById('m-category').value;
+  const hash     = btoa(title + date).replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+  const path     = `soc_planning_agent/archive/manual/${{date}}_${{hash}}.json`;
+
+  const payload = {{
+    title_en: title, title_zh: '', url: url || '',
+    source: source || '手動輸入', date: date, category: category,
+    saved_at: new Date().toISOString(), fulltext: text,
+  }};
+
+  try {{
+    const body = {{
+      message: `manual: ${{title.slice(0,60)}}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    }};
+    const res = await fetch(
+      `https://api.github.com/repos/REPO_PLACEHOLDER/contents/${{path}}`,
+      {{ method: 'PUT', headers: {{
+          Authorization: `token ${{token}}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }}, body: JSON.stringify(body) }}
+    );
+    if (res.ok) {{
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+      ['m-title','m-url','m-source','m-text'].forEach(id => document.getElementById(id).value = '');
+      setTimeout(closeManualModal, 1500);
+    }} else {{
+      const err = await res.json();
+      statusEl.textContent = '❌ ' + err.message; statusEl.className = 'save-status err';
+    }}
+  }} catch(e) {{
+    statusEl.textContent = '❌ ' + e.message; statusEl.className = 'save-status err';
+  }}
+}}
+
+window.addEventListener('DOMContentLoaded', () => {{
+  checkToken();
+  initBookmarks();
+  renderMyInterest();
+}});
+"""
+
+    manual_modal = f"""
+<!-- ── Manual Paste Button ── -->
+<button class="fab-paste" onclick="openManualModal()" title="貼入外部文章">＋ 貼入外部文章</button>
+
+<!-- ── Modal ── -->
+<div id="manual-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+     z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;
+              padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="color:#e6edf3;font-size:1em">📝 貼入外部文章</h2>
+      <button onclick="closeManualModal()" style="background:none;border:none;color:#8b949e;
+              font-size:1.2em;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="m-title" class="token-input" style="width:100%" placeholder="文章標題（必填）">
+      <input id="m-url"   class="token-input" style="width:100%" placeholder="文章網址（選填）">
+      <div style="display:flex;gap:8px">
+        <input id="m-source" class="token-input" style="flex:1" placeholder="來源（如：電子時報）">
+        <input id="m-date"   class="token-input" style="flex:1" type="date"
+               value="{datetime.now(TW_TZ).strftime('%Y-%m-%d')}">
+        <select id="m-category" class="token-input" style="flex:1">
+          <option value="chips_soc">💾 Chips/SoC</option>
+          <option value="mobile">📱 Mobile</option>
+          <option value="agentic_ai">🤖 AI</option>
+          <option value="5g_cpe">📡 5G/CPE</option>
+          <option value="taiwan">🇹🇼 台灣</option>
+          <option value="tech_general">🌐 Tech</option>
+        </select>
+      </div>
+      <textarea id="m-text" class="fulltext-area" style="min-height:200px"
+                placeholder="貼上文章全文（用於趨勢分析）..."></textarea>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-save" onclick="saveManualArticle()">💾 儲存到 GitHub</button>
+        <span class="save-status" id="m-status"></span>
+      </div>
+    </div>
+  </div>
+</div>"""
+
     return f"""<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOC Planning Agent — Reports</title>
-<style>{CSS}</style>
+<title>SOC Planning Agent — Dashboard</title>
+<style>{CSS}
+.fab-paste {{
+  position: fixed; bottom: 24px; right: 20px; z-index: 500;
+  background: #1a1200; border: 1px solid #e8a317; color: #e8a317;
+  border-radius: 24px; padding: 10px 18px; font-size: 0.82em;
+  font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: opacity 0.15s;
+}}
+.fab-paste:hover {{ opacity: 0.8; }}
+</style>
 </head>
 <body>
 <h1>📊 SOC Planning Agent</h1>
 <div class="page-meta">最後更新：{now_tw} (台灣時間) &nbsp;·&nbsp; 每 2 小時自動更新</div>
 <br>
-{hot_section}
-{interest_section}
-<br>
-{cards if cards else '<div class="page-meta">尚無報告，等待 RSS 收集中...</div>'}
+
+<div class="hot-section">
+  <div class="hot-header">
+    <span class="hot-icon">🔥</span><h2>重大消息</h2>
+    <span class="hot-count">{len(hot_articles)} 篇</span>
+  </div>
+  {hot_cards_html if hot_cards_html else '<div class="hot-empty">本次無重大消息偵測</div>'}
+</div>
+
+<div class="hot-section" style="margin-top:14px">
+  <div class="hot-header">
+    <span class="hot-icon">⭐</span><h2>我的關注</h2>
+    <span class="hot-count" id="my-interest-count">{len(interest_articles)} 篇</span>
+  </div>
+  <div id="my-interest-body">{interest_html}</div>
+</div>
+
+<h2 style="color:var(--text-bright);font-size:0.9em;margin:20px 0 10px;
+           border-bottom:1px solid var(--border);padding-bottom:6px">📁 所有報告</h2>
+{report_cards if report_cards else '<div class="page-meta">尚無報告，等待 RSS 收集中...</div>'}
+
+{manual_modal}
+<script>const PROMPT_TEMPLATE = {prompt_js};</script>
+<script>{JS.replace('REPO_PLACEHOLDER', GITHUB_REPO)}</script>
+<script>{index_js.replace('REPO_PLACEHOLDER', GITHUB_REPO)}</script>
 </body></html>"""
 
 
