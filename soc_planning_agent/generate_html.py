@@ -17,12 +17,27 @@ Card design per article:
 """
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 ROOT     = Path(__file__).parent
 DOCS_DIR = ROOT.parent / "docs"
-ARCHIVE_ANALYSIS_DIR = ROOT / "archive" / "analysis"
+BOOKMARK_DIR = ROOT / "archive" / "bookmarks"
+FULLTEXT_DIR = ROOT / "archive" / "fulltext"
+
+TW_TZ = timezone(timedelta(hours=8))
+
+# Hot news auto-detection
+HOT_KEYWORDS_EN = {
+    "ban", "sanction", "tariff", "embargo", "restriction",
+    "breakthrough", "acquisition", "merger", "warning",
+    "crisis", "record", "major", "critical", "launch", "ban",
+}
+HOT_KEYWORDS_ZH = {
+    "禁令", "制裁", "關稅", "突破", "收購", "合併",
+    "重大", "警告", "風險", "危機", "禁止", "供應鏈",
+}
+HOT_SOURCES = {"Bloomberg", "Reuters", "電子時報", "SemiAnalysis", "Digitimes"}
 
 GITHUB_REPO   = "johnsonlu1973/tensorflow"
 GITHUB_BRANCH = "master"
@@ -182,6 +197,38 @@ h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
 .btn-copy-prompt {
   background: #1a1326; border-color: var(--purple); color: var(--purple);
 }
+.btn-bookmark {
+  background: #1a1200; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; pointer-events: none; }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 14px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 7px 10px; border-radius: 5px;
+  text-decoration: none; margin-bottom: 5px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-card-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.hot-source {
+  font-size: 0.68em; font-weight: 700; padding: 1px 6px;
+  background: #21262d; color: var(--text-dim); border-radius: 8px;
+}
+.hot-date { font-size: 0.68em; color: var(--text-dim); }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: #79c0ff; line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 6px 0; }
 
 /* ── Full text panel ── */
 .fulltext-panel {
@@ -391,13 +438,117 @@ function copyPrompt(cardId) {
   });
 }
 
-window.addEventListener('DOMContentLoaded', checkToken);
+// ── Bookmark article to GitHub ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bookmark-btn-' + cardId);
+  btn.textContent = '⭐ 儲存中...';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:          articleMeta.url,
+    title_en:     articleMeta.title_en,
+    title_zh:     articleMeta.title_zh,
+    source:       articleMeta.source,
+    date:         articleMeta.date,
+    category:     articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  try {
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/REPO_PLACEHOLDER/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) sha = (await chk.json()).sha;
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/REPO_PLACEHOLDER/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+    } else {
+      const err = await res.json();
+      btn.textContent = `❌ ${err.message}`;
+    }
+  } catch(e) {
+    btn.textContent = `❌ ${e.message}`;
+  }
+}
+
+function initBookmarks() {
+  document.querySelectorAll('[id^="bookmark-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bookmark-btn-', '');
+    if (localStorage.getItem('bm_' + cardId)) {
+      btn.textContent = '⭐ 已關注';
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => { checkToken(); initBookmarks(); });
 """
 
 
 # ---------------------------------------------------------------------------
 # HTML builders
 # ---------------------------------------------------------------------------
+
+def _importance_score(article: dict) -> int:
+    score = 0
+    text = (article.get("title", "") + " " + article.get("title_zh", "")).lower()
+    for kw in HOT_KEYWORDS_EN:
+        if kw.lower() in text:
+            score += 2
+    for kw in HOT_KEYWORDS_ZH:
+        if kw in text:
+            score += 2
+    if article.get("source", "") in HOT_SOURCES:
+        score += 1
+    return score
+
+
+def _load_user_interest(n: int = 12) -> list:
+    """Load articles bookmarked or with full text saved by user."""
+    articles = []
+    for subdir in (BOOKMARK_DIR, FULLTEXT_DIR):
+        if subdir.exists():
+            for f in sorted(subdir.glob("*.json"), reverse=True)[:30]:
+                try:
+                    d = json.loads(f.read_text(encoding="utf-8"))
+                    d["_interest_type"] = subdir.name
+                    articles.append(d)
+                except Exception:
+                    pass
+    seen, result = set(), []
+    for a in articles:
+        url = a.get("url", "")
+        if url and url not in seen:
+            seen.add(url)
+            result.append(a)
+    return result[:n]
+
 
 def _esc(s: str) -> str:
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
@@ -445,6 +596,8 @@ def _article_card(article: dict, card_id: str, prompt_template_js: str) -> str:
     <div class="card-actions">
       <a class="btn btn-read" href="{_esc(url)}" target="_blank">🔗 閱讀全文</a>
       <button class="btn btn-paste" onclick="togglePaste('{card_id}')">📋 貼上全文</button>
+      <button class="btn btn-bookmark" id="bookmark-btn-{card_id}"
+              onclick="bookmarkArticle('{card_id}', {meta_js})">☆ 加入關注</button>
       <button class="btn btn-analyze" id="analyze-btn-{card_id}"
               onclick="toggleAnalysis('{card_id}', {meta_js}, PROMPT_TEMPLATE)">🔬 深度分析</button>
     </div>
@@ -506,7 +659,57 @@ def _collection_page(category: str, articles: list, date: str) -> str:
 </body></html>"""
 
 
-def _index_page(reports: list) -> str:
+def _hot_news_html(articles_flat: list, interest_articles: list) -> str:
+    """Render hot news + user interest sections for index page."""
+    html = ""
+
+    # ── 重大消息 ──
+    scored = sorted(articles_flat, key=_importance_score, reverse=True)
+    hot = [a for a in scored if _importance_score(a) >= 2][:8]
+    hot_cards = ""
+    for a in hot:
+        url     = _esc(a.get("url", "#"))
+        src     = _esc(a.get("source", ""))
+        pub     = (a.get("published", "") or "")[:10]
+        t_en    = _esc(a.get("title", ""))
+        t_zh    = _esc(a.get("title_zh", ""))
+        hot_cards += f"""<a class="hot-card" href="{url}" target="_blank">
+  <div class="hot-card-meta"><span class="hot-source">{src}</span><span class="hot-date">{pub}</span></div>
+  <div class="hot-title-en">{t_en}</div>
+  {f'<div class="hot-title-zh">{t_zh}</div>' if t_zh and t_zh != t_en else ""}
+</a>"""
+
+    html += f"""<div class="hot-section">
+  <div class="hot-header"><span class="hot-icon">🔥</span><h2>重大消息</h2><span class="hot-count">{len(hot)} 篇</span></div>
+  {hot_cards if hot_cards else '<div class="hot-empty">本次無重大消息偵測</div>'}
+</div>"""
+
+    # ── 我的關注 ──
+    interest_cards = ""
+    for a in interest_articles:
+        url   = _esc(a.get("url", "#"))
+        src   = _esc(a.get("source", ""))
+        pub   = (a.get("date", "") or "")[:10]
+        t_en  = _esc(a.get("title_en", "") or a.get("title", ""))
+        t_zh  = _esc(a.get("title_zh", ""))
+        itype = "📄 全文" if a.get("_interest_type") == "fulltext" else "⭐ 書籤"
+        interest_cards += f"""<a class="hot-card" href="{url}" target="_blank" style="border-left-color:#e8a317">
+  <div class="hot-card-meta"><span class="hot-source">{src}</span><span class="hot-date">{pub}</span>
+  <span style="font-size:0.65em;color:#e8a317;margin-left:6px">{itype}</span></div>
+  <div class="hot-title-en">{t_en}</div>
+  {f'<div class="hot-title-zh">{t_zh}</div>' if t_zh and t_zh != t_en else ""}
+</a>"""
+
+    html += f"""<div class="hot-section">
+  <div class="hot-header"><span class="hot-icon">⭐</span><h2>我的關注</h2><span class="hot-count">{len(interest_articles)} 篇</span></div>
+  {interest_cards if interest_cards else '<div class="hot-empty">尚無關注文章 — 在卡片上點「☆ 加入關注」或「💾 儲存全文」</div>'}
+</div>"""
+
+    return html
+
+
+def _index_page(reports: list, articles_flat: list = None, interest_articles: list = None) -> str:
+    tw_now = datetime.now(TW_TZ).strftime("%Y-%m-%d %H:%M")
     cards = ""
     for r in sorted(reports, key=lambda x: x["date"], reverse=True):
         emoji, label = CATEGORY_LABEL.get(r["category"], ("📰", r["category"]))
@@ -515,22 +718,26 @@ def _index_page(reports: list) -> str:
   <h2>{emoji} {label} — {r['date']}</h2>
   <div class="card-meta">
     {r['total']} 篇 &nbsp;·&nbsp;
-    <span class="new-count">+{r.get('new',r['total'])} 新</span>
+    <span class="new-count">+{r.get('new', r['total'])} 新</span>
   </div>
 </a>"""
+
+    hot_html = _hot_news_html(articles_flat or [], interest_articles or [])
 
     return f"""<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOC Planning Agent — Reports</title>
+<title>SOC Planning Agent — Dashboard</title>
 <style>{CSS}</style>
 </head>
 <body>
 <h1>📊 SOC Planning Agent</h1>
-<div class="page-meta">最後更新：{datetime.now().strftime('%Y-%m-%d %H:%M')} &nbsp;·&nbsp; 每 2 小時自動更新</div>
+<div class="page-meta">最後更新：{tw_now} (台灣時間) &nbsp;·&nbsp; 每 2 小時自動更新</div>
 <br>
+{hot_html}
+<h2 style="color:var(--text-bright);font-size:0.9em;margin:20px 0 10px;border-bottom:1px solid var(--border);padding-bottom:6px">📁 所有報告</h2>
 {cards if cards else '<div class="page-meta">尚無報告，等待 RSS 收集中...</div>'}
 </body></html>"""
 
@@ -555,9 +762,9 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
     for i, (category, articles) in enumerate(articles_by_category.items()):
         if not articles:
             continue
-        coll_id  = next_id + i
-        html     = _collection_page(category, articles, date)
-        fname    = f"collection_{coll_id}_{category}_{date}.html"
+        coll_id = next_id + i
+        html    = _collection_page(category, articles, date)
+        fname   = f"collection_{coll_id}_{category}_{date}.html"
         (DOCS_DIR / fname).write_text(html, encoding="utf-8")
         print(f"  ✓ {fname} ({len(articles)} articles)")
         new_reports.append({
@@ -581,8 +788,17 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
             })
 
     all_reports = new_reports + existing_reports
-    (DOCS_DIR / "index.html").write_text(_index_page(all_reports), encoding="utf-8")
-    print(f"  ✓ index.html ({len(all_reports)} reports)")
+
+    # Hot news: flatten all new articles + load user interest
+    articles_flat    = [a for arts in articles_by_category.values() for a in arts]
+    interest_articles = _load_user_interest()
+
+    (DOCS_DIR / "index.html").write_text(
+        _index_page(all_reports, articles_flat, interest_articles),
+        encoding="utf-8",
+    )
+    print(f"  ✓ index.html ({len(all_reports)} reports, {len(articles_flat)} hot-news candidates, "
+          f"{len(interest_articles)} interest)")
 
     # Write output vars for GitHub Actions
     gh_out = os.environ.get("GITHUB_OUTPUT")
@@ -590,5 +806,6 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
         with open(gh_out, "a") as f:
             f.write(f"new_reports={len(new_reports)}\n")
             f.write(f"pages_url={PAGES_URL}\n")
+            f.write(f"date={date}\n")
 
     return new_reports

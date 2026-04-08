@@ -44,26 +44,62 @@ TAIWAN_CATS   = {"taiwan"}
 # ---------------------------------------------------------------------------
 
 def load_recent_articles(days: int = 7) -> list[dict]:
-    """Load articles from the past N days of RSS archives."""
+    """Load articles from past N days of RSS archives + user bookmarks/fulltext."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     articles = []
-    if not ARCHIVE_RSS_DIR.exists():
-        return articles
 
-    for f in sorted(ARCHIVE_RSS_DIR.glob("*.json")):
-        try:
-            date_str = f.stem  # YYYY-MM-DD
-            file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            if file_date < cutoff:
-                continue
-            data = json.loads(f.read_text(encoding="utf-8"))
-            for a in data.get("articles", []):
-                a["_archive_date"] = date_str
-                articles.append(a)
-        except Exception as e:
-            print(f"  ⚠ skip {f.name}: {e}")
+    # ── RSS archive ──
+    if ARCHIVE_RSS_DIR.exists():
+        for f in sorted(ARCHIVE_RSS_DIR.glob("*.json")):
+            try:
+                date_str = f.stem  # YYYY-MM-DD
+                file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                if file_date < cutoff:
+                    continue
+                data = json.loads(f.read_text(encoding="utf-8"))
+                for a in data.get("articles", []):
+                    a["_archive_date"] = date_str
+                    articles.append(a)
+            except Exception as e:
+                print(f"  ⚠ skip {f.name}: {e}")
 
-    print(f"📂 Loaded {len(articles)} articles from past {days} days")
+    # ── User bookmarks (⭐ marked as interesting) ──
+    bookmark_dir = ROOT / "archive" / "bookmarks"
+    if bookmark_dir.exists():
+        seen_urls = {a.get("url") for a in articles}
+        for f in sorted(bookmark_dir.glob("*.json"), reverse=True)[:50]:
+            try:
+                a = json.loads(f.read_text(encoding="utf-8"))
+                if a.get("url") not in seen_urls:
+                    a["_user_bookmarked"] = True
+                    a["category"] = a.get("category", "bookmarked")
+                    articles.append(a)
+                    seen_urls.add(a.get("url"))
+                else:
+                    # Mark existing article as bookmarked
+                    for existing in articles:
+                        if existing.get("url") == a.get("url"):
+                            existing["_user_bookmarked"] = True
+                            break
+            except Exception as e:
+                print(f"  ⚠ skip bookmark {f.name}: {e}")
+
+    # ── User fulltext saves (pasted full text = high interest) ──
+    fulltext_dir = ROOT / "archive" / "fulltext"
+    if fulltext_dir.exists():
+        for f in sorted(fulltext_dir.glob("*.json"), reverse=True)[:50]:
+            try:
+                a = json.loads(f.read_text(encoding="utf-8"))
+                for existing in articles:
+                    if existing.get("url") == a.get("url"):
+                        existing["_user_fulltext"] = True
+                        existing["_fulltext_content"] = a.get("fulltext", "")[:500]
+                        break
+            except Exception:
+                pass
+
+    bookmarked = sum(1 for a in articles if a.get("_user_bookmarked"))
+    print(f"📂 Loaded {len(articles)} articles from past {days} days ({bookmarked} bookmarked by user)")
     return articles
 
 
@@ -82,8 +118,20 @@ def _build_category_summary(articles: list[dict]) -> dict[str, list]:
 
 def _format_articles_for_prompt(articles: list[dict], max_per_cat: int = 15) -> str:
     """Render articles as compact text for Claude analysis."""
+    # User-bookmarked articles go first, clearly marked
+    bookmarked = [a for a in articles if a.get("_user_bookmarked") or a.get("_user_fulltext")]
+    if bookmarked:
+        lines = ["\n## ⭐ 使用者標記重要（優先分析）"]
+        for a in bookmarked:
+            title = a.get("title_zh") or a.get("title", "")
+            src   = a.get("source", "")
+            pub   = (a.get("published", "") or a.get("_archive_date", ""))[:10]
+            flag  = "【全文已讀】" if a.get("_user_fulltext") else "【已加關注】"
+            lines.append(f"- {flag} [{src} {pub}] {title}")
+    else:
+        lines = []
+
     by_cat = _build_category_summary(articles)
-    lines = []
     for cat, arts in by_cat.items():
         emoji, label = CATEGORY_LABEL.get(cat, ("📰", cat))
         lines.append(f"\n## {emoji} {label} ({len(arts)} 篇)")
@@ -92,7 +140,8 @@ def _format_articles_for_prompt(articles: list[dict], max_per_cat: int = 15) -> 
             summary = (a.get("summary_zh") or a.get("summary", ""))[:200]
             src = a.get("source", "")
             pub = (a.get("published", "") or a.get("_archive_date", ""))[:10]
-            lines.append(f"- [{src} {pub}] {title}")
+            star = "⭐ " if (a.get("_user_bookmarked") or a.get("_user_fulltext")) else ""
+            lines.append(f"- {star}[{src} {pub}] {title}")
             if summary:
                 lines.append(f"  ↳ {summary}")
     return "\n".join(lines)
