@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Agentic AI — 2026-04-09</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>🤖 Agentic AI</h1>
+<div class="page-meta">2026-04-09 &nbsp;·&nbsp; 10 篇 &nbsp;·&nbsp; 更新：2026-04-09 14:04 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-age0">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/poke-makes-ai-agents-as-easy-as-sending-a-text/" target="_blank">Poke makes using AI agents as easy as sending a text</a></div>
+    <div class="title-zh">Poke 讓使用 AI agents 如同傳送文字訊息一樣簡單</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Poke brings AI agents to everyday users via text message by handling tasks and automations without complex setup, apps, or technical know-how.</div>
+  <div class="summary-zh">Poke 透過文字訊息將 AI agents 帶給日常用戶，無需複雜設置、應用程式或技術知識即可處理任務和自動化。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/poke-makes-ai-agents-as-easy-as-sending-a-text/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age0"
+              onclick="toggleAnalysis('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/poke-makes-ai-agents-as-easy-as-sending-a-text/&quot;, &quot;title_en&quot;: &quot;Poke makes using AI agents as easy as sending a text&quot;, &quot;title_zh&quot;: &quot;Poke \u8b93\u4f7f\u7528 AI agents \u5982\u540c\u50b3\u9001\u6587\u5b57\u8a0a\u606f\u4e00\u6a23\u7c21\u55ae&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age0"
+              onclick="bookmarkArticle('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/poke-makes-ai-agents-as-easy-as-sending-a-text/&quot;, &quot;title_en&quot;: &quot;Poke makes using AI agents as easy as sending a text&quot;, &quot;title_zh&quot;: &quot;Poke \u8b93\u4f7f\u7528 AI agents \u5982\u540c\u50b3\u9001\u6587\u5b57\u8a0a\u606f\u4e00\u6a23\u7c21\u55ae&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/poke-makes-ai-agents-as-easy-as-sending-a-text/&quot;, &quot;title_en&quot;: &quot;Poke makes using AI agents as easy as sending a text&quot;, &quot;title_zh&quot;: &quot;Poke \u8b93\u4f7f\u7528 AI agents \u5982\u540c\u50b3\u9001\u6587\u5b57\u8a0a\u606f\u4e00\u6a23\u7c21\u55ae&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age0"
+              onclick="copyPrompt('age0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age1">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/aws-boss-explains-why-investing-billions-in-both-anthropic-and-openai-is-an-ok-conflict/" target="_blank">AWS boss explains why investing billions in both Anthropic and OpenAI is an OK conflict</a></div>
+    <div class="title-zh">AWS 主管解釋為何同時投資數十億美元予 Anthropic 和 OpenAI 並無衝突</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AWS has an ingrained culture of handling competition, he explained, because the cloud giant also competes with its partners.</div>
+  <div class="summary-zh">AWS 擁有根深蒂固的競爭處理文化，因為這家雲端巨頭也與其合作夥伴競爭。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/aws-boss-explains-why-investing-billions-in-both-anthropic-and-openai-is-an-ok-conflict/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age1"
+              onclick="toggleAnalysis('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/aws-boss-explains-why-investing-billions-in-both-anthropic-and-openai-is-an-ok-conflict/&quot;, &quot;title_en&quot;: &quot;AWS boss explains why investing billions in both Anthropic and OpenAI is an OK conflict&quot;, &quot;title_zh&quot;: &quot;AWS \u4e3b\u7ba1\u89e3\u91cb\u70ba\u4f55\u540c\u6642\u6295\u8cc7\u6578\u5341\u5104\u7f8e\u5143\u4e88 Anthropic \u548c OpenAI \u4e26\u7121\u885d\u7a81&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age1"
+              onclick="bookmarkArticle('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/aws-boss-explains-why-investing-billions-in-both-anthropic-and-openai-is-an-ok-conflict/&quot;, &quot;title_en&quot;: &quot;AWS boss explains why investing billions in both Anthropic and OpenAI is an OK conflict&quot;, &quot;title_zh&quot;: &quot;AWS \u4e3b\u7ba1\u89e3\u91cb\u70ba\u4f55\u540c\u6642\u6295\u8cc7\u6578\u5341\u5104\u7f8e\u5143\u4e88 Anthropic \u548c OpenAI \u4e26\u7121\u885d\u7a81&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/aws-boss-explains-why-investing-billions-in-both-anthropic-and-openai-is-an-ok-conflict/&quot;, &quot;title_en&quot;: &quot;AWS boss explains why investing billions in both Anthropic and OpenAI is an OK conflict&quot;, &quot;title_zh&quot;: &quot;AWS \u4e3b\u7ba1\u89e3\u91cb\u70ba\u4f55\u540c\u6642\u6295\u8cc7\u6578\u5341\u5104\u7f8e\u5143\u4e88 Anthropic \u548c OpenAI \u4e26\u7121\u885d\u7a81&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age1"
+              onclick="copyPrompt('age1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age2">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/tubi-is-the-first-streamer-to-launch-a-native-app-within-chatgpt/" target="_blank">Tubi is the first streamer to launch a native app within ChatGPT</a></div>
+    <div class="title-zh">Tubi 成為首個在 ChatGPT 內推出原生應用的串流平台</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Tubi becomes the first streaming service to offer an app integration within ChatGPT, the AI chatbot that millions of users turn to for answers.</div>
+  <div class="summary-zh">Tubi 成為首個在 ChatGPT 內提供應用整合的串流服務，而 ChatGPT 是數百萬用戶尋求答案的 AI 聊天機器人。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/tubi-is-the-first-streamer-to-launch-a-native-app-within-chatgpt/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age2"
+              onclick="toggleAnalysis('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/tubi-is-the-first-streamer-to-launch-a-native-app-within-chatgpt/&quot;, &quot;title_en&quot;: &quot;Tubi is the first streamer to launch a native app within ChatGPT&quot;, &quot;title_zh&quot;: &quot;Tubi \u6210\u70ba\u9996\u500b\u5728 ChatGPT \u5167\u63a8\u51fa\u539f\u751f\u61c9\u7528\u7684\u4e32\u6d41\u5e73\u53f0&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age2"
+              onclick="bookmarkArticle('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/tubi-is-the-first-streamer-to-launch-a-native-app-within-chatgpt/&quot;, &quot;title_en&quot;: &quot;Tubi is the first streamer to launch a native app within ChatGPT&quot;, &quot;title_zh&quot;: &quot;Tubi \u6210\u70ba\u9996\u500b\u5728 ChatGPT \u5167\u63a8\u51fa\u539f\u751f\u61c9\u7528\u7684\u4e32\u6d41\u5e73\u53f0&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/tubi-is-the-first-streamer-to-launch-a-native-app-within-chatgpt/&quot;, &quot;title_en&quot;: &quot;Tubi is the first streamer to launch a native app within ChatGPT&quot;, &quot;title_zh&quot;: &quot;Tubi \u6210\u70ba\u9996\u500b\u5728 ChatGPT \u5167\u63a8\u51fa\u539f\u751f\u61c9\u7528\u7684\u4e32\u6d41\u5e73\u53f0&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age2"
+              onclick="copyPrompt('age2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age3">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/astropads-workbench-reimagines-remote-desktop-for-ai-agents-not-it-support/" target="_blank">Astropad’s Workbench reimagines remote desktop for AI agents, not IT support</a></div>
+    <div class="title-zh">Astropad 的 Workbench 為 AI agents 重新想像遠端桌面，而非 IT 支援</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Astropad’s Workbench lets users remotely monitor and control AI agents on Mac Minis from iPhone or iPad, with low-latency streaming and mobile access.</div>
+  <div class="summary-zh">Astropad 的 Workbench 讓用戶從 iPhone 或 iPad 遠端監控和控制 Mac Minis 上的 AI agents，具備低延遲串流和行動存取。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/astropads-workbench-reimagines-remote-desktop-for-ai-agents-not-it-support/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age3"
+              onclick="toggleAnalysis('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/astropads-workbench-reimagines-remote-desktop-for-ai-agents-not-it-support/&quot;, &quot;title_en&quot;: &quot;Astropad\u2019s Workbench reimagines remote desktop for AI agents, not IT support&quot;, &quot;title_zh&quot;: &quot;Astropad \u7684 Workbench \u70ba AI agents \u91cd\u65b0\u60f3\u50cf\u9060\u7aef\u684c\u9762\uff0c\u800c\u975e IT \u652f\u63f4&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age3"
+              onclick="bookmarkArticle('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/astropads-workbench-reimagines-remote-desktop-for-ai-agents-not-it-support/&quot;, &quot;title_en&quot;: &quot;Astropad\u2019s Workbench reimagines remote desktop for AI agents, not IT support&quot;, &quot;title_zh&quot;: &quot;Astropad \u7684 Workbench \u70ba AI agents \u91cd\u65b0\u60f3\u50cf\u9060\u7aef\u684c\u9762\uff0c\u800c\u975e IT \u652f\u63f4&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/astropads-workbench-reimagines-remote-desktop-for-ai-agents-not-it-support/&quot;, &quot;title_en&quot;: &quot;Astropad\u2019s Workbench reimagines remote desktop for AI agents, not IT support&quot;, &quot;title_zh&quot;: &quot;Astropad \u7684 Workbench \u70ba AI agents \u91cd\u65b0\u60f3\u50cf\u9060\u7aef\u684c\u9762\uff0c\u800c\u975e IT \u652f\u63f4&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age3"
+              onclick="copyPrompt('age3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age4">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/openai-releases-a-new-safety-blueprint-to-address-the-rise-in-child-sexual-exploitation/" target="_blank">OpenAI releases a new safety blueprint to address the rise in child sexual exploitation</a></div>
+    <div class="title-zh">OpenAI 發布新安全藍圖以應對兒童性剝削增長</div>
+    
+<div class="summary-block">
+  <div class="summary-en">OpenAI's new Child Safety Blueprint aims to tackle the alarming rise in child sexual exploitation linked to advancements in AI.</div>
+  <div class="summary-zh">OpenAI 的新兒童安全藍圖旨在應對與 AI 進展相關的兒童性剝削警人上升。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/openai-releases-a-new-safety-blueprint-to-address-the-rise-in-child-sexual-exploitation/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age4"
+              onclick="toggleAnalysis('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/openai-releases-a-new-safety-blueprint-to-address-the-rise-in-child-sexual-exploitation/&quot;, &quot;title_en&quot;: &quot;OpenAI releases a new safety blueprint to address the rise in child sexual exploitation&quot;, &quot;title_zh&quot;: &quot;OpenAI \u767c\u5e03\u65b0\u5b89\u5168\u85cd\u5716\u4ee5\u61c9\u5c0d\u5152\u7ae5\u6027\u525d\u524a\u589e\u9577&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age4"
+              onclick="bookmarkArticle('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/openai-releases-a-new-safety-blueprint-to-address-the-rise-in-child-sexual-exploitation/&quot;, &quot;title_en&quot;: &quot;OpenAI releases a new safety blueprint to address the rise in child sexual exploitation&quot;, &quot;title_zh&quot;: &quot;OpenAI \u767c\u5e03\u65b0\u5b89\u5168\u85cd\u5716\u4ee5\u61c9\u5c0d\u5152\u7ae5\u6027\u525d\u524a\u589e\u9577&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/openai-releases-a-new-safety-blueprint-to-address-the-rise-in-child-sexual-exploitation/&quot;, &quot;title_en&quot;: &quot;OpenAI releases a new safety blueprint to address the rise in child sexual exploitation&quot;, &quot;title_zh&quot;: &quot;OpenAI \u767c\u5e03\u65b0\u5b89\u5168\u85cd\u5716\u4ee5\u61c9\u5c0d\u5152\u7ae5\u6027\u525d\u524a\u589e\u9577&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age4"
+              onclick="copyPrompt('age4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age5">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/databricks-matei-zaharia-wins-acm-computing-prize-agi/" target="_blank">Databricks co-founder wins prestigious ACM award, says ‘AGI is here already’</a></div>
+    <div class="title-zh">Databricks 聯合創辦人獲得享譽盛名的 ACM 獎項，表示「AGI 已經在這裡」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Matei Zaharia has won the top honor from the Association for Computing Machinery. Now he's working on AI for research and says AGI is simply misunderstood.</div>
+  <div class="summary-zh">Matei Zaharia 獲得美國電腦協會的最高榮譽，現在他正從事 AI 研究工作，並表示 AGI 只是被誤解了。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/databricks-matei-zaharia-wins-acm-computing-prize-agi/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age5"
+              onclick="toggleAnalysis('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/databricks-matei-zaharia-wins-acm-computing-prize-agi/&quot;, &quot;title_en&quot;: &quot;Databricks co-founder wins prestigious ACM award, says \u2018AGI is here already\u2019&quot;, &quot;title_zh&quot;: &quot;Databricks \u806f\u5408\u5275\u8fa6\u4eba\u7372\u5f97\u4eab\u8b7d\u76db\u540d\u7684 ACM \u734e\u9805\uff0c\u8868\u793a\u300cAGI \u5df2\u7d93\u5728\u9019\u88e1\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age5"
+              onclick="bookmarkArticle('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/databricks-matei-zaharia-wins-acm-computing-prize-agi/&quot;, &quot;title_en&quot;: &quot;Databricks co-founder wins prestigious ACM award, says \u2018AGI is here already\u2019&quot;, &quot;title_zh&quot;: &quot;Databricks \u806f\u5408\u5275\u8fa6\u4eba\u7372\u5f97\u4eab\u8b7d\u76db\u540d\u7684 ACM \u734e\u9805\uff0c\u8868\u793a\u300cAGI \u5df2\u7d93\u5728\u9019\u88e1\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/databricks-matei-zaharia-wins-acm-computing-prize-agi/&quot;, &quot;title_en&quot;: &quot;Databricks co-founder wins prestigious ACM award, says \u2018AGI is here already\u2019&quot;, &quot;title_zh&quot;: &quot;Databricks \u806f\u5408\u5275\u8fa6\u4eba\u7372\u5f97\u4eab\u8b7d\u76db\u540d\u7684 ACM \u734e\u9805\uff0c\u8868\u793a\u300cAGI \u5df2\u7d93\u5728\u9019\u88e1\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age5"
+              onclick="copyPrompt('age5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age6">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/final-3-days-to-save-up-to-500-on-your-techcrunch-disrupt-2026-pass/" target="_blank">Final 3 days to save up to $500 on your TechCrunch Disrupt 2026 pass</a></div>
+    <div class="title-zh">最後 3 天在您的 TechCrunch Disrupt 2026 通票上節省高達 $500</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Save up to $500 on your TechCrunch Disrupt 2026 pass until April 10, 11:59 p.m. PT. Secure your spot at the center of the tech ecosystem. Register today.</div>
+  <div class="summary-zh">在 4 月 10 日晚上 11:59 PT 前，TechCrunch Disrupt 2026 通票可節省高達 $500，立即註冊以確保您在科技生態系統中心的位置。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/final-3-days-to-save-up-to-500-on-your-techcrunch-disrupt-2026-pass/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age6"
+              onclick="toggleAnalysis('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/final-3-days-to-save-up-to-500-on-your-techcrunch-disrupt-2026-pass/&quot;, &quot;title_en&quot;: &quot;Final\u00a03\u00a0days to save up to $500 on your TechCrunch Disrupt 2026 pass&quot;, &quot;title_zh&quot;: &quot;\u6700\u5f8c 3 \u5929\u5728\u60a8\u7684 TechCrunch Disrupt 2026 \u901a\u7968\u4e0a\u7bc0\u7701\u9ad8\u9054 $500&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age6"
+              onclick="bookmarkArticle('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/final-3-days-to-save-up-to-500-on-your-techcrunch-disrupt-2026-pass/&quot;, &quot;title_en&quot;: &quot;Final\u00a03\u00a0days to save up to $500 on your TechCrunch Disrupt 2026 pass&quot;, &quot;title_zh&quot;: &quot;\u6700\u5f8c 3 \u5929\u5728\u60a8\u7684 TechCrunch Disrupt 2026 \u901a\u7968\u4e0a\u7bc0\u7701\u9ad8\u9054 $500&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/final-3-days-to-save-up-to-500-on-your-techcrunch-disrupt-2026-pass/&quot;, &quot;title_en&quot;: &quot;Final\u00a03\u00a0days to save up to $500 on your TechCrunch Disrupt 2026 pass&quot;, &quot;title_zh&quot;: &quot;\u6700\u5f8c 3 \u5929\u5728\u60a8\u7684 TechCrunch Disrupt 2026 \u901a\u7968\u4e0a\u7bc0\u7701\u9ad8\u9054 $500&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age6"
+              onclick="copyPrompt('age6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age7">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/04/08/atlassian-confluence-visual-ai-tools-agents/" target="_blank">Atlassian launches visual AI tools and third-party agents in Confluence</a></div>
+    <div class="title-zh">Atlassian 在 Confluence 推出視覺 AI 工具和第三方 agents</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Confluence users can now create visual assets within the software in addition to new third-party agents working with Lovable, Replit, and Gamma.</div>
+  <div class="summary-zh">Confluence 用戶現可在軟體內建立視覺資產，以及使用與 Lovable、Replit 和 Gamma 合作的新第三方 agents。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/04/08/atlassian-confluence-visual-ai-tools-agents/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age7"
+              onclick="toggleAnalysis('age7', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/atlassian-confluence-visual-ai-tools-agents/&quot;, &quot;title_en&quot;: &quot;Atlassian launches visual\u00a0AI tools\u00a0and third-party agents\u00a0in Confluence&quot;, &quot;title_zh&quot;: &quot;Atlassian \u5728 Confluence \u63a8\u51fa\u8996\u89ba AI \u5de5\u5177\u548c\u7b2c\u4e09\u65b9 agents&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age7"
+              onclick="bookmarkArticle('age7', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/atlassian-confluence-visual-ai-tools-agents/&quot;, &quot;title_en&quot;: &quot;Atlassian launches visual\u00a0AI tools\u00a0and third-party agents\u00a0in Confluence&quot;, &quot;title_zh&quot;: &quot;Atlassian \u5728 Confluence \u63a8\u51fa\u8996\u89ba AI \u5de5\u5177\u548c\u7b2c\u4e09\u65b9 agents&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age7', {&quot;url&quot;: &quot;https://techcrunch.com/2026/04/08/atlassian-confluence-visual-ai-tools-agents/&quot;, &quot;title_en&quot;: &quot;Atlassian launches visual\u00a0AI tools\u00a0and third-party agents\u00a0in Confluence&quot;, &quot;title_zh&quot;: &quot;Atlassian \u5728 Confluence \u63a8\u51fa\u8996\u89ba AI \u5de5\u5177\u548c\u7b2c\u4e09\u65b9 agents&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age7"
+              onclick="copyPrompt('age7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age8">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">MIT Tech Review AI</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/" target="_blank">Mustafa Suleyman: AI development won’t hit a wall anytime soon—here’s why</a></div>
+    <div class="title-zh">Mustafa Suleyman：AI 發展短期內不會觸及瓶頸—原因在此</div>
+    
+<div class="summary-block">
+  <div class="summary-en">We evolved for a linear world. If you walk for an hour, you cover a certain distance. Walk for two hours and you cover double that distance. This intuition served us well on the savannah. But it catastrophically fails when confronting AI and the core exponential trends at its heart. From the time I began work on AI in 2010 to now, the amount of training data that goes into frontier AI models has grown by a staggering 1 trillion times—from roughly 10¹⁴ flops (floating-point operations‚ the core unit of computation) for early systems to over 10²⁶ flops for today’s largest models. This is an explosion. Everything else in AI follows from this fact. The skeptics keep predicting walls. And they keep being wrong in the face of this epic generational compute ramp. Often, they point out that Moore’</div>
+  <div class="summary-zh">我們在線性世界中進化。這種直覺在應對 AI 和其核心指數趨勢時會徹底失效。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age8"
+              onclick="toggleAnalysis('age8', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/&quot;, &quot;title_en&quot;: &quot;Mustafa Suleyman: AI development won\u2019t hit a wall anytime soon\u2014here\u2019s why&quot;, &quot;title_zh&quot;: &quot;Mustafa Suleyman\uff1aAI \u767c\u5c55\u77ed\u671f\u5167\u4e0d\u6703\u89f8\u53ca\u74f6\u9838\u2014\u539f\u56e0\u5728\u6b64&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age8"
+              onclick="bookmarkArticle('age8', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/&quot;, &quot;title_en&quot;: &quot;Mustafa Suleyman: AI development won\u2019t hit a wall anytime soon\u2014here\u2019s why&quot;, &quot;title_zh&quot;: &quot;Mustafa Suleyman\uff1aAI \u767c\u5c55\u77ed\u671f\u5167\u4e0d\u6703\u89f8\u53ca\u74f6\u9838\u2014\u539f\u56e0\u5728\u6b64&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age8', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/&quot;, &quot;title_en&quot;: &quot;Mustafa Suleyman: AI development won\u2019t hit a wall anytime soon\u2014here\u2019s why&quot;, &quot;title_zh&quot;: &quot;Mustafa Suleyman\uff1aAI \u767c\u5c55\u77ed\u671f\u5167\u4e0d\u6703\u89f8\u53ca\u74f6\u9838\u2014\u539f\u56e0\u5728\u6b64&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age8"
+              onclick="copyPrompt('age8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age9">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Hugging Face Blog</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://huggingface.co/blog/ibm-research/altk-evolve" target="_blank">ALTK‑Evolve: On‑the‑Job Learning for AI Agents</a></div>
+    <div class="title-zh">ALTK‑Evolve：AI Agents 在職學習</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://huggingface.co/blog/ibm-research/altk-evolve" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age9"
+              onclick="toggleAnalysis('age9', {&quot;url&quot;: &quot;https://huggingface.co/blog/ibm-research/altk-evolve&quot;, &quot;title_en&quot;: &quot;ALTK\u2011Evolve: On\u2011the\u2011Job Learning for AI Agents&quot;, &quot;title_zh&quot;: &quot;ALTK\u2011Evolve\uff1aAI Agents \u5728\u8077\u5b78\u7fd2&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age9"
+              onclick="bookmarkArticle('age9', {&quot;url&quot;: &quot;https://huggingface.co/blog/ibm-research/altk-evolve&quot;, &quot;title_en&quot;: &quot;ALTK\u2011Evolve: On\u2011the\u2011Job Learning for AI Agents&quot;, &quot;title_zh&quot;: &quot;ALTK\u2011Evolve\uff1aAI Agents \u5728\u8077\u5b78\u7fd2&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age9', {&quot;url&quot;: &quot;https://huggingface.co/blog/ibm-research/altk-evolve&quot;, &quot;title_en&quot;: &quot;ALTK\u2011Evolve: On\u2011the\u2011Job Learning for AI Agents&quot;, &quot;title_zh&quot;: &quot;ALTK\u2011Evolve\uff1aAI Agents \u5728\u8077\u5b78\u7fd2&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age9"
+              onclick="copyPrompt('age9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>

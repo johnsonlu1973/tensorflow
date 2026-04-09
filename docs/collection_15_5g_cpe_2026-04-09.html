@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📡 5G / CPE — 2026-04-09</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>📡 5G / CPE</h1>
+<div class="page-meta">2026-04-09 &nbsp;·&nbsp; 18 篇 &nbsp;·&nbsp; 更新：2026-04-09 14:04 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-5g_0">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/ai-machine-learning/ai-viewed-as-great-equalizer-for-small-midsized-broadband-operators" target="_blank">AI viewed as 'great equalizer' for small, midsized broadband operators</a></div>
+    <div class="title-zh">AI 被視為小型及中型寬頻營運商的「偉大均衡器」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AI is leveling the playing field and changing how smaller operators compete against larger rivals, says Cable One COO Ken Johnson. Operators of all sizes are evaluating the technology but moving at their own pace.</div>
+  <div class="summary-zh">Cable One 首席運營官 Ken Johnson 表示，AI 正在平衡競爭環境，改變小型營運商與大型競爭對手的競爭方式。各規模的營運商都在評估該技術，但推進速度各不相同。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/ai-machine-learning/ai-viewed-as-great-equalizer-for-small-midsized-broadband-operators" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_0"
+              onclick="toggleAnalysis('5g_0', {&quot;url&quot;: &quot;https://www.lightreading.com/ai-machine-learning/ai-viewed-as-great-equalizer-for-small-midsized-broadband-operators&quot;, &quot;title_en&quot;: &quot;AI viewed as 'great equalizer' for small, midsized broadband operators&quot;, &quot;title_zh&quot;: &quot;AI \u88ab\u8996\u70ba\u5c0f\u578b\u53ca\u4e2d\u578b\u5bec\u983b\u71df\u904b\u5546\u7684\u300c\u5049\u5927\u5747\u8861\u5668\u300d&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_0"
+              onclick="bookmarkArticle('5g_0', {&quot;url&quot;: &quot;https://www.lightreading.com/ai-machine-learning/ai-viewed-as-great-equalizer-for-small-midsized-broadband-operators&quot;, &quot;title_en&quot;: &quot;AI viewed as 'great equalizer' for small, midsized broadband operators&quot;, &quot;title_zh&quot;: &quot;AI \u88ab\u8996\u70ba\u5c0f\u578b\u53ca\u4e2d\u578b\u5bec\u983b\u71df\u904b\u5546\u7684\u300c\u5049\u5927\u5747\u8861\u5668\u300d&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_0', {&quot;url&quot;: &quot;https://www.lightreading.com/ai-machine-learning/ai-viewed-as-great-equalizer-for-small-midsized-broadband-operators&quot;, &quot;title_en&quot;: &quot;AI viewed as 'great equalizer' for small, midsized broadband operators&quot;, &quot;title_zh&quot;: &quot;AI \u88ab\u8996\u70ba\u5c0f\u578b\u53ca\u4e2d\u578b\u5bec\u983b\u71df\u904b\u5546\u7684\u300c\u5049\u5927\u5747\u8861\u5668\u300d&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_0"
+              onclick="copyPrompt('5g_0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_1">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/regulatory-politics/fcc-preps-vote-to-modernize-satellite-spectrum-sharing-rules" target="_blank">FCC preps vote to modernize satellite spectrum-sharing rules</a></div>
+    <div class="title-zh">FCC 準備投票現代化衛星頻譜共享規則</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The FCC said it will vote on an order that aims to improve and modernize satellite spectrum-sharing rules, claiming it could 'unlock more than $2 billion in economic benefits. #pressrelease</div>
+  <div class="summary-zh">FCC 表示將投票通過一項命令，旨在改進和現代化衛星頻譜共享規則，聲稱可能帶來超過 20 億美元的經濟效益。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/regulatory-politics/fcc-preps-vote-to-modernize-satellite-spectrum-sharing-rules" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_1"
+              onclick="toggleAnalysis('5g_1', {&quot;url&quot;: &quot;https://www.lightreading.com/regulatory-politics/fcc-preps-vote-to-modernize-satellite-spectrum-sharing-rules&quot;, &quot;title_en&quot;: &quot;FCC preps vote to modernize satellite spectrum-sharing rules&quot;, &quot;title_zh&quot;: &quot;FCC \u6e96\u5099\u6295\u7968\u73fe\u4ee3\u5316\u885b\u661f\u983b\u8b5c\u5171\u4eab\u898f\u5247&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_1"
+              onclick="bookmarkArticle('5g_1', {&quot;url&quot;: &quot;https://www.lightreading.com/regulatory-politics/fcc-preps-vote-to-modernize-satellite-spectrum-sharing-rules&quot;, &quot;title_en&quot;: &quot;FCC preps vote to modernize satellite spectrum-sharing rules&quot;, &quot;title_zh&quot;: &quot;FCC \u6e96\u5099\u6295\u7968\u73fe\u4ee3\u5316\u885b\u661f\u983b\u8b5c\u5171\u4eab\u898f\u5247&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_1', {&quot;url&quot;: &quot;https://www.lightreading.com/regulatory-politics/fcc-preps-vote-to-modernize-satellite-spectrum-sharing-rules&quot;, &quot;title_en&quot;: &quot;FCC preps vote to modernize satellite spectrum-sharing rules&quot;, &quot;title_zh&quot;: &quot;FCC \u6e96\u5099\u6295\u7968\u73fe\u4ee3\u5316\u885b\u661f\u983b\u8b5c\u5171\u4eab\u898f\u5247&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_1"
+              onclick="copyPrompt('5g_1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_2">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/5g/ad-watchdog-sides-with-verizon-in-complaint-raised-by-t-mobile" target="_blank">Ad watchdog sides with Verizon in complaint raised by T-Mobile</a></div>
+    <div class="title-zh">廣告監管機構在 T-Mobile 投訴中支持 Verizon</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The National Advertising Division said it determined that Verizon provided adequate disclosure of a future price increase linked to its 'four lines for $25/line' offer. #pressrelease</div>
+  <div class="summary-zh">美國全國廣告委員會裁定，Verizon 對其「四條線 25 美元/線」優惠相關的未來漲價提供了充分的披露。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/5g/ad-watchdog-sides-with-verizon-in-complaint-raised-by-t-mobile" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_2"
+              onclick="toggleAnalysis('5g_2', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/ad-watchdog-sides-with-verizon-in-complaint-raised-by-t-mobile&quot;, &quot;title_en&quot;: &quot;Ad watchdog sides with Verizon in complaint raised by T-Mobile&quot;, &quot;title_zh&quot;: &quot;\u5ee3\u544a\u76e3\u7ba1\u6a5f\u69cb\u5728 T-Mobile \u6295\u8a34\u4e2d\u652f\u6301 Verizon&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_2"
+              onclick="bookmarkArticle('5g_2', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/ad-watchdog-sides-with-verizon-in-complaint-raised-by-t-mobile&quot;, &quot;title_en&quot;: &quot;Ad watchdog sides with Verizon in complaint raised by T-Mobile&quot;, &quot;title_zh&quot;: &quot;\u5ee3\u544a\u76e3\u7ba1\u6a5f\u69cb\u5728 T-Mobile \u6295\u8a34\u4e2d\u652f\u6301 Verizon&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_2', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/ad-watchdog-sides-with-verizon-in-complaint-raised-by-t-mobile&quot;, &quot;title_en&quot;: &quot;Ad watchdog sides with Verizon in complaint raised by T-Mobile&quot;, &quot;title_zh&quot;: &quot;\u5ee3\u544a\u76e3\u7ba1\u6a5f\u69cb\u5728 T-Mobile \u6295\u8a34\u4e2d\u652f\u6301 Verizon&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_2"
+              onclick="copyPrompt('5g_2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_3">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/smartphones-devices/apple-s-smartphone-stranglehold-just-got-tighter" target="_blank">Apple's smartphone stranglehold just got tighter</a></div>
+    <div class="title-zh">Apple 的智慧型手機市場控制力進一步加強</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Recon Analytics reports that new consumer survey data reveals a market tilting fast toward Apple, a Samsung brand identity crisis, and Google renting share rather than owning it.</div>
+  <div class="summary-zh">Recon Analytics 的新消費者調查數據顯示市場快速向 Apple 傾斜、Samsung 品牌認同危機加深，以及 Google 在市場中租賃份額而非擁有份額。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/smartphones-devices/apple-s-smartphone-stranglehold-just-got-tighter" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_3"
+              onclick="toggleAnalysis('5g_3', {&quot;url&quot;: &quot;https://www.lightreading.com/smartphones-devices/apple-s-smartphone-stranglehold-just-got-tighter&quot;, &quot;title_en&quot;: &quot;Apple's smartphone stranglehold just got tighter&quot;, &quot;title_zh&quot;: &quot;Apple \u7684\u667a\u6167\u578b\u624b\u6a5f\u5e02\u5834\u63a7\u5236\u529b\u9032\u4e00\u6b65\u52a0\u5f37&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_3"
+              onclick="bookmarkArticle('5g_3', {&quot;url&quot;: &quot;https://www.lightreading.com/smartphones-devices/apple-s-smartphone-stranglehold-just-got-tighter&quot;, &quot;title_en&quot;: &quot;Apple's smartphone stranglehold just got tighter&quot;, &quot;title_zh&quot;: &quot;Apple \u7684\u667a\u6167\u578b\u624b\u6a5f\u5e02\u5834\u63a7\u5236\u529b\u9032\u4e00\u6b65\u52a0\u5f37&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_3', {&quot;url&quot;: &quot;https://www.lightreading.com/smartphones-devices/apple-s-smartphone-stranglehold-just-got-tighter&quot;, &quot;title_en&quot;: &quot;Apple's smartphone stranglehold just got tighter&quot;, &quot;title_zh&quot;: &quot;Apple \u7684\u667a\u6167\u578b\u624b\u6a5f\u5e02\u5834\u63a7\u5236\u529b\u9032\u4e00\u6b65\u52a0\u5f37&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_3"
+              onclick="copyPrompt('5g_3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_4">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/private-networks/globalstar-bets-on-industrial-automation-and-ai-for-private-5g" target="_blank">Globalstar bets on industrial automation and AI for private 5G</a></div>
+    <div class="title-zh">Globalstar 押注工業自動化和 AI 的專網 5G</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Globalstar expands XCOM RAN private 5G offering aimed at industrial automation and physical AI, amid speculation that the satellite company might be sold.</div>
+  <div class="summary-zh">Globalstar 擴展針對工業自動化和物理 AI 的 XCOM RAN 專網 5G 服務，同時有傳言稱該衛星公司可能被收購。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/private-networks/globalstar-bets-on-industrial-automation-and-ai-for-private-5g" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_4"
+              onclick="toggleAnalysis('5g_4', {&quot;url&quot;: &quot;https://www.lightreading.com/private-networks/globalstar-bets-on-industrial-automation-and-ai-for-private-5g&quot;, &quot;title_en&quot;: &quot;Globalstar bets on industrial automation and AI for private 5G&quot;, &quot;title_zh&quot;: &quot;Globalstar \u62bc\u6ce8\u5de5\u696d\u81ea\u52d5\u5316\u548c AI \u7684\u5c08\u7db2 5G&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_4"
+              onclick="bookmarkArticle('5g_4', {&quot;url&quot;: &quot;https://www.lightreading.com/private-networks/globalstar-bets-on-industrial-automation-and-ai-for-private-5g&quot;, &quot;title_en&quot;: &quot;Globalstar bets on industrial automation and AI for private 5G&quot;, &quot;title_zh&quot;: &quot;Globalstar \u62bc\u6ce8\u5de5\u696d\u81ea\u52d5\u5316\u548c AI \u7684\u5c08\u7db2 5G&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_4', {&quot;url&quot;: &quot;https://www.lightreading.com/private-networks/globalstar-bets-on-industrial-automation-and-ai-for-private-5g&quot;, &quot;title_en&quot;: &quot;Globalstar bets on industrial automation and AI for private 5G&quot;, &quot;title_zh&quot;: &quot;Globalstar \u62bc\u6ce8\u5de5\u696d\u81ea\u52d5\u5316\u548c AI \u7684\u5c08\u7db2 5G&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_4"
+              onclick="copyPrompt('5g_4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_5">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/5g/eurobites-ericsson-du-extend-themselves-on-fwa" target="_blank">Eurobites: Ericsson, Du extend themselves on FWA</a></div>
+    <div class="title-zh">Eurobites：Ericsson、Du 在 FWA 領域拓展業務</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Also in today's EMEA regional roundup: Telefónica offloads Mexican mobile unit; new boss for Boldyn in Europe; TikTok invests in second Finnish data center.</div>
+  <div class="summary-zh">EMEA 地區週報還包括：Telefónica 出售墨西哥移動部門、Boldyn 在歐洲任命新總裁、TikTok 在芬蘭投資第二個數據中心。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/5g/eurobites-ericsson-du-extend-themselves-on-fwa" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_5"
+              onclick="toggleAnalysis('5g_5', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/eurobites-ericsson-du-extend-themselves-on-fwa&quot;, &quot;title_en&quot;: &quot;Eurobites: Ericsson, Du extend themselves on FWA&quot;, &quot;title_zh&quot;: &quot;Eurobites\uff1aEricsson\u3001Du \u5728 FWA \u9818\u57df\u62d3\u5c55\u696d\u52d9&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_5"
+              onclick="bookmarkArticle('5g_5', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/eurobites-ericsson-du-extend-themselves-on-fwa&quot;, &quot;title_en&quot;: &quot;Eurobites: Ericsson, Du extend themselves on FWA&quot;, &quot;title_zh&quot;: &quot;Eurobites\uff1aEricsson\u3001Du \u5728 FWA \u9818\u57df\u62d3\u5c55\u696d\u52d9&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_5', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/eurobites-ericsson-du-extend-themselves-on-fwa&quot;, &quot;title_en&quot;: &quot;Eurobites: Ericsson, Du extend themselves on FWA&quot;, &quot;title_zh&quot;: &quot;Eurobites\uff1aEricsson\u3001Du \u5728 FWA \u9818\u57df\u62d3\u5c55\u696d\u52d9&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_5"
+              onclick="copyPrompt('5g_5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_6">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/cable-technology/globe-telecom-joins-consortium-to-build-candle-subsea-cable" target="_blank">Globe Telecom joins consortium to build Candle subsea cable</a></div>
+    <div class="title-zh">Globe Telecom 加入 Candle 海底光纜建設聯盟</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Globe Telecom will participate in the consortium as both an investor and a landing party, with the company providing a cable landing station in Nasugbu, Batangas in the Philippines.</div>
+  <div class="summary-zh">Globe Telecom 將以投資者和登陸方身份參與該聯盟，並在菲律賓的 Nasugbu、Batangas 提供光纜登陸站。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/cable-technology/globe-telecom-joins-consortium-to-build-candle-subsea-cable" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_6"
+              onclick="toggleAnalysis('5g_6', {&quot;url&quot;: &quot;https://www.lightreading.com/cable-technology/globe-telecom-joins-consortium-to-build-candle-subsea-cable&quot;, &quot;title_en&quot;: &quot;Globe Telecom joins consortium to build Candle subsea cable&quot;, &quot;title_zh&quot;: &quot;Globe Telecom \u52a0\u5165 Candle \u6d77\u5e95\u5149\u7e9c\u5efa\u8a2d\u806f\u76df&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_6"
+              onclick="bookmarkArticle('5g_6', {&quot;url&quot;: &quot;https://www.lightreading.com/cable-technology/globe-telecom-joins-consortium-to-build-candle-subsea-cable&quot;, &quot;title_en&quot;: &quot;Globe Telecom joins consortium to build Candle subsea cable&quot;, &quot;title_zh&quot;: &quot;Globe Telecom \u52a0\u5165 Candle \u6d77\u5e95\u5149\u7e9c\u5efa\u8a2d\u806f\u76df&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_6', {&quot;url&quot;: &quot;https://www.lightreading.com/cable-technology/globe-telecom-joins-consortium-to-build-candle-subsea-cable&quot;, &quot;title_en&quot;: &quot;Globe Telecom joins consortium to build Candle subsea cable&quot;, &quot;title_zh&quot;: &quot;Globe Telecom \u52a0\u5165 Candle \u6d77\u5e95\u5149\u7e9c\u5efa\u8a2d\u806f\u76df&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_6"
+              onclick="copyPrompt('5g_6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_7">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Light Reading</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.lightreading.com/5g/india-s-tejas-eyes-5g-turnaround-at-home-and-abroad" target="_blank">India's Tejas eyes 5G turnaround at home and abroad</a></div>
+    <div class="title-zh">印度 Tejas 目標在國內外實現 5G 轉機</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Backed by Tata Group and with the support of India's government, Tejas Networks is determined to prove it can succeed on the 5G world stage.</div>
+  <div class="summary-zh">在塔塔集團支持和印度政府扶持下，Tejas Networks 致力於證明自己能在全球 5G 舞台上取得成功。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.lightreading.com/5g/india-s-tejas-eyes-5g-turnaround-at-home-and-abroad" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_7"
+              onclick="toggleAnalysis('5g_7', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/india-s-tejas-eyes-5g-turnaround-at-home-and-abroad&quot;, &quot;title_en&quot;: &quot;India's Tejas eyes 5G turnaround at home and abroad&quot;, &quot;title_zh&quot;: &quot;\u5370\u5ea6 Tejas \u76ee\u6a19\u5728\u570b\u5167\u5916\u5be6\u73fe 5G \u8f49\u6a5f&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_7"
+              onclick="bookmarkArticle('5g_7', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/india-s-tejas-eyes-5g-turnaround-at-home-and-abroad&quot;, &quot;title_en&quot;: &quot;India's Tejas eyes 5G turnaround at home and abroad&quot;, &quot;title_zh&quot;: &quot;\u5370\u5ea6 Tejas \u76ee\u6a19\u5728\u570b\u5167\u5916\u5be6\u73fe 5G \u8f49\u6a5f&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_7', {&quot;url&quot;: &quot;https://www.lightreading.com/5g/india-s-tejas-eyes-5g-turnaround-at-home-and-abroad&quot;, &quot;title_en&quot;: &quot;India's Tejas eyes 5G turnaround at home and abroad&quot;, &quot;title_zh&quot;: &quot;\u5370\u5ea6 Tejas \u76ee\u6a19\u5728\u570b\u5167\u5916\u5be6\u73fe 5G \u8f49\u6a5f&quot;, &quot;source&quot;: &quot;Light Reading&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_7"
+              onclick="copyPrompt('5g_7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_8">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/ai/industrial-ai-cisco-2026" target="_blank">Industrial AI adoption is surging despite growing security and infrastructure concerns</a></div>
+    <div class="title-zh">工業 AI 採用激增，儘管面臨安全與基礎設施顧慮</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A new report from Cisco reveals that most industrial organizations have moved AI into live operations In sum &amp;#8211; what we know: Cisco and Sapio Research have released the&amp;#160;2026 State of Industrial AI Report, pulling together survey responses from over&amp;#8230;</div>
+  <div class="summary-zh">Cisco 新報告顯示，大多數工業組織已將 AI 應用於實際運營，Cisco 與 Sapio Research 發布了 2026 年工業 AI 狀況報告。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/ai/industrial-ai-cisco-2026" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_8"
+              onclick="toggleAnalysis('5g_8', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/ai/industrial-ai-cisco-2026&quot;, &quot;title_en&quot;: &quot;Industrial AI adoption is surging despite growing security and infrastructure concerns&quot;, &quot;title_zh&quot;: &quot;\u5de5\u696d AI \u63a1\u7528\u6fc0\u589e\uff0c\u5118\u7ba1\u9762\u81e8\u5b89\u5168\u8207\u57fa\u790e\u8a2d\u65bd\u9867\u616e&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_8"
+              onclick="bookmarkArticle('5g_8', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/ai/industrial-ai-cisco-2026&quot;, &quot;title_en&quot;: &quot;Industrial AI adoption is surging despite growing security and infrastructure concerns&quot;, &quot;title_zh&quot;: &quot;\u5de5\u696d AI \u63a1\u7528\u6fc0\u589e\uff0c\u5118\u7ba1\u9762\u81e8\u5b89\u5168\u8207\u57fa\u790e\u8a2d\u65bd\u9867\u616e&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_8', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/ai/industrial-ai-cisco-2026&quot;, &quot;title_en&quot;: &quot;Industrial AI adoption is surging despite growing security and infrastructure concerns&quot;, &quot;title_zh&quot;: &quot;\u5de5\u696d AI \u63a1\u7528\u6fc0\u589e\uff0c\u5118\u7ba1\u9762\u81e8\u5b89\u5168\u8207\u57fa\u790e\u8a2d\u65bd\u9867\u616e&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_8"
+              onclick="copyPrompt('5g_8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_9">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/network-infrastructure/3-takeaways-from-satshow-2026" target="_blank">3 takeaways from SatShow 2026</a></div>
+    <div class="title-zh">SatShow 2026 三大重點啟示</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Megatrends shaping the satellite sector, operators’ deepest pain points, and strategic maneuvers, as discussed in SatShow 2026 RCR wasn&amp;#8217;t on the floor at the SatShow 2026, but that didn’t stop us from following the buzz. Here’s what we learned. SatShow&amp;#8230;</div>
+  <div class="summary-zh">探討在 SatShow 2026 討論的塑造衛星産業的巨大趨勢、營運商最深層的痛點和戰略舉措。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/network-infrastructure/3-takeaways-from-satshow-2026" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_9"
+              onclick="toggleAnalysis('5g_9', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/network-infrastructure/3-takeaways-from-satshow-2026&quot;, &quot;title_en&quot;: &quot;3 takeaways from SatShow 2026&quot;, &quot;title_zh&quot;: &quot;SatShow 2026 \u4e09\u5927\u91cd\u9ede\u555f\u793a&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_9"
+              onclick="bookmarkArticle('5g_9', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/network-infrastructure/3-takeaways-from-satshow-2026&quot;, &quot;title_en&quot;: &quot;3 takeaways from SatShow 2026&quot;, &quot;title_zh&quot;: &quot;SatShow 2026 \u4e09\u5927\u91cd\u9ede\u555f\u793a&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_9', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/network-infrastructure/3-takeaways-from-satshow-2026&quot;, &quot;title_en&quot;: &quot;3 takeaways from SatShow 2026&quot;, &quot;title_zh&quot;: &quot;SatShow 2026 \u4e09\u5927\u91cd\u9ede\u555f\u793a&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_9"
+              onclick="copyPrompt('5g_9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_10">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/carriers/telcos-capex-ai-omdia" target="_blank">Telcos shifting capex to AI infra, says Omdia</a></div>
+    <div class="title-zh">Omdia：電信營運商正轉向 AI 基礎設施資本支出</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Hyperscalers continue to dominate AI infrastructure globally, but regulatory dynamics are opening space for telcos in specific segments, observes Omdia In sum – what to know: Demand-led models – Telcos must secure anchor tenants and real workloads early, as AI&amp;#8230;</div>
+  <div class="summary-zh">Omdia 觀察到超大規模營運商繼續全球主導 AI 基礎設施，但監管動態正為電信營運商在特定領域開創空間。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/carriers/telcos-capex-ai-omdia" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_10"
+              onclick="toggleAnalysis('5g_10', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/carriers/telcos-capex-ai-omdia&quot;, &quot;title_en&quot;: &quot;Telcos shifting capex to AI infra, says Omdia&quot;, &quot;title_zh&quot;: &quot;Omdia\uff1a\u96fb\u4fe1\u71df\u904b\u5546\u6b63\u8f49\u5411 AI \u57fa\u790e\u8a2d\u65bd\u8cc7\u672c\u652f\u51fa&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_10"
+              onclick="bookmarkArticle('5g_10', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/carriers/telcos-capex-ai-omdia&quot;, &quot;title_en&quot;: &quot;Telcos shifting capex to AI infra, says Omdia&quot;, &quot;title_zh&quot;: &quot;Omdia\uff1a\u96fb\u4fe1\u71df\u904b\u5546\u6b63\u8f49\u5411 AI \u57fa\u790e\u8a2d\u65bd\u8cc7\u672c\u652f\u51fa&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_10', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/carriers/telcos-capex-ai-omdia&quot;, &quot;title_en&quot;: &quot;Telcos shifting capex to AI infra, says Omdia&quot;, &quot;title_zh&quot;: &quot;Omdia\uff1a\u96fb\u4fe1\u71df\u904b\u5546\u6b63\u8f49\u5411 AI \u57fa\u790e\u8a2d\u65bd\u8cc7\u672c\u652f\u51fa&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_10"
+              onclick="copyPrompt('5g_10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_11">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/5g/proximus-5g-sa" target="_blank">Proximus claims first 5G SA network in Belgium</a></div>
+    <div class="title-zh">Proximus 宣稱比利時首個 5G SA 網路</div>
+    
+<div class="summary-block">
+  <div class="summary-en">New 5G SA architecture will allow for the development of end-to-end network slicing In sum – what to know: Standalone shift – Proximus has launched a 5G standalone network, moving beyond 4G-dependent architectures to enable more advanced network capabilities. New&amp;#8230;</div>
+  <div class="summary-zh">新的 5G SA 架構將允許開發端到端網路切片，Proximus 推出 5G 獨立網路，超越 4G 依賴架構。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/5g/proximus-5g-sa" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_11"
+              onclick="toggleAnalysis('5g_11', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/5g/proximus-5g-sa&quot;, &quot;title_en&quot;: &quot;Proximus claims first 5G SA network in Belgium&quot;, &quot;title_zh&quot;: &quot;Proximus \u5ba3\u7a31\u6bd4\u5229\u6642\u9996\u500b 5G SA \u7db2\u8def&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_11"
+              onclick="bookmarkArticle('5g_11', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/5g/proximus-5g-sa&quot;, &quot;title_en&quot;: &quot;Proximus claims first 5G SA network in Belgium&quot;, &quot;title_zh&quot;: &quot;Proximus \u5ba3\u7a31\u6bd4\u5229\u6642\u9996\u500b 5G SA \u7db2\u8def&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_11', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/5g/proximus-5g-sa&quot;, &quot;title_en&quot;: &quot;Proximus claims first 5G SA network in Belgium&quot;, &quot;title_zh&quot;: &quot;Proximus \u5ba3\u7a31\u6bd4\u5229\u6642\u9996\u500b 5G SA \u7db2\u8def&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_11"
+              onclick="copyPrompt('5g_11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_12">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/internet-of-things/att-ai-edge-nvidia-cisco-microsoft" target="_blank">AT&amp;T maps its AI-grid edge game with Nvidia, Cisco, Microsoft</a></div>
+    <div class="title-zh">AT&amp;T 與 Nvidia、Cisco、Microsoft 佈局 AI 邊緣網格戰略</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AT&amp;#38;T has clarified its emerging AI “grid” and IoT strategy, combining regional inference, cloud platforms, and private 5G to target enterprise use cases while testing where edge AI delivers most value. In sum – what to know: Regional edge –&amp;#8230;</div>
+  <div class="summary-zh">AT&amp;T 明確了其新興 AI「網格」和 IoT 策略，結合區域推理、雲平台和專網 5G 來鎖定企業用例，並測試邊緣 AI 的最大價值點。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/internet-of-things/att-ai-edge-nvidia-cisco-microsoft" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_12"
+              onclick="toggleAnalysis('5g_12', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/internet-of-things/att-ai-edge-nvidia-cisco-microsoft&quot;, &quot;title_en&quot;: &quot;AT&amp;T maps its AI-grid edge game with Nvidia, Cisco, Microsoft&quot;, &quot;title_zh&quot;: &quot;AT&amp;T \u8207 Nvidia\u3001Cisco\u3001Microsoft \u4f48\u5c40 AI \u908a\u7de3\u7db2\u683c\u6230\u7565&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_12"
+              onclick="bookmarkArticle('5g_12', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/internet-of-things/att-ai-edge-nvidia-cisco-microsoft&quot;, &quot;title_en&quot;: &quot;AT&amp;T maps its AI-grid edge game with Nvidia, Cisco, Microsoft&quot;, &quot;title_zh&quot;: &quot;AT&amp;T \u8207 Nvidia\u3001Cisco\u3001Microsoft \u4f48\u5c40 AI \u908a\u7de3\u7db2\u683c\u6230\u7565&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_12', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/internet-of-things/att-ai-edge-nvidia-cisco-microsoft&quot;, &quot;title_en&quot;: &quot;AT&amp;T maps its AI-grid edge game with Nvidia, Cisco, Microsoft&quot;, &quot;title_zh&quot;: &quot;AT&amp;T \u8207 Nvidia\u3001Cisco\u3001Microsoft \u4f48\u5c40 AI \u908a\u7de3\u7db2\u683c\u6230\u7565&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_12"
+              onclick="copyPrompt('5g_12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_13">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/open_ran/open-interfaces-o-ran" target="_blank">Open Interfaces, Smarter Networks: The O-RAN Advantage for Indoor Deployments</a></div>
+    <div class="title-zh">開放介面、更智慧網路：O-RAN 在室內部署中的優勢</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As demand for reliable connectivity continues to grow, in-building wireless networks have become a critical part of the telecom infrastructure landscape. From stadiums and large arenas to enterprise campuses and transportation hubs, end users expect the same high-quality connectivity indoors&amp;#8230;</div>
+  <div class="summary-zh">隨著可靠連接需求增長，室內無線網路已成為電信基礎設施的關鍵部分，從體育場館到企業園區，使用者都期望獲得相同品質的室內連接。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/open_ran/open-interfaces-o-ran" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_13')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_13"
+              onclick="toggleAnalysis('5g_13', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/open_ran/open-interfaces-o-ran&quot;, &quot;title_en&quot;: &quot;Open Interfaces, Smarter Networks: The O-RAN Advantage for Indoor Deployments&quot;, &quot;title_zh&quot;: &quot;\u958b\u653e\u4ecb\u9762\u3001\u66f4\u667a\u6167\u7db2\u8def\uff1aO-RAN \u5728\u5ba4\u5167\u90e8\u7f72\u4e2d\u7684\u512a\u52e2&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_13"
+              onclick="bookmarkArticle('5g_13', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/open_ran/open-interfaces-o-ran&quot;, &quot;title_en&quot;: &quot;Open Interfaces, Smarter Networks: The O-RAN Advantage for Indoor Deployments&quot;, &quot;title_zh&quot;: &quot;\u958b\u653e\u4ecb\u9762\u3001\u66f4\u667a\u6167\u7db2\u8def\uff1aO-RAN \u5728\u5ba4\u5167\u90e8\u7f72\u4e2d\u7684\u512a\u52e2&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_13">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_13"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_13')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_13', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/open_ran/open-interfaces-o-ran&quot;, &quot;title_en&quot;: &quot;Open Interfaces, Smarter Networks: The O-RAN Advantage for Indoor Deployments&quot;, &quot;title_zh&quot;: &quot;\u958b\u653e\u4ecb\u9762\u3001\u66f4\u667a\u6167\u7db2\u8def\uff1aO-RAN \u5728\u5ba4\u5167\u90e8\u7f72\u4e2d\u7684\u512a\u52e2&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_13"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_13">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_13"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_13"
+              onclick="copyPrompt('5g_13')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_14">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">RCR Wireless</span>
+      <span class="date-tag">Wed, 08 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.rcrwireless.com/20260408/podcast/will-ai-replace-the-org-chart-suman-kanuganti-on-the-rise-of-personal-ai" target="_blank">Will AI Replace the Org Chart? Suman Kanuganti on the Rise of Personal AI</a></div>
+    <div class="title-zh">AI 會取代組織圖表嗎？Suman Kanuganti 談論個人 AI 的崛起</div>
+    
+<div class="summary-block">
+  <div class="summary-en">In this episode, Suman Kanuganti, CEO of Personal AI, shares how he is redefining artificial intelligence by shifting the focus from generalized models to deeply personalized, human-centered intelligence. From founding Aira—an AI platform supporting the blind and low-vision community—to building&amp;#8230;</div>
+  <div class="summary-zh">Personal AI 首席執行官 Suman Kanuganti 分享如何透過從通用模型轉向深度個性化、以人為中心的智慧來重新定義人工智慧，從創辦支持盲人和低視力社群的 AI 平台 Aira 開始。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.rcrwireless.com/20260408/podcast/will-ai-replace-the-org-chart-suman-kanuganti-on-the-rise-of-personal-ai" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_14')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_14"
+              onclick="toggleAnalysis('5g_14', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/podcast/will-ai-replace-the-org-chart-suman-kanuganti-on-the-rise-of-personal-ai&quot;, &quot;title_en&quot;: &quot;Will AI Replace the Org Chart? Suman Kanuganti on the Rise of Personal AI&quot;, &quot;title_zh&quot;: &quot;AI \u6703\u53d6\u4ee3\u7d44\u7e54\u5716\u8868\u55ce\uff1fSuman Kanuganti \u8ac7\u8ad6\u500b\u4eba AI \u7684\u5d1b\u8d77&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_14"
+              onclick="bookmarkArticle('5g_14', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/podcast/will-ai-replace-the-org-chart-suman-kanuganti-on-the-rise-of-personal-ai&quot;, &quot;title_en&quot;: &quot;Will AI Replace the Org Chart? Suman Kanuganti on the Rise of Personal AI&quot;, &quot;title_zh&quot;: &quot;AI \u6703\u53d6\u4ee3\u7d44\u7e54\u5716\u8868\u55ce\uff1fSuman Kanuganti \u8ac7\u8ad6\u500b\u4eba AI \u7684\u5d1b\u8d77&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_14">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_14"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_14')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_14', {&quot;url&quot;: &quot;https://www.rcrwireless.com/20260408/podcast/will-ai-replace-the-org-chart-suman-kanuganti-on-the-rise-of-personal-ai&quot;, &quot;title_en&quot;: &quot;Will AI Replace the Org Chart? Suman Kanuganti on the Rise of Personal AI&quot;, &quot;title_zh&quot;: &quot;AI \u6703\u53d6\u4ee3\u7d44\u7e54\u5716\u8868\u55ce\uff1fSuman Kanuganti \u8ac7\u8ad6\u500b\u4eba AI \u7684\u5d1b\u8d77&quot;, &quot;source&quot;: &quot;RCR Wireless&quot;, &quot;date&quot;: &quot;Wed, 08 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_14"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_14">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_14"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_14"
+              onclick="copyPrompt('5g_14')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_15">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Fierce Wireless</span>
+      <span class="date-tag">Apr 8, 202</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.fierce-network.com/wireless/prepaid-mvno-us-mobile-teases-ultimate-bundle-starlink" target="_blank"></a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">US Mobile plans to launch a single bundle that combines mobile service across AT&amp;amp;T, Verizon and T-Mobile with Starlink home internet.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.fierce-network.com/wireless/prepaid-mvno-us-mobile-teases-ultimate-bundle-starlink" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_15')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_15"
+              onclick="toggleAnalysis('5g_15', {&quot;url&quot;: &quot;https://www.fierce-network.com/wireless/prepaid-mvno-us-mobile-teases-ultimate-bundle-starlink&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_15"
+              onclick="bookmarkArticle('5g_15', {&quot;url&quot;: &quot;https://www.fierce-network.com/wireless/prepaid-mvno-us-mobile-teases-ultimate-bundle-starlink&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_15">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_15"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_15')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_15', {&quot;url&quot;: &quot;https://www.fierce-network.com/wireless/prepaid-mvno-us-mobile-teases-ultimate-bundle-starlink&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_15"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_15">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_15"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_15"
+              onclick="copyPrompt('5g_15')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_16">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Fierce Wireless</span>
+      <span class="date-tag">Apr 8, 202</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.fierce-network.com/sponsored/cisco-and-shift-autonomous-ai-driven-networks" target="_blank"></a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">AI is rewriting network traffic and security, requiring service providers to adapt quickly to the changing environments. See how infrastructure is evolving in real time with Cisco. Watch now!</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.fierce-network.com/sponsored/cisco-and-shift-autonomous-ai-driven-networks" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_16')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_16"
+              onclick="toggleAnalysis('5g_16', {&quot;url&quot;: &quot;https://www.fierce-network.com/sponsored/cisco-and-shift-autonomous-ai-driven-networks&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_16"
+              onclick="bookmarkArticle('5g_16', {&quot;url&quot;: &quot;https://www.fierce-network.com/sponsored/cisco-and-shift-autonomous-ai-driven-networks&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_16">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_16"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_16')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_16', {&quot;url&quot;: &quot;https://www.fierce-network.com/sponsored/cisco-and-shift-autonomous-ai-driven-networks&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_16"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_16">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_16"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_16"
+              onclick="copyPrompt('5g_16')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-5g_17">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Fierce Wireless</span>
+      <span class="date-tag">Apr 8, 202</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.fierce-network.com/cloud/anthropic-snags-microsoft-exec-new-infrastructure-chief" target="_blank"></a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The move comes as Anthropic presses ahead with major infrastructure initiatives, including a $50 billion data center push.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.fierce-network.com/cloud/anthropic-snags-microsoft-exec-new-infrastructure-chief" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('5g_17')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-5g_17"
+              onclick="toggleAnalysis('5g_17', {&quot;url&quot;: &quot;https://www.fierce-network.com/cloud/anthropic-snags-microsoft-exec-new-infrastructure-chief&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-5g_17"
+              onclick="bookmarkArticle('5g_17', {&quot;url&quot;: &quot;https://www.fierce-network.com/cloud/anthropic-snags-microsoft-exec-new-infrastructure-chief&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-5g_17">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-5g_17"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('5g_17')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('5g_17', {&quot;url&quot;: &quot;https://www.fierce-network.com/cloud/anthropic-snags-microsoft-exec-new-infrastructure-chief&quot;, &quot;title_en&quot;: &quot;&quot;, &quot;title_zh&quot;: &quot;&quot;, &quot;source&quot;: &quot;Fierce Wireless&quot;, &quot;date&quot;: &quot;Apr 8, 202&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-5g_17"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-5g_17">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-5g_17"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-5g_17"
+              onclick="copyPrompt('5g_17')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
