@@ -66,7 +66,14 @@ FEEDS = {
         {"url": "https://www.inside.com.tw/rss",               "name": "Inside 台灣"},
         {"url": "https://www.bnext.com.tw/rss",                "name": "數位時代"},
         {"url": "https://www.ctimes.com.tw/rss/rss-news.xml",  "name": "CTIMES"},
-        {"url": "https://www.digitimes.com.tw/rss/rss.xml",    "name": "電子時報 Digitimes"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_60.xml",    "name": "電子時報 Digitimes-AI"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_40.xml",    "name": "電子時報 Digitimes-semi"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_25.xml",    "name": "電子時報 Digitimes-AI focus"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_16.xml",    "name": "電子時報 Digitimes-IC design"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_27.xml",    "name": "電子時報 Digitimes-Next 5G"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_6.xml",    "name": "電子時報 Digitimes-smartphone"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_7.xml",    "name": "電子時報 Digitimes-broadband"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_70.xml",    "name": "電子時報 Digitimes-mobile"},
     ],
 }
 
