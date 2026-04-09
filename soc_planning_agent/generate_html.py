@@ -121,12 +121,6 @@ def _importance_score(article: dict) -> int:
         if kw in title_zh:
             score += 2
 
-    # Tech keywords → check both (technical terms less likely to double-count)
-    combined = title_en + " " + title_zh.lower()
-    for kw in TECH_KEYWORDS:
-        if kw in combined:
-            score += 1
-
     if article.get("source", "") in HOT_SOURCES:
         score += 1
     return score
@@ -190,9 +184,10 @@ def _prune_expired(cards: list, max_age_hours: int = 24) -> list:
 # ---------------------------------------------------------------------------
 
 def _interest_keywords() -> set:
-    """Extract keywords from user bookmarks / fulltext / manual saves."""
+    """Extract keywords from user bookmarks / fulltext / manual saves + static tech baseline."""
     import re as _re
-    kws: set = set()
+    # Static tech baseline — always relevant regardless of user history
+    kws: set = set(TECH_KEYWORDS)
     STOP = {"with","from","that","this","they","will","have","been","more",
             "than","when","also","into","their","would","about","which"}
     for subdir in (BOOKMARK_DIR, FULLTEXT_DIR, MANUAL_DIR):
@@ -222,10 +217,13 @@ def _headline_score(article: dict, interest_kws: set) -> int:
     zh   = article.get("title_zh","")
     score = 0
     for kw in interest_kws:
-        if len(kw) >= 4 and kw in text:
-            score += 1
-        elif len(kw) == 2 and kw in zh:
-            score += 1
+        is_zh_bigram = (len(kw) == 2 and all('\u4e00' <= c <= '\u9fff' for c in kw))
+        if is_zh_bigram:
+            if kw in zh:
+                score += 1
+        else:
+            if kw in text:  # handles English of any length (ai, 5g, soc, benchmark...)
+                score += 1
     return score
 
 
