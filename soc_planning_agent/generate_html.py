@@ -338,6 +338,12 @@ h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
 }
 .btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
 
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
 /* ── Full text panel ── */
 .fulltext-panel {
   display: none; border-top: 1px solid var(--border);
@@ -673,7 +679,7 @@ def _esc(s: str) -> str:
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
-def _article_card(article: dict, card_id: str, prompt_template_js: str) -> str:
+def _article_card(article: dict, card_id: str, prompt_template_js: str, show_dismiss: bool = False) -> str:
     title_en  = _esc(article.get("title", ""))
     title_zh  = _esc(article.get("title_zh", ""))
     url       = article.get("url", "#")
@@ -702,8 +708,12 @@ def _article_card(article: dict, card_id: str, prompt_template_js: str) -> str:
   {f'<div class="summary-zh">{sum_zh}</div>' if sum_zh and sum_zh != sum_en else ""}
 </div>"""
 
+    dismiss_btn = (f'<button class="btn btn-dismiss" '
+                   f'onclick="dismissCard(\'{card_id}\', \'{_esc(url)}\')">👁 已看到</button>'
+                   if show_dismiss else "")
+
     return f"""
-<div class="card" id="card-{card_id}">
+<div class="card" id="card-{card_id}" data-url="{_esc(url)}">
   <div class="card-head">
     <div class="card-meta-row">
       <span class="source-tag">{source}</span>
@@ -720,6 +730,7 @@ def _article_card(article: dict, card_id: str, prompt_template_js: str) -> str:
               onclick="toggleAnalysis('{card_id}', {meta_js}, PROMPT_TEMPLATE)">🔬 深度分析</button>
       <button class="btn btn-bookmark" id="bm-btn-{card_id}"
               onclick="bookmarkArticle('{card_id}', {meta_js})">⭐ 加入關注</button>
+      {dismiss_btn}
     </div>
   </div>
 
@@ -817,12 +828,12 @@ def _index_page(reports: list, hot_articles: list = None,
     # 🔥 重大消息 — full article cards
     hot_cards_html = ""
     for i, a in enumerate(hot_articles):
-        hot_cards_html += _article_card(a, f"hot{i}", prompt_js)
+        hot_cards_html += _article_card(a, f"hot{i}", prompt_js, show_dismiss=True)
 
     # 📰 頭條消息 — full article cards
     hl_cards_html = ""
     for i, a in enumerate(headline_articles):
-        hl_cards_html += _article_card(a, f"hl{i}", prompt_js)
+        hl_cards_html += _article_card(a, f"hl{i}", prompt_js, show_dismiss=True)
 
     # ⭐ 我的關注 — compact server-side fallback; JS overwrites from localStorage
     interest_html = _compact_interest_html(interest_articles, empty_msg="載入中...")
@@ -842,7 +853,28 @@ def _index_page(reports: list, hot_articles: list = None,
     now_tw = datetime.now(TW_TZ).strftime('%Y-%m-%d %H:%M')
 
     index_js = f"""
-// ── Dynamic 我的關注 from localStorage ──
+// ── Dismiss hot/headline cards ──
+function dismissCard(cardId, url) {{
+  const card = document.getElementById('card-' + cardId);
+  if (card) card.style.display = 'none';
+  if (!url) return;
+  const dismissed = JSON.parse(localStorage.getItem('dismissed_hot') || '[]');
+  if (!dismissed.includes(url)) {{
+    dismissed.push(url);
+    localStorage.setItem('dismissed_hot', JSON.stringify(dismissed.slice(-300)));
+  }}
+}}
+
+function initDismissed() {{
+  const dismissed = JSON.parse(localStorage.getItem('dismissed_hot') || '[]');
+  if (!dismissed.length) return;
+  document.querySelectorAll('.card[data-url]').forEach(card => {{
+    if (dismissed.includes(card.getAttribute('data-url')))
+      card.style.display = 'none';
+  }});
+}}
+
+// ── Dynamic 我的關注 from localStorage (最新 3 則，其餘連結至 my-interest.html) ──
 function renderMyInterest() {{
   const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
   const container = document.getElementById('my-interest-body');
@@ -854,8 +886,7 @@ function renderMyInterest() {{
   }}
   document.getElementById('my-interest-count').textContent = stored.length + ' 篇';
   let html = '';
-  stored.forEach(a => {{
-    // Use encodeURI to ensure URL is safe for href
+  stored.slice(0, 3).forEach(a => {{
     const safeUrl = a.url ? encodeURI(a.url) : '#';
     const titleEn = (a.title_en || a.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const titleZh = (a.title_zh || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -872,6 +903,14 @@ function renderMyInterest() {{
   ${{titleZh ? '<div class="hot-title-zh">'+titleZh+'</div>' : ''}}
 </a>`;
   }});
+  if (stored.length > 3) {{
+    html += `<a class="hot-card" href="my-interest.html"
+              style="border-left-color:#e8a317;justify-content:center;padding:10px 14px">
+  <div style="color:#e8a317;font-size:0.82em;font-weight:700;text-align:center">
+    查看全部 ${{stored.length}} 篇關注文章 →
+  </div>
+</a>`;
+  }}
   container.innerHTML = html;
 }}
 
@@ -938,6 +977,7 @@ async function saveManualArticle() {{
 window.addEventListener('DOMContentLoaded', () => {{
   checkToken();
   initBookmarks();
+  initDismissed();
   renderMyInterest();
 }});
 """
@@ -1036,6 +1076,63 @@ window.addEventListener('DOMContentLoaded', () => {{
 <script>const PROMPT_TEMPLATE = {prompt_js};</script>
 <script>{JS.replace('REPO_PLACEHOLDER', GITHUB_REPO)}</script>
 <script>{index_js.replace('REPO_PLACEHOLDER', GITHUB_REPO)}</script>
+</body></html>"""
+
+
+# ---------------------------------------------------------------------------
+# 我的關注 sub-page (all bookmarks from localStorage)
+# ---------------------------------------------------------------------------
+
+def _my_interest_page() -> str:
+    now_tw = datetime.now(TW_TZ).strftime('%Y-%m-%d %H:%M')
+    js = r"""
+function renderAll() {
+  const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+  const container = document.getElementById('all-bookmarks');
+  const countEl   = document.getElementById('bm-count');
+  if (!stored.length) {
+    container.innerHTML = '<div class="hot-empty">尚無關注文章 — 請在新聞卡片按「⭐ 加入關注」</div>';
+    if (countEl) countEl.textContent = '0 篇';
+    return;
+  }
+  if (countEl) countEl.textContent = stored.length + ' 篇';
+  let html = '';
+  stored.forEach(a => {
+    const safeUrl = a.url ? encodeURI(a.url) : '#';
+    const titleEn = (a.title_en || a.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const titleZh = (a.title_zh || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const src  = (a.source || '').replace(/</g,'&lt;');
+    const date = (a.date || a.bookmarked_at || '').slice(0,10);
+    html += `<a class="hot-card" href="${safeUrl}" target="_blank" rel="noopener"
+              style="border-left-color:#e8a317;cursor:pointer">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+    <span class="hot-source">${src}</span>
+    <span class="hot-date">${date}</span>
+    <span style="font-size:0.65em;color:#e8a317">⭐</span>
+  </div>
+  <div class="hot-title-en">${titleEn}</div>
+  ${titleZh ? '<div class="hot-title-zh">'+titleZh+'</div>' : ''}
+</a>`;
+  });
+  container.innerHTML = html;
+}
+window.addEventListener('DOMContentLoaded', renderAll);
+"""
+    return f"""<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⭐ 我的關注 — SOC Planning Agent</title>
+<style>{CSS}</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>⭐ 我的關注</h1>
+<div class="page-meta">更新：{now_tw} (台灣時間) &nbsp;·&nbsp; <span id="bm-count">載入中...</span></div>
+<br>
+<div id="all-bookmarks"><div class="hot-empty">載入中...</div></div>
+<script>{js}</script>
 </body></html>"""
 
 
@@ -1190,6 +1287,7 @@ def generate_reports(articles_by_category: dict, date: str) -> list:
                     interest_articles=interest_articles),
         encoding="utf-8",
     )
+    (DOCS_DIR / "my-interest.html").write_text(_my_interest_page(), encoding="utf-8")
     print(f"  ✓ index.html ({len(all_reports)} reports, "
           f"{len(hot_articles)} hot, {len(headline_articles)} headlines)")
 
@@ -1263,7 +1361,8 @@ def rebuild_from_archive():
                     interest_articles=interest),
         encoding="utf-8"
     )
-    print(f"\n✅ Rebuilt {len(all_reports)} pages + index.html "
+    (DOCS_DIR / "my-interest.html").write_text(_my_interest_page(), encoding="utf-8")
+    print(f"\n✅ Rebuilt {len(all_reports)} pages + index.html + my-interest.html "
           f"({len(hot_articles)} hot, {len(headline_articles)} headlines)")
 
 
