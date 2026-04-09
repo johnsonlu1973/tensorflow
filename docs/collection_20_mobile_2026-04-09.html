@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Mobile — 2026-04-09</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>📱 Mobile</h1>
+<div class="page-meta">2026-04-09 &nbsp;·&nbsp; 8 篇 &nbsp;·&nbsp; 更新：2026-04-09 18:55 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-mob0">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/04/09/the-google-tv-streamer-is-down-to-80-right-now-on-amazon/" target="_blank">The Google TV Streamer is down to $80 right now on Amazon</a></div>
+    <div class="title-zh">Google TV Streamer 現已在 Amazon 上降至 $80</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Google TV Streamer 4K is back down to its all-time low price on Amazon, and if you’ve been waiting for a reason to upgrade your living room setup, this is it. more…</div>
+  <div class="summary-zh">Google TV Streamer 4K 在 Amazon 上回到歷史最低價，如果你一直在等待升級客廳設備的理由，現在就是時候了。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/04/09/the-google-tv-streamer-is-down-to-80-right-now-on-amazon/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob0"
+              onclick="toggleAnalysis('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/04/09/the-google-tv-streamer-is-down-to-80-right-now-on-amazon/&quot;, &quot;title_en&quot;: &quot;The Google TV Streamer is down to $80 right now on Amazon&quot;, &quot;title_zh&quot;: &quot;Google TV Streamer \u73fe\u5df2\u5728 Amazon \u4e0a\u964d\u81f3 $80&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob0"
+              onclick="bookmarkArticle('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/04/09/the-google-tv-streamer-is-down-to-80-right-now-on-amazon/&quot;, &quot;title_en&quot;: &quot;The Google TV Streamer is down to $80 right now on Amazon&quot;, &quot;title_zh&quot;: &quot;Google TV Streamer \u73fe\u5df2\u5728 Amazon \u4e0a\u964d\u81f3 $80&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/04/09/the-google-tv-streamer-is-down-to-80-right-now-on-amazon/&quot;, &quot;title_en&quot;: &quot;The Google TV Streamer is down to $80 right now on Amazon&quot;, &quot;title_zh&quot;: &quot;Google TV Streamer \u73fe\u5df2\u5728 Amazon \u4e0a\u964d\u81f3 $80&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob0"
+              onclick="copyPrompt('mob0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob1">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/oneplus-nord-6-google-pixel-10a-3655417/" target="_blank">OnePlus just made a phone that’s everything I wanted the Pixel 10a to be</a></div>
+    <div class="title-zh">OnePlus 推出了我一直想要的 Pixel 10a</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Pixel lineup has been a part of my smartphone rotation ever since the first model launched way back in 2016. And like everyone else, I’m a big fan of a good deal. So, the Pixel A-series smartphones has, predictably, been of particular interest to me. The idea of blending good-enough specs with excellent value isn’t new, but when paired with Google’s clean software and cutting-edge AI smarts, there’s a lot to like here on paper. But times are changing, and the definition of value continues to get redefined year on year. In an AI-first market, OnePlus is going against the grain with an old-school value-conscious flagship killer. I have grown increasingly weary of Google’s dogmatic insistence on an AI-first strategy, particularly when so many of those headline features remain exclusive to</div>
+  <div class="summary-zh">OnePlus 推出新款手機，具備我期待在 Pixel 10a 上看到的所有功能，融合了出色的規格和實惠的價格。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/oneplus-nord-6-google-pixel-10a-3655417/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob1"
+              onclick="toggleAnalysis('mob1', {&quot;url&quot;: &quot;https://www.androidauthority.com/oneplus-nord-6-google-pixel-10a-3655417/&quot;, &quot;title_en&quot;: &quot;OnePlus just made a phone that\u2019s everything I wanted the Pixel 10a to be&quot;, &quot;title_zh&quot;: &quot;OnePlus \u63a8\u51fa\u4e86\u6211\u4e00\u76f4\u60f3\u8981\u7684 Pixel 10a&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob1"
+              onclick="bookmarkArticle('mob1', {&quot;url&quot;: &quot;https://www.androidauthority.com/oneplus-nord-6-google-pixel-10a-3655417/&quot;, &quot;title_en&quot;: &quot;OnePlus just made a phone that\u2019s everything I wanted the Pixel 10a to be&quot;, &quot;title_zh&quot;: &quot;OnePlus \u63a8\u51fa\u4e86\u6211\u4e00\u76f4\u60f3\u8981\u7684 Pixel 10a&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob1', {&quot;url&quot;: &quot;https://www.androidauthority.com/oneplus-nord-6-google-pixel-10a-3655417/&quot;, &quot;title_en&quot;: &quot;OnePlus just made a phone that\u2019s everything I wanted the Pixel 10a to be&quot;, &quot;title_zh&quot;: &quot;OnePlus \u63a8\u51fa\u4e86\u6211\u4e00\u76f4\u60f3\u8981\u7684 Pixel 10a&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob1"
+              onclick="copyPrompt('mob1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob2">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/mediatek-dimensity-9600-pro-leaked-specs-3656096/" target="_blank">This rumored chip could help 2027’s flagship phones get closer to 5GHz mark</a></div>
+    <div class="title-zh">傳聞中的晶片有助於 2027 年旗艦手機接近 5GHz 標準</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Credit: Kris Carlon / Android Authority TL;DR A leaker has revealed apparent MediaTek Dimensity 9600 Pro specs. The new chipset could use two big “Canyon” cores clocked at almost 5GHz, while retaining the Dimensity 9500’s medium cores. Other notable specs include a so-called Magni GPU and TSMC’s 2nm manufacturing process. We’ve already heard plenty of rumors about the Snapdragon 8 Elite Gen 6 chipset family , which is expected to power a host of top Android phones . However, we’ve also heard murmurings about the MediaTek Dimensity 9600, and a trusted source has now revealed more apparent details. Leaker Digital Chat Station wrote on Weibo that the “Dimensity 9600 (Pro)” has an octa-core CPU with a peak speed of close to 5GHz. For reference, the current-generation Dimensity 9500 has a peak </div>
+  <div class="summary-zh">洩露者揭露了 MediaTek Dimensity 9600 Pro 的規格，該晶片採用兩個主頻接近 5GHz 的「Canyon」核心和新型 Magni GPU，採用 TSMC 2nm 製程。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/mediatek-dimensity-9600-pro-leaked-specs-3656096/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob2"
+              onclick="toggleAnalysis('mob2', {&quot;url&quot;: &quot;https://www.androidauthority.com/mediatek-dimensity-9600-pro-leaked-specs-3656096/&quot;, &quot;title_en&quot;: &quot;This rumored chip could help 2027\u2019s flagship phones get closer to 5GHz mark&quot;, &quot;title_zh&quot;: &quot;\u50b3\u805e\u4e2d\u7684\u6676\u7247\u6709\u52a9\u65bc 2027 \u5e74\u65d7\u8266\u624b\u6a5f\u63a5\u8fd1 5GHz \u6a19\u6e96&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob2"
+              onclick="bookmarkArticle('mob2', {&quot;url&quot;: &quot;https://www.androidauthority.com/mediatek-dimensity-9600-pro-leaked-specs-3656096/&quot;, &quot;title_en&quot;: &quot;This rumored chip could help 2027\u2019s flagship phones get closer to 5GHz mark&quot;, &quot;title_zh&quot;: &quot;\u50b3\u805e\u4e2d\u7684\u6676\u7247\u6709\u52a9\u65bc 2027 \u5e74\u65d7\u8266\u624b\u6a5f\u63a5\u8fd1 5GHz \u6a19\u6e96&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob2', {&quot;url&quot;: &quot;https://www.androidauthority.com/mediatek-dimensity-9600-pro-leaked-specs-3656096/&quot;, &quot;title_en&quot;: &quot;This rumored chip could help 2027\u2019s flagship phones get closer to 5GHz mark&quot;, &quot;title_zh&quot;: &quot;\u50b3\u805e\u4e2d\u7684\u6676\u7247\u6709\u52a9\u65bc 2027 \u5e74\u65d7\u8266\u624b\u6a5f\u63a5\u8fd1 5GHz \u6a19\u6e96&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob2"
+              onclick="copyPrompt('mob2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob3">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/galaxy-s23-a36-one-ui-8-5-beta-3656119/" target="_blank">Samsung expands One UI 8.5 beta to much older flagships and budget phones</a></div>
+    <div class="title-zh">Samsung 將 One UI 8.5 測試版擴展至更多舊旗艦和預算機型</div>
+    
+<div class="summary-block">
+  <div class="summary-en">TL;DR Samsung has expanded One UI 8.5 beta to the three-year-old Galaxy S23 series. The beta program is now also open for Samsung’s mid-rangers, starting with the Galaxy A36. In addition, the newer beta builds have been rolled out to already-enrolled devices. As Samsung prepares to roll out the stable version of its latest One UI 8.5 software experience, it is expanding the beta to more devices. After recently opening up One UI 8.5 beta for the Galaxy S24 , as well as its sixth and seventh generations of its foldables, Samsung is now including even older flagships in the program, while also bringing the first beta for its budget A series devices. According to tipster Tarun Vats on X , One UI 8.5 beta is now available for the Galaxy S23 series. In addition to its home country of South Korea</div>
+  <div class="summary-zh">Samsung 已將 One UI 8.5 測試版擴展至三年前的 Galaxy S23 系列和中階機型如 Galaxy A36，並向已註冊設備推送新版本。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/galaxy-s23-a36-one-ui-8-5-beta-3656119/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob3"
+              onclick="toggleAnalysis('mob3', {&quot;url&quot;: &quot;https://www.androidauthority.com/galaxy-s23-a36-one-ui-8-5-beta-3656119/&quot;, &quot;title_en&quot;: &quot;Samsung expands One UI 8.5 beta to much older flagships and budget phones&quot;, &quot;title_zh&quot;: &quot;Samsung \u5c07 One UI 8.5 \u6e2c\u8a66\u7248\u64f4\u5c55\u81f3\u66f4\u591a\u820a\u65d7\u8266\u548c\u9810\u7b97\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob3"
+              onclick="bookmarkArticle('mob3', {&quot;url&quot;: &quot;https://www.androidauthority.com/galaxy-s23-a36-one-ui-8-5-beta-3656119/&quot;, &quot;title_en&quot;: &quot;Samsung expands One UI 8.5 beta to much older flagships and budget phones&quot;, &quot;title_zh&quot;: &quot;Samsung \u5c07 One UI 8.5 \u6e2c\u8a66\u7248\u64f4\u5c55\u81f3\u66f4\u591a\u820a\u65d7\u8266\u548c\u9810\u7b97\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob3', {&quot;url&quot;: &quot;https://www.androidauthority.com/galaxy-s23-a36-one-ui-8-5-beta-3656119/&quot;, &quot;title_en&quot;: &quot;Samsung expands One UI 8.5 beta to much older flagships and budget phones&quot;, &quot;title_zh&quot;: &quot;Samsung \u5c07 One UI 8.5 \u6e2c\u8a66\u7248\u64f4\u5c55\u81f3\u66f4\u591a\u820a\u65d7\u8266\u548c\u9810\u7b97\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob3"
+              onclick="copyPrompt('mob3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob4">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/i-switched-from-gmail-to-proton-mail-3655312/" target="_blank">I switched from Gmail to Proton Mail, and not just because of privacy</a></div>
+    <div class="title-zh">我從 Gmail 轉換到 Proton Mail，不僅僅是因為隱私考慮</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Credit: Calvin Wankhede / Android Authority Here’s a scary thought: Google probably knows me better than my own mother. Between my emails in Gmail, images in Photos, all my online searches, personal Gemini conversations, files stored in my Drive account , and all the data the company collects from other Google apps I use, it can create a surprisingly accurate profile of me. The more it gets to know me, the better it gets at showing me ads that may grab my attention, which in turn will boost their profits. I get the business behind it, I just don’t like it. I want privacy. Period. Google won’t give it to me, so I started looking elsewhere. I already ditched Google Drive and Photos for Proton Drive , and while I was initially skeptical of moving away from Gmail since I just cleaned it up, Pr</div>
+  <div class="summary-zh">除了隱私保護外，使用者從 Gmail 轉向 Proton Mail 還有其他重要原因，包括對 Google 廣泛數據蒐集的擔憂。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/i-switched-from-gmail-to-proton-mail-3655312/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob4"
+              onclick="toggleAnalysis('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/i-switched-from-gmail-to-proton-mail-3655312/&quot;, &quot;title_en&quot;: &quot;I switched from Gmail to Proton Mail, and not just because of privacy&quot;, &quot;title_zh&quot;: &quot;\u6211\u5f9e Gmail \u8f49\u63db\u5230 Proton Mail\uff0c\u4e0d\u50c5\u50c5\u662f\u56e0\u70ba\u96b1\u79c1\u8003\u616e&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob4"
+              onclick="bookmarkArticle('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/i-switched-from-gmail-to-proton-mail-3655312/&quot;, &quot;title_en&quot;: &quot;I switched from Gmail to Proton Mail, and not just because of privacy&quot;, &quot;title_zh&quot;: &quot;\u6211\u5f9e Gmail \u8f49\u63db\u5230 Proton Mail\uff0c\u4e0d\u50c5\u50c5\u662f\u56e0\u70ba\u96b1\u79c1\u8003\u616e&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/i-switched-from-gmail-to-proton-mail-3655312/&quot;, &quot;title_en&quot;: &quot;I switched from Gmail to Proton Mail, and not just because of privacy&quot;, &quot;title_zh&quot;: &quot;\u6211\u5f9e Gmail \u8f49\u63db\u5230 Proton Mail\uff0c\u4e0d\u50c5\u50c5\u662f\u56e0\u70ba\u96b1\u79c1\u8003\u616e&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob4"
+              onclick="copyPrompt('mob4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob5">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/onn-4k-streaming-stick-chromecast-google-tv-replacement-waiting-for-3655737/" target="_blank">Walmart’s new $30 streamer is the Chromecast with Google TV replacement I’ve been waiting for</a></div>
+    <div class="title-zh">Walmart 新推出的 $30 串流器是我一直在等待的 Chromecast with Google TV 替代品</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Google left an obvious gap when it moved on from the Chromecast with Google TV. As imperfect as it was, the $50 price made it an affordable way to get a reliable Google TV streaming device — much more so than the $100 Google TV Streamer, the only streaming device Google currently sells. Thankfully, Walmart’s new Onn 4K Streaming Stick looks poised to fill that gap. The $30 dongle will offer cheap, simple streaming for those emotionally committed to Google TV , and for that crowd, it might be perfect.</div>
+  <div class="summary-zh">Google 停產 Chromecast with Google TV 後留下了明顯空缺，Walmart 的新 $30 串流器提供了比 Google 的 $100 TV Streamer 更實惠的 Google TV 設備選擇。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/onn-4k-streaming-stick-chromecast-google-tv-replacement-waiting-for-3655737/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob5"
+              onclick="toggleAnalysis('mob5', {&quot;url&quot;: &quot;https://www.androidauthority.com/onn-4k-streaming-stick-chromecast-google-tv-replacement-waiting-for-3655737/&quot;, &quot;title_en&quot;: &quot;Walmart\u2019s new $30 streamer is the Chromecast with Google TV replacement I\u2019ve been waiting for&quot;, &quot;title_zh&quot;: &quot;Walmart \u65b0\u63a8\u51fa\u7684 $30 \u4e32\u6d41\u5668\u662f\u6211\u4e00\u76f4\u5728\u7b49\u5f85\u7684 Chromecast with Google TV \u66ff\u4ee3\u54c1&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob5"
+              onclick="bookmarkArticle('mob5', {&quot;url&quot;: &quot;https://www.androidauthority.com/onn-4k-streaming-stick-chromecast-google-tv-replacement-waiting-for-3655737/&quot;, &quot;title_en&quot;: &quot;Walmart\u2019s new $30 streamer is the Chromecast with Google TV replacement I\u2019ve been waiting for&quot;, &quot;title_zh&quot;: &quot;Walmart \u65b0\u63a8\u51fa\u7684 $30 \u4e32\u6d41\u5668\u662f\u6211\u4e00\u76f4\u5728\u7b49\u5f85\u7684 Chromecast with Google TV \u66ff\u4ee3\u54c1&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob5', {&quot;url&quot;: &quot;https://www.androidauthority.com/onn-4k-streaming-stick-chromecast-google-tv-replacement-waiting-for-3655737/&quot;, &quot;title_en&quot;: &quot;Walmart\u2019s new $30 streamer is the Chromecast with Google TV replacement I\u2019ve been waiting for&quot;, &quot;title_zh&quot;: &quot;Walmart \u65b0\u63a8\u51fa\u7684 $30 \u4e32\u6d41\u5668\u662f\u6211\u4e00\u76f4\u5728\u7b49\u5f85\u7684 Chromecast with Google TV \u66ff\u4ee3\u54c1&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob5"
+              onclick="copyPrompt('mob5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob6">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/insta360_snap_adds_a_magnetic_touchscreen_viewfinder_to_your_phone-news-72305.php" target="_blank">Insta360 Snap adds a magnetic touchscreen viewfinder to your phone</a></div>
+    <div class="title-zh">Insta360 Snap 為你的手機添加磁性觸控螢幕取景器</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Insta360’s latest accessory is a magnetically attached 3.5-inch touchscreen with two key features. It serves as a viewfinder for your rear cameras and also mirrors your phone’s screen, allowing you to access all apps and menus on your Android or iOS device. Insta360 Snap comes in two varieties – a standard version priced at $80/€86/£73 and a $90/€96/£83 one, which adds an adjustable LED light. Both connect via USB-C and draw power from your phone. Insta360 claims this minimizes lag to as low as 30ms, which is much better than competing Bluetooth options. ...</div>
+  <div class="summary-zh">Insta360 Snap 是一款磁吸式 3.5 英寸觸控螢幕，可用作後置攝像頭取景器，並支援在 Android 或 iOS 設備上鏡像顯示所有應用和功能表。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/insta360_snap_adds_a_magnetic_touchscreen_viewfinder_to_your_phone-news-72305.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob6"
+              onclick="toggleAnalysis('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/insta360_snap_adds_a_magnetic_touchscreen_viewfinder_to_your_phone-news-72305.php&quot;, &quot;title_en&quot;: &quot;Insta360 Snap adds a magnetic touchscreen viewfinder to your phone&quot;, &quot;title_zh&quot;: &quot;Insta360 Snap \u70ba\u4f60\u7684\u624b\u6a5f\u6dfb\u52a0\u78c1\u6027\u89f8\u63a7\u87a2\u5e55\u53d6\u666f\u5668&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob6"
+              onclick="bookmarkArticle('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/insta360_snap_adds_a_magnetic_touchscreen_viewfinder_to_your_phone-news-72305.php&quot;, &quot;title_en&quot;: &quot;Insta360 Snap adds a magnetic touchscreen viewfinder to your phone&quot;, &quot;title_zh&quot;: &quot;Insta360 Snap \u70ba\u4f60\u7684\u624b\u6a5f\u6dfb\u52a0\u78c1\u6027\u89f8\u63a7\u87a2\u5e55\u53d6\u666f\u5668&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/insta360_snap_adds_a_magnetic_touchscreen_viewfinder_to_your_phone-news-72305.php&quot;, &quot;title_en&quot;: &quot;Insta360 Snap adds a magnetic touchscreen viewfinder to your phone&quot;, &quot;title_zh&quot;: &quot;Insta360 Snap \u70ba\u4f60\u7684\u624b\u6a5f\u6dfb\u52a0\u78c1\u6027\u89f8\u63a7\u87a2\u5e55\u53d6\u666f\u5668&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob6"
+              onclick="copyPrompt('mob6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob7">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Thu, 09 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/apple_to_use_foldable_panels_made_by_samsung_display-news-72304.php" target="_blank">Apple to use foldable panels made by Samsung Display</a></div>
+    <div class="title-zh">Apple 將採用 Samsung Display 製造的可摺疊面板</div>
+    
+<div class="summary-block">
+  <div class="summary-en">According to a new report out of Korea, Apple is expected to exclusively source foldable screens from Samsung Display. These foldable OLED panels will likely be used in the company’s upcoming iPhone Fold. Korean publication The Elec reports, citing industry sources, that Samsung Display will supply Apple with its foldable OLED panels for the next three years. During the period, Apple will not be using foldable panels from other suppliers, the report stated. Samsung Display is said to begin production of the OLED foldable screens in the 2nd quarter with initial shipments expected to...</div>
+  <div class="summary-zh">根據韓國報導，Apple 預計將專門從 Samsung Display 採購可摺疊 OLED 面板，用於其即將推出的 iPhone Fold。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/apple_to_use_foldable_panels_made_by_samsung_display-news-72304.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob7"
+              onclick="toggleAnalysis('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/apple_to_use_foldable_panels_made_by_samsung_display-news-72304.php&quot;, &quot;title_en&quot;: &quot;Apple to use foldable panels made by Samsung Display&quot;, &quot;title_zh&quot;: &quot;Apple \u5c07\u63a1\u7528 Samsung Display \u88fd\u9020\u7684\u53ef\u647a\u758a\u9762\u677f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob7"
+              onclick="bookmarkArticle('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/apple_to_use_foldable_panels_made_by_samsung_display-news-72304.php&quot;, &quot;title_en&quot;: &quot;Apple to use foldable panels made by Samsung Display&quot;, &quot;title_zh&quot;: &quot;Apple \u5c07\u63a1\u7528 Samsung Display \u88fd\u9020\u7684\u53ef\u647a\u758a\u9762\u677f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/apple_to_use_foldable_panels_made_by_samsung_display-news-72304.php&quot;, &quot;title_en&quot;: &quot;Apple to use foldable panels made by Samsung Display&quot;, &quot;title_zh&quot;: &quot;Apple \u5c07\u63a1\u7528 Samsung Display \u88fd\u9020\u7684\u53ef\u647a\u758a\u9762\u677f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Thu, 09 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob7"
+              onclick="copyPrompt('mob7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
