@@ -63,6 +63,7 @@ FEEDS = {
     "taiwan": [
         {"url": "https://www.ithome.com.tw/rss",               "name": "iThome"},
         {"url": "https://technews.tw/feed/",                   "name": "科技新報"},
+        {"url": "https://technews.tw/category/finance/feed/",  "name": "科技新報財經"},
         {"url": "https://www.inside.com.tw/rss",               "name": "Inside 台灣"},
         {"url": "https://www.bnext.com.tw/rss",                "name": "數位時代"},
         {"url": "https://www.ctimes.com.tw/rss/rss-news.xml",  "name": "CTIMES"},
