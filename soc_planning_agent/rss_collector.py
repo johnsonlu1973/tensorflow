@@ -25,7 +25,7 @@ FEEDS = {
         {"url": "https://www.eetimes.com/feed/",                "name": "EE Times"},
         {"url": "https://semiengineering.com/feed/",            "name": "SemiEngineering"},
         {"url": "https://semianalysis.com/feed/",               "name": "SemiAnalysis"},
-        {"url": "https://www.qualcomm.com/news/onq/rss.xml",    "name": "Qualcomm Blog"},
+        {"url": "https://www.qualcomm.com/news/releases",    "name": "Qualcomm Blog"},
         {"url": "https://www.nextplatform.com/feed/",           "name": "The Next Platform"},
     ],
     "mobile": [
