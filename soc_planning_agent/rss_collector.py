@@ -41,6 +41,7 @@ FEEDS = {
         {"url": "https://venturebeat.com/category/ai/feed/",   "name": "VentureBeat AI"},
         {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed/", "name": "MIT Tech Review AI"},
         {"url": "https://huggingface.co/blog/feed.xml",        "name": "Hugging Face Blog"},
+        {"url": "https://www.anthropic.com/news",        "name": "Antropic news"},
         {"url": "https://api.therundown.ai/rss",               "name": "Rundown AI"},
     ],
     "5g_cpe": [
@@ -68,9 +69,11 @@ FEEDS = {
         #{"url": "https://www.bnext.com.tw/rss",                "name": "數位時代"},
         {"url": "https://www.ctimes.com.tw/rss/rss-news.xml",  "name": "CTIMES"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_60.xml",    "name": "電子時報 Digitimes-AI"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_10.xml",    "name": "電子時報 Digitimes-CSP"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_40.xml",    "name": "電子時報 Digitimes-semi"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_25.xml",    "name": "電子時報 Digitimes-AI focus"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_16.xml",    "name": "電子時報 Digitimes-IC design"},
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_24.xml",    "name": "電子時報 Digitimes-cloud"}
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_27.xml",    "name": "電子時報 Digitimes-Next 5G"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_6.xml",    "name": "電子時報 Digitimes-smartphone"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_7.xml",    "name": "電子時報 Digitimes-broadband"},
