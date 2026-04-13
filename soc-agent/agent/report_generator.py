@@ -26,10 +26,10 @@ import anthropic
 
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "johnsonlu1973/tensorflow")
 GITHUB_BRANCH = "claude/soc-strategy-agent-TBegn"
-REPORT_BASE_URL = os.environ.get(
-    "REPORT_BASE_URL",
-    f"https://github.com/{GITHUB_REPO}/blob/{GITHUB_BRANCH}/soc-agent/reports",
-)
+
+# Use htmlpreview.github.io so Slack links open rendered HTML, not source code
+_RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/soc-agent/reports"
+REPORT_BASE_URL = f"https://htmlpreview.github.io/?{_RAW_BASE}"
 
 
 def _ts_label() -> str:
