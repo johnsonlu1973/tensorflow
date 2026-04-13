@@ -26,11 +26,28 @@ class SearchAgent:
     # ------------------------------------------------------------------
 
     def search_industry_news(self) -> dict:
-        """Search all configured topics and return synthesised JSON."""
+        """Search all configured topics and return synthesised JSON.
+        Only uses real-time web search (Perplexity or Claude web_search tool).
+        Never falls back to model training data.
+        """
         raw_results = []
         for topic in self.topics:
             print(f"  Searching: {topic[:60]}...")
             raw_results.append(self._search(topic))
+
+        # Abort if no real content retrieved
+        has_content = any(r.get("content", "").strip() for r in raw_results)
+        if not has_content:
+            print("WARNING: All searches returned empty — check PERPLEXITY_API_KEY or web_search access.")
+            return {
+                "summary": "⚠️ 搜尋未取得資料。請確認 PERPLEXITY_API_KEY 已設定，或 Claude web_search 工具可用。",
+                "highlights": ["搜尋工具無法存取，請檢查 GitHub Secrets 中的 PERPLEXITY_API_KEY 設定"],
+                "categories": {},
+                "all_sources": [],
+                "market_signals": [],
+                "search_status": "failed",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
 
         skills_ctx = self._load_skills_context()
         return self._synthesize(raw_results, skills_ctx)
@@ -92,7 +109,7 @@ class SearchAgent:
             return None
 
     def _claude_search(self, query: str) -> dict:
-        # Try web_search tool first
+        """Search via Claude web_search tool. Returns empty content if unavailable."""
         try:
             resp = self.client.messages.create(
                 model="claude-sonnet-4-6",
@@ -102,52 +119,25 @@ class SearchAgent:
                     "role": "user",
                     "content": (
                         f"Search for latest news (past week) about: {query}. "
-                        "Focus on credible sources. Return key findings with URLs."
+                        "Focus on credible sources only. Return key findings with URLs."
                     ),
                 }],
             )
             text = " ".join(
                 block.text for block in resp.content if hasattr(block, "text")
             ).strip()
-            if text and len(text) > 50:
-                return {
-                    "query": query,
-                    "content": text,
-                    "citations": [],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-        except Exception as e:
-            print(f"  Web search tool unavailable ({type(e).__name__}), using knowledge base")
-
-        # Fallback: use Claude's knowledge base directly
-        try:
-            resp = self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
-                messages=[{
-                    "role": "user",
-                    "content": (
-                        f"Based on your knowledge up to early 2025, provide key industry insights about: {query}. "
-                        "Focus on: recent product announcements, strategy shifts, market dynamics, "
-                        "and implications for mobile SoC / CPE chipset industry. "
-                        "Be specific with facts, chip models, and company names."
-                    ),
-                }],
-            )
-            text = resp.content[0].text.strip()
             return {
                 "query": query,
-                "content": text,
+                "content": text if text else "",
                 "citations": [],
-                "source": "knowledge_base",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
-            print(f"  Knowledge base fallback failed ({e})")
+            print(f"  Claude web_search unavailable ({type(e).__name__}): {e}")
             return {
                 "query": query,
                 "content": "",
-                "citations": [],
+                "search_error": str(e),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
