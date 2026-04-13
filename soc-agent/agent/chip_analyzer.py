@@ -1,7 +1,8 @@
 """
 Chip Analyzer
-Reads uploaded chip spec files and produces a structured comparison.
-Supports: PDF text extraction, .txt, .json files.
+Reads structured chip spec JSON files and evaluates whether
+current Qualcomm / MediaTek flagships can satisfy identified use cases.
+Also supports PDF / TXT uploads via best-effort text extraction.
 """
 import json
 import os
@@ -17,52 +18,95 @@ class ChipAnalyzer:
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.specs_dir = Path(__file__).parent.parent / "data" / "chip_specs"
 
-    def load_specs(self) -> dict:
-        """Read all spec files and return combined text."""
-        specs: dict[str, str] = {}
+    # ------------------------------------------------------------------
+    def load_specs(self) -> list[dict]:
+        """Load all chip spec JSON files; ignore README / gitkeep."""
+        specs: list[dict] = []
+        for f in sorted(self.specs_dir.glob("*.json")):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                # Support both single-chip and multi-chip comparison files
+                if "chips" in data:
+                    specs.extend(data["chips"])
+                elif "brand" in data:
+                    specs.append(data)
+            except Exception as e:
+                print(f"  Could not read {f.name}: {e}")
+        # Fallback: also read plain text / pdf files
         for f in self.specs_dir.iterdir():
-            if f.suffix.lower() in {".txt", ".json", ".md"} and f.name != "README.md":
-                specs[f.name] = f.read_text(encoding="utf-8", errors="ignore")
+            if f.suffix.lower() in {".txt", ".md"} and f.name != "README.md":
+                specs.append({"brand": "uploaded", "model": f.stem,
+                               "raw_text": f.read_text(encoding="utf-8", errors="ignore")})
             elif f.suffix.lower() == ".pdf":
                 text = self._extract_pdf(f)
                 if text:
-                    specs[f.name] = text
+                    specs.append({"brand": "uploaded", "model": f.stem, "raw_text": text})
         return specs
 
+    def load_comparison(self) -> dict | None:
+        """Load the latest comparison file (has 'comparison' key)."""
+        for f in sorted(self.specs_dir.glob("*.json"), reverse=True):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                if "comparison" in data:
+                    return data
+            except Exception:
+                pass
+        return None
+
+    # ------------------------------------------------------------------
     def analyze(self, use_cases: list[str]) -> dict:
-        """Check whether current Qualcomm/MediaTek chips satisfy the given use cases."""
+        """
+        For each use case determine:
+          qualcomm_status / mediatek_status: "yes" | "partial" | "no"
+        Returns structured JSON for report_generator consumption.
+        """
         specs = self.load_specs()
+        comparison = self.load_comparison()
+
         if not specs:
-            return {
-                "qualcomm": {"satisfies": [], "gaps": use_cases, "note": "No spec files uploaded yet."},
-                "mediatek": {"satisfies": [], "gaps": use_cases, "note": "No spec files uploaded yet."},
-            }
+            return self._no_spec_result(use_cases)
 
-        specs_text = "\n\n".join(f"=== {name} ===\n{content}" for name, content in specs.items())
-        prompt = f"""You are a chip architect at a SOC company.
-Analyze whether current Qualcomm and MediaTek flagship chips can satisfy these use cases:
+        specs_json = json.dumps(specs, ensure_ascii=False, indent=2)[:8000]
+        cmp_json = (
+            json.dumps(comparison.get("comparison", {}), ensure_ascii=False, indent=2)
+            if comparison else "{}"
+        )
 
+        prompt = f"""You are a chip architect at a leading SOC company.
+Evaluate whether the following use cases can be satisfied by current flagship chips.
+
+Use Cases:
 {json.dumps(use_cases, ensure_ascii=False, indent=2)}
 
-Chip specifications available:
-{specs_text}
+Chip Specifications:
+{specs_json}
+
+Comparison Summary:
+{cmp_json}
 
 Return ONLY valid JSON:
 {{
-  "qualcomm": {{
-    "chip_model": "e.g. Snapdragon 8 Elite",
-    "satisfies": ["use case description"],
-    "partially_satisfies": [{{"use_case": "", "limitation": ""}}],
-    "gaps": ["use cases that cannot be satisfied"]
-  }},
-  "mediatek": {{
-    "chip_model": "e.g. Dimensity 9400",
-    "satisfies": ["use case description"],
-    "partially_satisfies": [{{"use_case": "", "limitation": ""}}],
-    "gaps": ["use cases that cannot be satisfied"]
-  }},
+  "evaluations": [
+    {{
+      "use_case": "use case title",
+      "qualcomm_model": "Snapdragon 8 Elite Gen 2",
+      "qualcomm_status": "yes|partial|no",
+      "qualcomm_reason": "brief explanation",
+      "mediatek_model": "Dimensity 9500",
+      "mediatek_status": "yes|partial|no",
+      "mediatek_reason": "brief explanation",
+      "gap_notes": "what is missing if either chip cannot fully satisfy"
+    }}
+  ],
+  "overall_gaps": ["gaps not satisfiable by either chip"],
+  "qualcomm_unique_strengths": ["..."],
+  "mediatek_unique_strengths": ["..."],
   "summary": "overall assessment"
 }}"""
+
         try:
             resp = self.client.messages.create(
                 model="claude-sonnet-4-6",
@@ -75,7 +119,50 @@ Return ONLY valid JSON:
                 return json.loads(m.group())
         except Exception as e:
             print(f"Chip analysis error: {e}")
-        return {"qualcomm": {"satisfies": [], "gaps": []}, "mediatek": {"satisfies": [], "gaps": []}}
+
+        return self._no_spec_result(use_cases)
+
+    def get_known_gaps(self) -> list[str]:
+        """Return pre-defined strategic gaps from the comparison file."""
+        cmp = self.load_comparison()
+        if cmp:
+            return cmp.get("comparison", {}).get("key_gaps_for_soc_strategy", [])
+        return []
+
+    def get_chip_summary(self) -> dict:
+        """Return a concise chip capability summary for report headers."""
+        specs = self.load_specs()
+        out: dict[str, dict] = {}
+        for chip in specs:
+            brand = chip.get("brand", "").lower()
+            if brand in {"qualcomm", "mediatek"}:
+                npu = chip.get("npu", {})
+                out[brand] = {
+                    "model": chip.get("model", ""),
+                    "tops": npu.get("tops", "N/A"),
+                    "strengths": chip.get("strengths", []),
+                }
+        return out
+
+    # ------------------------------------------------------------------
+    def _no_spec_result(self, use_cases: list[str]) -> dict:
+        return {
+            "evaluations": [
+                {
+                    "use_case": uc,
+                    "qualcomm_model": "Snapdragon 8 Elite Gen 2",
+                    "qualcomm_status": "unknown",
+                    "qualcomm_reason": "No spec file loaded",
+                    "mediatek_model": "Dimensity 9500",
+                    "mediatek_status": "unknown",
+                    "mediatek_reason": "No spec file loaded",
+                    "gap_notes": "",
+                }
+                for uc in use_cases
+            ],
+            "overall_gaps": use_cases,
+            "summary": "Chip spec files not loaded.",
+        }
 
     def _extract_pdf(self, path: Path) -> str:
         """Best-effort PDF text extraction without heavy deps."""
@@ -83,7 +170,7 @@ Return ONLY valid JSON:
             import subprocess
             result = subprocess.run(
                 ["pdftotext", str(path), "-"],
-                capture_output=True, text=True, timeout=30
+                capture_output=True, text=True, timeout=30,
             )
             return result.stdout
         except Exception:

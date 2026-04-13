@@ -289,6 +289,7 @@ class ReportGenerator:
     # ------------------------------------------------------------------ #
 
     def generate_usecase_report(self, data: dict) -> tuple[str, str]:
+        from chip_analyzer import ChipAnalyzer
         ts = _ts_label()
         filename = f"usecase_{ts}.html"
         out_dir = self.reports_dir / "use-cases"
@@ -296,31 +297,43 @@ class ReportGenerator:
         out_path = out_dir / filename
 
         analysis = self._analyze_usecases(data)
-        chip = analysis.get("chip_analysis", {})
         current_uc = analysis.get("current_use_cases", [])
         future_uc = analysis.get("future_use_cases_2y", [])
 
-        def uc_row(uc: dict, chip_data: dict) -> str:
+        # Use ChipAnalyzer with the actual spec files for accurate evaluation
+        all_uc_titles = [u.get("title", "") for u in current_uc + future_uc]
+        chip_result = ChipAnalyzer(self.config).analyze(all_uc_titles)
+        evaluations = {e["use_case"]: e for e in chip_result.get("evaluations", [])}
+        known_gaps = ChipAnalyzer(self.config).get_known_gaps()
+
+        status_map = {
+            "yes":     ("chip-ok",   "✅ 可滿足"),
+            "partial": ("chip-warn", "⚠️ 部分滿足"),
+            "no":      ("chip-no",   "❌ 無法滿足"),
+            "unknown": ("",          "— 未知"),
+        }
+
+        def uc_row(uc: dict) -> str:
             title = uc.get("title", "")
-            pain = uc.get("pain_points", "")
-            qc = chip_data.get("qualcomm", {})
-            mt = chip_data.get("mediatek", {})
-            qc_sat = title in qc.get("satisfies", [])
-            mt_sat = title in mt.get("satisfies", [])
-            qc_cls = "chip-ok" if qc_sat else "chip-no"
-            mt_cls = "chip-ok" if mt_sat else "chip-no"
-            qc_txt = "✅ 可滿足" if qc_sat else "❌ 無法滿足"
-            mt_txt = "✅ 可滿足" if mt_sat else "❌ 無法滿足"
+            pain  = uc.get("pain_points", "")
+            ev    = evaluations.get(title, {})
+            qs, qt = status_map.get(ev.get("qualcomm_status","unknown"), ("","—"))
+            ms, mt = status_map.get(ev.get("mediatek_status","unknown"), ("","—"))
+            qr = ev.get("qualcomm_reason","")
+            mr = ev.get("mediatek_reason","")
+            gap = ev.get("gap_notes","")
+            gap_row = f"<tr><td colspan='4' style='font-size:.8rem;color:var(--warn);background:#fffbeb'><strong>差距:</strong> {gap}</td></tr>" if gap else ""
             return (
                 f"<tr><td><strong>{title}</strong><br>"
-                f"<small>{uc.get('description','')}</small></td>"
+                f"<small style='color:var(--muted)'>{uc.get('description','')}</small></td>"
                 f"<td>{pain}</td>"
-                f"<td class='{qc_cls}'>{qc_txt}</td>"
-                f"<td class='{mt_cls}'>{mt_txt}</td></tr>"
+                f"<td class='{qs}'>{qt}<br><small style='font-weight:400;color:var(--muted)'>{qr}</small></td>"
+                f"<td class='{ms}'>{mt}<br><small style='font-weight:400;color:var(--muted)'>{mr}</small></td></tr>"
+                + gap_row
             )
 
-        cur_rows = "".join(uc_row(u, chip) for u in current_uc)
-        fut_rows = "".join(uc_row(u, chip) for u in future_uc)
+        cur_rows = "".join(uc_row(u) for u in current_uc)
+        fut_rows = "".join(uc_row(u) for u in future_uc)
 
         highlights_html = "".join(
             f'<div class="highlight-card">{h}</div>'
@@ -367,6 +380,7 @@ class ReportGenerator:
     <h2>🔍 晶片差距分析 Chip Gap Analysis</h2>
     <p style="color:var(--muted);margin-bottom:1rem">以下場景目前晶片方案無法滿足，將納入策略建議報告</p>
     {"".join(f'<span class="tag">⚠️ {g}</span>' for g in analysis.get("unmet_gaps",[]))}
+    {"".join(f'<span class="tag" style="background:#fee2e2;color:#991b1b">🔴 {g}</span>' for g in known_gaps) if known_gaps else ""}
   </div>
 
   {_feedback_block("使用場景與需求痛點報告", filename)}
