@@ -92,6 +92,7 @@ class SearchAgent:
             return None
 
     def _claude_search(self, query: str) -> dict:
+        # Try web_search tool first
         try:
             resp = self.client.messages.create(
                 model="claude-sonnet-4-6",
@@ -101,24 +102,51 @@ class SearchAgent:
                     "role": "user",
                     "content": (
                         f"Search for latest news (past week) about: {query}. "
-                        "Use only credible sources. Return key findings with URLs."
+                        "Focus on credible sources. Return key findings with URLs."
                     ),
                 }],
             )
             text = " ".join(
                 block.text for block in resp.content if hasattr(block, "text")
+            ).strip()
+            if text and len(text) > 50:
+                return {
+                    "query": query,
+                    "content": text,
+                    "citations": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+        except Exception as e:
+            print(f"  Web search tool unavailable ({type(e).__name__}), using knowledge base")
+
+        # Fallback: use Claude's knowledge base directly
+        try:
+            resp = self.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Based on your knowledge up to early 2025, provide key industry insights about: {query}. "
+                        "Focus on: recent product announcements, strategy shifts, market dynamics, "
+                        "and implications for mobile SoC / CPE chipset industry. "
+                        "Be specific with facts, chip models, and company names."
+                    ),
+                }],
             )
+            text = resp.content[0].text.strip()
             return {
                 "query": query,
                 "content": text,
                 "citations": [],
+                "source": "knowledge_base",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
-            print(f"  Claude search failed ({e})")
+            print(f"  Knowledge base fallback failed ({e})")
             return {
                 "query": query,
-                "content": "Search unavailable.",
+                "content": "",
                 "citations": [],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
@@ -176,16 +204,40 @@ Return ONLY valid JSON with this exact structure:
                 messages=[{"role": "user", "content": prompt}],
             )
             text = resp.content[0].text
-            m = re.search(r"\{.*\}", text, re.DOTALL)
-            if m:
-                return json.loads(m.group())
+            result = self._extract_json(text)
+            if result:
+                return result
+            print("Synthesis: JSON parse failed, raw text length:", len(text))
         except Exception as e:
             print(f"Synthesis error: {e}")
         return {
-            "summary": "Synthesis pending.",
+            "summary": "搜尋資料已收集，分析合成失敗，請檢查 API key 設定。",
             "highlights": [],
             "categories": {},
             "all_sources": [],
             "market_signals": [],
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    @staticmethod
+    def _extract_json(text: str) -> dict | None:
+        """Robustly extract JSON from Claude responses (handles markdown code blocks)."""
+        # 1. Try stripping markdown code fences
+        stripped = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
+        # 2. Try to find the outermost JSON object
+        for pattern in [
+            r"(\{.*\})",          # standard
+            r"```json\s*(\{.*?\})\s*```",  # fenced
+        ]:
+            m = re.search(pattern, stripped, re.DOTALL)
+            if m:
+                try:
+                    return json.loads(m.group(1))
+                except json.JSONDecodeError:
+                    pass
+        # 3. Try the whole stripped text
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            pass
+        return None

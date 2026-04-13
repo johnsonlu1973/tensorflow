@@ -132,23 +132,23 @@ HTML_FOOT = """
 </footer>
 <script>
 // Star rating for feedback
-document.querySelectorAll('.stars').forEach(container => {{
-  const stars = container.querySelectorAll('.star');
-  stars.forEach((star, i) => {{
-    star.addEventListener('mouseenter', () => {{
-      stars.forEach((s, j) => s.classList.toggle('active', j <= i));
-    }});
-    star.addEventListener('mouseleave', () => {{
-      const sel = parseInt(container.dataset.selected || 0);
-      stars.forEach((s, j) => s.classList.toggle('active', j < sel));
-    }});
-    star.addEventListener('click', () => {{
+document.querySelectorAll('.stars').forEach(function(container) {
+  var stars = container.querySelectorAll('.star');
+  stars.forEach(function(star, i) {
+    star.addEventListener('mouseenter', function() {
+      stars.forEach(function(s, j) { s.classList.toggle('active', j <= i); });
+    });
+    star.addEventListener('mouseleave', function() {
+      var sel = parseInt(container.dataset.selected || 0);
+      stars.forEach(function(s, j) { s.classList.toggle('active', j < sel); });
+    });
+    star.addEventListener('click', function() {
       container.dataset.selected = i + 1;
-      const url = container.dataset.url + encodeURIComponent('\\nRating: ' + (i+1) + '/5');
+      var url = container.dataset.url + encodeURIComponent('\nRating: ' + (i+1) + '/5');
       container.nextElementSibling.href = url;
-    }});
-  }});
-}});
+    });
+  });
+});
 </script>
 </body>
 </html>
