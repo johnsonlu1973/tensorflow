@@ -73,7 +73,7 @@ FEEDS = {
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_40.xml",    "name": "電子時報 Digitimes-semi"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_25.xml",    "name": "電子時報 Digitimes-AI focus"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_16.xml",    "name": "電子時報 Digitimes-IC design"},
-        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_24.xml",    "name": "電子時報 Digitimes-cloud"}
+        {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_24.xml",    "name": "電子時報 Digitimes-cloud"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_27.xml",    "name": "電子時報 Digitimes-Next 5G"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_6.xml",    "name": "電子時報 Digitimes-smartphone"},
         {"url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_7.xml",    "name": "電子時報 Digitimes-broadband"},
