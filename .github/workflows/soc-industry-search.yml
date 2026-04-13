@@ -1,0 +1,58 @@
+name: "SOC Strategy: Industry Search (Every 4h)"
+on:
+  schedule:
+    - cron: '0 0,4,8,12,16,20 * * *'
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  BRANCH_NAME: claude/soc-strategy-agent-TBegn
+
+jobs:
+  industry-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: soc-agent/agent/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r soc-agent/agent/requirements.txt
+
+      - name: Run Industry Search
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REPORT_BASE_URL: https://github.com/${{ github.repository }}/blob/${{ env.BRANCH_NAME }}/soc-agent/reports
+        run: cd soc-agent && python agent/main.py --task industry
+
+      - name: Commit and push reports
+        run: |
+          git config user.name "SOC Strategy Agent"
+          git config user.email "soc-agent@users.noreply.github.com"
+          git pull --rebase origin ${{ env.BRANCH_NAME }}
+          git add soc-agent/reports/ soc-agent/data/ || true
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "feat(reports): industry dynamics $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push origin ${{ env.BRANCH_NAME }}
