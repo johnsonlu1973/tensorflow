@@ -255,10 +255,10 @@ Return ONLY valid JSON with this exact structure:
                 messages=[{"role": "user", "content": prompt}],
             )
             text = resp.content[0].text
-             # ── 新增診斷 print ──────────────────────────────
-        print("=== RAW SYNTHESIS (first 500 chars) ===")
-        print(text[:500])
-        print("=== END RAW ===")
+             # ── 新增診斷 print ────────────────────────────── 
+            print("=== RAW SYNTHESIS (first 500 chars) ===")
+            print(text[:500])
+            print("=== END RAW ===")
         # ──────────────────────────────────────────────
             result = self._extract_json(text)
             if result:
