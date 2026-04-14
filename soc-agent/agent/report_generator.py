@@ -42,7 +42,9 @@ def _ts_label() -> str:
 
 
 def _now_fmt() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    from zoneinfo import ZoneInfo
+    tw = datetime.now(ZoneInfo("Asia/Taipei"))
+    return tw.strftime("%Y-%m-%d %H:%M CST")
 
 
 def _feedback_url(report_type: str, report_file: str) -> str:
