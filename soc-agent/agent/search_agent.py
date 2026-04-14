@@ -10,11 +10,18 @@ writes findings back after each run. Builds knowledge graph after synthesis.
 import json
 import os
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import anthropic
 import requests
+
+
+def log(msg: str) -> None:
+    """Timestamped, unbuffered print for real-time GitHub Actions output."""
+    ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    print(f"[{ts}] {msg}", flush=True)
 
 
 class SearchAgent:
@@ -23,6 +30,8 @@ class SearchAgent:
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.perplexity_key = os.environ.get("PERPLEXITY_API_KEY", "")
         self.base_topics = config["search"]["topics"]
+        # Delay between consecutive Claude API calls to avoid rate limits
+        self._claude_call_interval = 8  # seconds
 
     # ------------------------------------------------------------------
     # Public
@@ -40,34 +49,43 @@ class SearchAgent:
         from memory_manager import MemoryManager
         from knowledge_graph import KnowledgeGraph
 
+        source = "Perplexity" if self.perplexity_key else "Claude web_search"
+        log(f"Search source: {source}")
+
         memory = MemoryManager(self.config)
         kg = KnowledgeGraph(self.config)
 
         # Step 1: Read memory to guide this run
+        log("Reading long-term memory (search.md)...")
         mem_state = memory.read()
         priorities = mem_state.get("next_priorities", [])
         confirmed = mem_state.get("confirmed_facts", [])
         gaps = mem_state.get("gaps", [])
 
         # Step 2: Build prioritised topic list
-        # Put gap-filling topics first, then base topics
         topics = self._build_topic_list(priorities, gaps)
-        print(f"[Search] This run: {len(topics)} topics "
-              f"({len(priorities)} priority gaps + base topics)")
+        log(f"Topics this run: {len(topics)} "
+            f"({min(len(priorities)+len(gaps),5)} priority gaps + base topics)")
         if confirmed:
-            print(f"[Search] Already confirmed in memory: {len(confirmed)} facts — will skip repeating")
+            log(f"Already confirmed: {len(confirmed)} facts — skipping repeats")
 
         # Step 3: Search
         raw_results = []
-        for topic in topics:
-            print(f"  Searching: {topic[:70]}...")
-            raw_results.append(self._search(topic))
+        for i, topic in enumerate(topics, 1):
+            log(f"  [{i}/{len(topics)}] {topic[:70]}...")
+            result = self._search(topic)
+            ok = "✓" if result.get("content", "").strip() else "✗ empty"
+            log(f"         → {ok}")
+            raw_results.append(result)
 
-        has_content = any(r.get("content", "").strip() for r in raw_results)
+        success_count = sum(1 for r in raw_results if r.get("content", "").strip())
+        log(f"Search complete: {success_count}/{len(topics)} returned content")
+
+        has_content = success_count > 0
         if not has_content:
-            print("WARNING: All searches returned empty — check PERPLEXITY_API_KEY.")
+            log("WARNING: All searches returned empty — PERPLEXITY_API_KEY not set and Claude rate-limited.")
             return {
-                "summary": "⚠️ 搜尋未取得資料。請確認 PERPLEXITY_API_KEY 已設定。",
+                "summary": "⚠️ 搜尋未取得資料。請確認 PERPLEXITY_API_KEY 已設定於 GitHub Secrets。",
                 "highlights": ["搜尋工具無法存取，請檢查 GitHub Secrets 中的 PERPLEXITY_API_KEY 設定"],
                 "categories": {},
                 "all_sources": [],
@@ -76,7 +94,8 @@ class SearchAgent:
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
 
-        # Step 4: Synthesise (pass confirmed facts so Claude knows what NOT to repeat)
+        # Step 4: Synthesise
+        log("Synthesising results...")
         skills_ctx = self._load_skills_context()
         confirmed_ctx = (
             "\n\nAlready confirmed facts (do NOT repeat these as highlights, focus on NEW findings):\n"
@@ -86,10 +105,12 @@ class SearchAgent:
         result = self._synthesize(raw_results, skills_ctx + confirmed_ctx)
 
         # Step 5: Update memory and knowledge graph
+        log("Updating long-term memory (search.md)...")
         memory.update(raw_results, result)
+        log("Updating knowledge graph...")
         kg.update_from_synthesis(result)
         kg_stats = kg.get_stats()
-        print(f"[KG] Graph now has {kg_stats['nodes']} nodes, {kg_stats['edges']} edges")
+        log(f"Knowledge graph: {kg_stats['nodes']} nodes, {kg_stats['edges']} edges")
 
         return result
 
@@ -98,19 +119,12 @@ class SearchAgent:
     # ------------------------------------------------------------------
 
     def _build_topic_list(self, priorities: list[str], gaps: list[str]) -> list[str]:
-        """
-        Merge priority gaps with base topics.
-        Gaps / priorities go first; base topics fill remaining slots.
-        Max 12 topics per run to keep cost reasonable.
-        """
         seen: set[str] = set()
         topics: list[str] = []
-        # Priority gaps first
         for p in (priorities + gaps)[:5]:
             if p not in seen:
                 topics.append(p)
                 seen.add(p)
-        # Then base topics
         for t in self.base_topics:
             if t not in seen and len(topics) < 12:
                 topics.append(t)
@@ -166,41 +180,53 @@ class SearchAgent:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
-            print(f"  Perplexity failed ({e}), falling back to Claude")
+            log(f"         Perplexity failed ({type(e).__name__}), falling back to Claude")
             return None
 
     def _claude_search(self, query: str) -> dict:
-        """Search via Claude web_search tool. Returns empty content if unavailable."""
-        try:
-            resp = self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2048,
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}],
-                messages=[{
-                    "role": "user",
-                    "content": (
-                        f"Search for latest news (past week) about: {query}. "
-                        "Focus on credible sources only. Return key findings with URLs."
-                    ),
-                }],
-            )
-            text = " ".join(
-                block.text for block in resp.content if hasattr(block, "text")
-            ).strip()
-            return {
-                "query": query,
-                "content": text if text else "",
-                "citations": [],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        except Exception as e:
-            print(f"  Claude web_search unavailable ({type(e).__name__}): {e}")
-            return {
-                "query": query,
-                "content": "",
-                "search_error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+        """Search via Claude web_search tool. Retries on rate limit with backoff."""
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = self.client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=2048,
+                    tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}],
+                    messages=[{
+                        "role": "user",
+                        "content": (
+                            f"Search for latest news (past week) about: {query}. "
+                            "Focus on credible sources only. Return key findings with URLs."
+                        ),
+                    }],
+                )
+                text = " ".join(
+                    block.text for block in resp.content if hasattr(block, "text")
+                ).strip()
+                # Pace consecutive Claude calls to stay within rate limits
+                time.sleep(self._claude_call_interval)
+                return {
+                    "query": query,
+                    "content": text if text else "",
+                    "citations": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            except anthropic.RateLimitError:
+                wait = 60 * attempt  # 60s, 120s, 180s
+                if attempt < max_retries:
+                    log(f"         Rate limit hit — waiting {wait}s before retry {attempt}/{max_retries-1}...")
+                    time.sleep(wait)
+                else:
+                    log(f"         Rate limit: gave up after {max_retries} attempts. Skipping topic.")
+            except Exception as e:
+                log(f"         Claude web_search error ({type(e).__name__}): {e}")
+                break
+        return {
+            "query": query,
+            "content": "",
+            "search_error": "rate_limit_or_error",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
     def _load_skills_context(self) -> str:
         path = Path(__file__).parent.parent / "skills" / "learned_skills.json"
@@ -226,7 +252,6 @@ Search Results (JSON):
 {json.dumps(results, indent=2, ensure_ascii=False)}
 {skills_ctx}
 
-#Return ONLY valid JSON with this exact structure:
 Return ONLY raw JSON. No markdown. No ```json. No text before or after. Start with {{ end with }}:
 {{
   "summary": "2-3 sentence executive summary in Traditional Chinese",
@@ -249,24 +274,29 @@ Return ONLY raw JSON. No markdown. No ```json. No text before or after. Start wi
   "market_signals": ["signal1", "signal2"],
   "generated_at": "{datetime.now(timezone.utc).isoformat()}"
 }}"""
-        try:
-            resp = self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=8192,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            text = resp.content[0].text
-             # ── 新增診斷 print ────────────────────────────── 
-            #print("=== RAW SYNTHESIS (first 500 chars) ===")
-            #print(text[:500])
-            #print("=== END RAW ===")
-        # ──────────────────────────────────────────────
-            result = self._extract_json(text)
-            if result:
-                return result
-            print("Synthesis: JSON parse failed, raw text length:", len(text))
-        except Exception as e:
-            print(f"Synthesis error: {e}")
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = self.client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=8192,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                text = resp.content[0].text
+                result = self._extract_json(text)
+                if result:
+                    return result
+                log(f"Synthesis: JSON parse failed (attempt {attempt}), raw length: {len(text)}")
+            except anthropic.RateLimitError:
+                wait = 60 * attempt
+                if attempt < max_retries:
+                    log(f"Synthesis rate limit — waiting {wait}s before retry {attempt}/{max_retries-1}...")
+                    time.sleep(wait)
+                else:
+                    log("Synthesis rate limit: gave up after max retries.")
+            except Exception as e:
+                log(f"Synthesis error: {e}")
+                break
         return {
             "summary": "搜尋資料已收集，分析合成失敗，請檢查 API key 設定。",
             "highlights": [],
@@ -278,21 +308,14 @@ Return ONLY raw JSON. No markdown. No ```json. No text before or after. Start wi
 
     @staticmethod
     def _extract_json(text: str) -> dict | None:
-        """Robustly extract JSON from Claude responses (handles markdown code blocks)."""
-        # 1. Try stripping markdown code fences
         stripped = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
-        # 2. Try to find the outermost JSON object
-        for pattern in [
-            r"(\{.*\})",          # standard
-            r"```json\s*(\{.*?\})\s*```",  # fenced
-        ]:
+        for pattern in [r"(\{.*\})", r"```json\s*(\{.*?\})\s*```"]:
             m = re.search(pattern, stripped, re.DOTALL)
             if m:
                 try:
                     return json.loads(m.group(1))
                 except json.JSONDecodeError:
                     pass
-        # 3. Try the whole stripped text
         try:
             return json.loads(stripped)
         except json.JSONDecodeError:

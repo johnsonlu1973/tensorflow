@@ -42,14 +42,14 @@ def main():
     generator = ReportGenerator(config)
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    print(f"[{ts}] Task: {args.task}")
+    print(f"[{ts}] Task: {args.task}", flush=True)
 
     try:
         if args.task == "industry":
             data = searcher.search_industry_news()
             path, url = generator.generate_industry_report(data)
             notifier.send(
-                title="× 産業動態報告已更新",
+                title="産業動態報告已更新",
                 report_type="Industry Dynamics",
                 url=url,
                 summary=data.get("summary", ""),
@@ -60,7 +60,7 @@ def main():
             data = searcher.search_industry_news()
             path, url = generator.generate_usecase_report(data)
             notifier.send(
-                title="× 使用場景與痛點報告已更新",
+                title="使用場景與痛點報告已更新",
                 report_type="Use Case & Pain Points",
                 url=url,
                 summary=generator.last_summary,
@@ -70,7 +70,7 @@ def main():
         elif args.task == "strategy":
             path, url = generator.generate_strategy_report()
             notifier.send(
-                title="× 策略建議報告已更新",
+                title="策略建議報告已更新",
                 report_type="Strategy Recommendations",
                 url=url,
                 summary=generator.last_summary,
@@ -80,12 +80,12 @@ def main():
         elif args.task == "feedback":
             processor = FeedbackProcessor(config)
             new_skills = processor.process_github_issues()
-            print(f"Learned {len(new_skills)} new skills from feedback")
+            print(f"Learned {len(new_skills)} new skills from feedback", flush=True)
 
-        print(f"Task '{args.task}' completed successfully.")
+        print(f"Task '{args.task}' completed successfully.", flush=True)
 
     except Exception as exc:
-        print(f"ERROR in task '{args.task}': {exc}", file=sys.stderr)
+        print(f"ERROR in task '{args.task}': {exc}", file=sys.stderr, flush=True)
         notifier.send_error(args.task, str(exc))
         sys.exit(1)
 
