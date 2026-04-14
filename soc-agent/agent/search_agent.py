@@ -226,7 +226,8 @@ Search Results (JSON):
 {json.dumps(results, indent=2, ensure_ascii=False)}
 {skills_ctx}
 
-Return ONLY valid JSON with this exact structure:
+#Return ONLY valid JSON with this exact structure:
+Return ONLY raw JSON. No markdown. No ```json. No text before or after. Start with {{ end with }}:
 {{
   "summary": "2-3 sentence executive summary in Traditional Chinese",
   "highlights": ["5 key highlights (Traditional Chinese)"],
@@ -256,9 +257,9 @@ Return ONLY valid JSON with this exact structure:
             )
             text = resp.content[0].text
              # ── 新增診斷 print ────────────────────────────── 
-            print("=== RAW SYNTHESIS (first 500 chars) ===")
-            print(text[:500])
-            print("=== END RAW ===")
+            #print("=== RAW SYNTHESIS (first 500 chars) ===")
+            #print(text[:500])
+            #print("=== END RAW ===")
         # ──────────────────────────────────────────────
             result = self._extract_json(text)
             if result:
