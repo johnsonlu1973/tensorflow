@@ -26,9 +26,11 @@ import anthropic
 
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "johnsonlu1973/tensorflow")
 GITHUB_BRANCH = "claude/soc-strategy-agent-TBegn"
+
+# GitHub Pages URL — workflows set REPORT_BASE_URL; falls back to Pages default
 REPORT_BASE_URL = os.environ.get(
     "REPORT_BASE_URL",
-    f"https://github.com/{GITHUB_REPO}/blob/{GITHUB_BRANCH}/soc-agent/reports",
+    "https://johnsonlu1973.github.io/tensorflow/reports",
 )
 
 
@@ -132,23 +134,23 @@ HTML_FOOT = """
 </footer>
 <script>
 // Star rating for feedback
-document.querySelectorAll('.stars').forEach(container => {{
-  const stars = container.querySelectorAll('.star');
-  stars.forEach((star, i) => {{
-    star.addEventListener('mouseenter', () => {{
-      stars.forEach((s, j) => s.classList.toggle('active', j <= i));
-    }});
-    star.addEventListener('mouseleave', () => {{
-      const sel = parseInt(container.dataset.selected || 0);
-      stars.forEach((s, j) => s.classList.toggle('active', j < sel));
-    }});
-    star.addEventListener('click', () => {{
+document.querySelectorAll('.stars').forEach(function(container) {
+  var stars = container.querySelectorAll('.star');
+  stars.forEach(function(star, i) {
+    star.addEventListener('mouseenter', function() {
+      stars.forEach(function(s, j) { s.classList.toggle('active', j <= i); });
+    });
+    star.addEventListener('mouseleave', function() {
+      var sel = parseInt(container.dataset.selected || 0);
+      stars.forEach(function(s, j) { s.classList.toggle('active', j < sel); });
+    });
+    star.addEventListener('click', function() {
       container.dataset.selected = i + 1;
-      const url = container.dataset.url + encodeURIComponent('\\nRating: ' + (i+1) + '/5');
+      var url = container.dataset.url + encodeURIComponent('\nRating: ' + (i+1) + '/5');
       container.nextElementSibling.href = url;
-    }});
-  }});
-}});
+    });
+  });
+});
 </script>
 </body>
 </html>
@@ -290,6 +292,7 @@ class ReportGenerator:
 
     def generate_usecase_report(self, data: dict) -> tuple[str, str]:
         from chip_analyzer import ChipAnalyzer
+        from knowledge_graph import KnowledgeGraph
         ts = _ts_label()
         filename = f"usecase_{ts}.html"
         out_dir = self.reports_dir / "use-cases"
@@ -297,14 +300,37 @@ class ReportGenerator:
         out_path = out_dir / filename
 
         analysis = self._analyze_usecases(data)
+        chip = analysis.get("chip_analysis", {})
         current_uc = analysis.get("current_use_cases", [])
-        future_uc = analysis.get("future_use_cases_2y", [])
+
+        # Use knowledge graph to predict 2-year future use cases (graph-driven, not just AI guessing)
+        kg = KnowledgeGraph(self.config)
+        current_titles = [u.get("title", "") for u in current_uc]
+        kg_predictions = kg.predict_future_use_cases(current_titles)
+
+        # Merge KG predictions with any from analysis, de-duplicate
+        analysis_future = analysis.get("future_use_cases_2y", [])
+        kg_future_titles = {p.get("use_case", "") for p in kg_predictions}
+        future_uc = list(analysis_future) + [
+            {
+                "title": p.get("use_case", ""),
+                "description": p.get("description", ""),
+                "pain_points": p.get("pain_point_addressed", ""),
+                "chip_requirement": p.get("chip_requirement", ""),
+                "confidence": p.get("confidence", 0),
+                "graph_path": p.get("graph_path", ""),
+                "source": "knowledge_graph",
+            }
+            for p in kg_predictions
+            if p.get("use_case") not in {u.get("title") for u in analysis_future}
+        ]
 
         # Use ChipAnalyzer with the actual spec files for accurate evaluation
         all_uc_titles = [u.get("title", "") for u in current_uc + future_uc]
         chip_result = ChipAnalyzer(self.config).analyze(all_uc_titles)
         evaluations = {e["use_case"]: e for e in chip_result.get("evaluations", [])}
         known_gaps = ChipAnalyzer(self.config).get_known_gaps()
+        kg_stats = kg.get_stats()
 
         status_map = {
             "yes":     ("chip-ok",   "✅ 可滿足"),
@@ -313,7 +339,7 @@ class ReportGenerator:
             "unknown": ("",          "— 未知"),
         }
 
-        def uc_row(uc: dict) -> str:
+        def uc_row(uc: dict, show_graph_path: bool = False) -> str:
             title = uc.get("title", "")
             pain  = uc.get("pain_points", "")
             ev    = evaluations.get(title, {})
@@ -322,18 +348,33 @@ class ReportGenerator:
             qr = ev.get("qualcomm_reason","")
             mr = ev.get("mediatek_reason","")
             gap = ev.get("gap_notes","")
-            gap_row = f"<tr><td colspan='4' style='font-size:.8rem;color:var(--warn);background:#fffbeb'><strong>差距:</strong> {gap}</td></tr>" if gap else ""
+            graph_path = uc.get("graph_path","")
+            chip_req   = uc.get("chip_requirement","")
+            confidence = uc.get("confidence", None)
+            is_kg = uc.get("source") == "knowledge_graph"
+
+            subtitle = uc.get("description","")
+            if show_graph_path and graph_path:
+                subtitle += f"<br><span style='font-size:.72rem;color:#6366f1'>🔗 Graph: {graph_path}</span>"
+            if chip_req:
+                subtitle += f"<br><span style='font-size:.72rem;color:var(--warn)'>⚙️ SoC需求: {chip_req}</span>"
+            conf_badge = (f" <span class='pill pill-ok'>信心 {int(confidence*100)}%</span>"
+                          if confidence else "")
+            kg_badge = " <span class='pill' style='background:#ede9fe;color:#6d28d9'>KG預測</span>" if is_kg else ""
+
+            gap_row = (f"<tr><td colspan='4' style='font-size:.8rem;color:var(--warn);"
+                       f"background:#fffbeb'><strong>差距:</strong> {gap}</td></tr>") if gap else ""
             return (
-                f"<tr><td><strong>{title}</strong><br>"
-                f"<small style='color:var(--muted)'>{uc.get('description','')}</small></td>"
+                f"<tr><td><strong>{title}</strong>{kg_badge}{conf_badge}<br>"
+                f"<small style='color:var(--muted)'>{subtitle}</small></td>"
                 f"<td>{pain}</td>"
                 f"<td class='{qs}'>{qt}<br><small style='font-weight:400;color:var(--muted)'>{qr}</small></td>"
                 f"<td class='{ms}'>{mt}<br><small style='font-weight:400;color:var(--muted)'>{mr}</small></td></tr>"
                 + gap_row
             )
 
-        cur_rows = "".join(uc_row(u) for u in current_uc)
-        fut_rows = "".join(uc_row(u) for u in future_uc)
+        cur_rows = "".join(uc_row(u, show_graph_path=False) for u in current_uc)
+        fut_rows = "".join(uc_row(u, show_graph_path=True)  for u in future_uc)
 
         highlights_html = "".join(
             f'<div class="highlight-card">{h}</div>'
@@ -352,6 +393,10 @@ class ReportGenerator:
   <div class="summary-box">
     <h2>Executive Summary</h2>
     <p>{analysis.get("summary","")}</p>
+    <p style="margin-top:.75rem;font-size:.8rem;opacity:.7">
+      Knowledge Graph: {kg_stats.get("nodes",0)} nodes · {kg_stats.get("edges",0)} edges
+      · 2-year predictions driven by graph paths
+    </p>
   </div>
   <div class="highlights">{highlights_html}</div>
 
@@ -462,14 +507,32 @@ Identify use cases and pain points. Return ONLY valid JSON:
     # ------------------------------------------------------------------ #
 
     def generate_strategy_report(self) -> tuple[str, str]:
+        from knowledge_graph import KnowledgeGraph
+        from memory_manager import MemoryManager
         ts = _ts_label()
         filename = f"strategy_{ts}.html"
         out_dir = self.reports_dir / "strategy"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / filename
 
-        strategy = self._build_strategy()
+        # Load confirmed facts from memory to ground strategy in real data
+        mem = MemoryManager(self.config)
+        confirmed_facts = mem.get_confirmed_facts()
+
+        strategy = self._build_strategy(confirmed_facts)
         recs = strategy.get("recommendations", [])
+
+        # Enrich each strategy with all related use cases from knowledge graph
+        kg = KnowledgeGraph(self.config)
+        enriched = kg.link_strategy_to_use_cases(recs)
+        # Merge enriched data back into recs
+        enriched_map = {e.get("title", ""): e for e in enriched}
+        for rec in recs:
+            enr = enriched_map.get(rec.get("title", ""), {})
+            if enr:
+                rec["secondary_use_cases"] = enr.get("secondary_use_cases", [])
+                rec["ecosystem_connections"] = enr.get("ecosystem_connections", [])
+        kg_stats = kg.get_stats()
         criteria = strategy.get("success_criteria_met", {})
 
         def badge(met: bool, label: str) -> str:
@@ -536,6 +599,10 @@ Identify use cases and pain points. Return ONLY valid JSON:
     <h2>Executive Summary</h2>
     <p>{strategy.get("summary","")}</p>
     <div style="margin-top:1rem">{criteria_html}</div>
+    <p style="margin-top:.75rem;font-size:.8rem;opacity:.7">
+      Knowledge Graph: {kg_stats.get("nodes",0)} nodes · {kg_stats.get("edges",0)} edges
+      · Strategy grounded in {len(confirmed_facts)} confirmed market facts
+    </p>
   </div>
   <div class="highlights">{highlights_html}</div>
 
@@ -566,16 +633,23 @@ Identify use cases and pain points. Return ONLY valid JSON:
         print(f"Strategy report saved: {out_path}")
         return str(out_path), url
 
-    def _build_strategy(self) -> dict:
+    def _build_strategy(self, confirmed_facts: list | None = None) -> dict:
         # Gather unmet gaps from recent use-case reports
         gaps = self._collect_recent_gaps()
         skills_ctx = self._skills_context()
+        facts_ctx = ""
+        if confirmed_facts:
+            facts_ctx = (
+                "\n\nConfirmed market facts (verified across multiple search runs — ground strategy in these):\n"
+                + "\n".join(f"- {f}" for f in confirmed_facts[:20])
+            )
         prompt = f"""You are the VP of Product BU & Strategy Planning at a leading SOC company.
 Mission: Develop the world's strongest Agentic Mobile & CPE SoC.
 Success criteria (must achieve at least ONE): pricing power | market share growth | customer lock-in.
 
 Based on these unmet use cases and gaps that current Qualcomm/MediaTek chips cannot satisfy:
 {json.dumps(gaps, ensure_ascii=False, indent=2)}
+{facts_ctx}
 {skills_ctx}
 
 Propose concrete SoC product strategies. Validate each against:
