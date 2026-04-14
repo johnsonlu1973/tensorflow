@@ -30,7 +30,7 @@ GITHUB_BRANCH = "claude/soc-strategy-agent-TBegn"
 # GitHub Pages URL — workflows set REPORT_BASE_URL; falls back to Pages default
 REPORT_BASE_URL = os.environ.get(
     "REPORT_BASE_URL",
-    "https://johnsonlu1973.github.io/tensorflow/reports",
+    "https://johnsonlu1973.github.io/tensorflow/soc-agent/reports",
 )
 
 
