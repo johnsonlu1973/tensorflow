@@ -32,6 +32,9 @@ REPORT_BASE_URL = os.environ.get(
     "REPORT_BASE_URL",
     "https://johnsonlu1973.github.io/tensorflow/soc-agent/reports",
 )
+# URL is consistent with docs/ folder in master branch:
+# docs/soc-agent/reports/industry/latest.html
+# → https://johnsonlu1973.github.io/tensorflow/soc-agent/reports/industry/latest.html
 
 
 def _ts_label() -> str:
@@ -186,7 +189,9 @@ class ReportGenerator:
     def __init__(self, config: dict):
         self.config = config
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        self.reports_dir = Path(__file__).parent.parent / "reports"
+        # Write reports into docs/soc-agent/reports/ so GitHub Pages
+        # (served from master/docs/) can render them directly.
+        self.reports_dir = Path(__file__).parent.parent.parent / "docs" / "soc-agent" / "reports"
         self.last_summary = ""
         self.last_highlights: list[str] = []
 
