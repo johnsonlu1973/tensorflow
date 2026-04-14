@@ -30,8 +30,11 @@ class SearchAgent:
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.perplexity_key = os.environ.get("PERPLEXITY_API_KEY", "")
         self.base_topics = config["search"]["topics"]
-        # Delay between consecutive Claude API calls to avoid rate limits
-        self._claude_call_interval = 8  # seconds
+        # Without Perplexity, every search uses Claude API.
+        # Limit topics to avoid exceeding 30k input tokens/minute.
+        self._max_topics = 12 if self.perplexity_key else 5
+        # Delay between consecutive Claude API calls (seconds)
+        self._claude_call_interval = 8
 
     # ------------------------------------------------------------------
     # Public
@@ -49,8 +52,11 @@ class SearchAgent:
         from memory_manager import MemoryManager
         from knowledge_graph import KnowledgeGraph
 
-        source = "Perplexity" if self.perplexity_key else "Claude web_search"
-        log(f"Search source: {source}")
+        if self.perplexity_key:
+            log("Search source: Perplexity (primary) — up to 12 topics")
+        else:
+            log("Search source: Claude web_search only — limited to 5 topics to stay within rate limits")
+            log("  Tip: set PERPLEXITY_API_KEY in GitHub Secrets to enable full 12-topic search")
 
         memory = MemoryManager(self.config)
         kg = KnowledgeGraph(self.config)
@@ -121,12 +127,15 @@ class SearchAgent:
     def _build_topic_list(self, priorities: list[str], gaps: list[str]) -> list[str]:
         seen: set[str] = set()
         topics: list[str] = []
-        for p in (priorities + gaps)[:5]:
+        # Priority gaps first (max 3 when Claude-only to save tokens)
+        gap_limit = 3 if not self.perplexity_key else 5
+        for p in (priorities + gaps)[:gap_limit]:
             if p not in seen:
                 topics.append(p)
                 seen.add(p)
+        # Then base topics up to the per-run cap
         for t in self.base_topics:
-            if t not in seen and len(topics) < 12:
+            if t not in seen and len(topics) < self._max_topics:
                 topics.append(t)
                 seen.add(t)
         return topics
