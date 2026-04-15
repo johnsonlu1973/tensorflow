@@ -142,6 +142,9 @@ Predict 5-8 use cases. Only use evidence from the graph, not speculation.
                 return json.loads(m.group()).get("predictions", [])
         except Exception as e:
             print(f"[KG] predict error: {e}")
+            print(f"[KG] stop_reason: {resp.stop_reason}")          # ← 加這行
+            print(f"[KG] response length: {len(text)}")             # ← 加這行
+            print(f"[KG] response tail:\n{text[-200:]}")            # ← 加這行
         return []
 
     def link_strategy_to_use_cases(self, strategy_items: list[dict]) -> list[dict]:
