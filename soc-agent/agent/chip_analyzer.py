@@ -119,6 +119,10 @@ Return ONLY valid JSON:
                 return json.loads(m.group())
         except Exception as e:
             print(f"Chip analysis error: {e}")
+            # debug 
+            print(f"[Chip] stop_reason: {resp.stop_reason}")        # ← 加這行
+            print(f"[Chip] response length: {len(text)}")           # ← 加這行
+            print(f"[Chip] response tail:\n{text[-200:]}")          # ← 加這行
 
         return self._no_spec_result(use_cases)
 
