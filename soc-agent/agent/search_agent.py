@@ -30,10 +30,9 @@ class SearchAgent:
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.perplexity_key = os.environ.get("PERPLEXITY_API_KEY", "")
         self.base_topics = config["search"]["topics"]
-        # Without Perplexity, every search uses Claude API.
-        # Limit topics to avoid exceeding 30k input tokens/minute.
-        self._max_topics = 12 if self.perplexity_key else 5
+        self._max_topics = 12
         # Delay between consecutive Claude API calls (seconds)
+        # Today-only results are compact so 12 topics stay within rate limits
         self._claude_call_interval = 8
 
     # ------------------------------------------------------------------
@@ -52,11 +51,11 @@ class SearchAgent:
         from memory_manager import MemoryManager
         from knowledge_graph import KnowledgeGraph
 
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if self.perplexity_key:
-            log("Search source: Perplexity (primary) — up to 12 topics")
+            log(f"Search source: Perplexity (primary) — 12 topics, today only ({today})")
         else:
-            log("Search source: Claude web_search only — limited to 5 topics to stay within rate limits")
-            log("  Tip: set PERPLEXITY_API_KEY in GitHub Secrets to enable full 12-topic search")
+            log(f"Search source: Claude web_search — 12 topics, today only ({today})")
 
         memory = MemoryManager(self.config)
         kg = KnowledgeGraph(self.config)
@@ -127,9 +126,7 @@ class SearchAgent:
     def _build_topic_list(self, priorities: list[str], gaps: list[str]) -> list[str]:
         seen: set[str] = set()
         topics: list[str] = []
-        # Priority gaps first (max 3 when Claude-only to save tokens)
-        gap_limit = 3 if not self.perplexity_key else 5
-        for p in (priorities + gaps)[:gap_limit]:
+        for p in (priorities + gaps)[:5]:
             if p not in seen:
                 topics.append(p)
                 seen.add(p)
@@ -148,6 +145,7 @@ class SearchAgent:
         return self._claude_search(query)
 
     def _perplexity(self, query: str) -> dict | None:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         url = "https://api.perplexity.ai/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.perplexity_key}",
@@ -163,20 +161,22 @@ class SearchAgent:
                         "sourced information from credible media: official company blogs, "
                         "Reuters, Bloomberg, Nikkei, IEEE, The Verge, Ars Technica, "
                         "AnandTech, SemiAnalysis, Counterpoint Research, IDC. "
-                        "Exclude personal blogs and unverified social media."
+                        "Exclude personal blogs and unverified social media. "
+                        "ONLY return news published today. Discard anything older."
                     ),
                 },
                 {
                     "role": "user",
                     "content": (
-                        f"Latest news (past week) about: {query}\n\n"
+                        f"News published TODAY ({today}) about: {query}\n\n"
+                        "IMPORTANT: Only include articles published on {today}. "
                         "Return JSON with keys: findings (list of str), "
-                        "sources (list of {title,url,date}), significance (str)"
+                        "sources (list of {{title,url,date}}), significance (str)"
                     ),
                 },
             ],
             "return_citations": True,
-            "search_recency_filter": "week",
+            "search_recency_filter": "day",
         }
         try:
             resp = requests.post(url, json=payload, headers=headers, timeout=45)
@@ -194,6 +194,7 @@ class SearchAgent:
 
     def _claude_search(self, query: str) -> dict:
         """Search via Claude web_search tool. Retries on rate limit with backoff."""
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         max_retries = 3
         for attempt in range(1, max_retries + 1):
             try:
@@ -204,8 +205,9 @@ class SearchAgent:
                     messages=[{
                         "role": "user",
                         "content": (
-                            f"Search for latest news (past week) about: {query}. "
-                            "Focus on credible sources only. Return key findings with URLs."
+                            f"Search for news published TODAY ({today}) about: {query}. "
+                            "Only include articles from today. Discard anything older. "
+                            "Focus on credible sources only. Return key findings with URLs and publication dates."
                         ),
                     }],
                 )
@@ -251,9 +253,13 @@ class SearchAgent:
         )
 
     def _synthesize(self, results: list[dict], skills_ctx: str) -> dict:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         prompt = f"""You are the VP of Product BU & Strategy Planning at a leading SOC company.
 Mission: Develop the world's strongest Agentic Mobile & CPE SoC.
 Success criteria: pricing power, market share growth, customer lock-in.
+
+TODAY'S DATE: {today}
+CRITICAL: Only synthesise articles published on {today}. Discard any content from earlier dates.
 
 Synthesize the following search results into a structured industry dynamics report.
 
