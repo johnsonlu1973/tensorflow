@@ -487,11 +487,28 @@ Identify use cases and pain points. Return ONLY valid JSON:
     }}
   }},
   "unmet_gaps": ["gaps not satisfied by either chip"]
-}}"""
+}}
+
+7. QUALITY RULES (MOST IMPORTANT):
+1. NO DUPLICATE USE CASES:
+   - REMOVE: "AI photo editing" AND "AI image enhancement" (same domain, same technology, same user action)
+   - KEEP: "AI photo editing" AND "real-time AR translation" (different domain, different technology)
+   - RULE: if a reader would say "this is the same as item X", remove it
+2. PAIN POINTS MUST BE SPECIFIC:
+   DO NOT write vague descriptions. WRITE specific metrics instead.
+   BAD: "chip performance improved"
+   GOOD: "NPU throughput increased from 38 to 50 TOPS"
+   BEST: "At ~70% accuracy, NPU can do 40 tokens/second"
+3. OUTPUT CONSTRAINTS:
+   - current_use_cases: maximum 5 items, NO duplicates
+   - future_use_cases_2y: maximum 3 items, NO duplicates, NO overlap with current
+   - Each use case needs a specific scenario, benefit, or quantified value in description
+   - unmet_gaps: maximum 5 items, each a specific technical gap with measurable threshold
+   - Total JSON output must be under 3000 tokens"""
         try:
             resp = self.client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=6144,
+                max_tokens=3500,
                 messages=[{"role": "user", "content": prompt}],
             )
             text = resp.content[0].text
