@@ -1,13 +1,8 @@
-name: "SOC Strategy: Industry Search (Every 4h)"
+name: "SOC Strategy: Learn from GitHub Issues"
 on:
-  schedule:
-    - cron: '0 0,4,8,12,16,20 * * *'
+  issues:
+    types: [opened, edited, labeled, closed]
   workflow_dispatch:
-    inputs:
-      debug:
-        description: 'Enable debug output'
-        required: false
-        default: 'false'
 
 permissions:
   contents: write
@@ -15,12 +10,11 @@ permissions:
 
 env:
   BRANCH_NAME: master
-  PAGES_BASE: https://johnsonlu1973.github.io/tensorflow/soc-agent
 
 jobs:
-  industry-search:
+  learn-feedback:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,27 +32,21 @@ jobs:
       - name: Install dependencies
         run: pip install -r soc-agent/agent/requirements.txt
 
-      - name: Run Industry Search
+      - name: Process feedback
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REPORT_BASE_URL: ${{ env.PAGES_BASE }}/reports
           PYTHONUNBUFFERED: "1"
-        run: cd soc-agent && python agent/main.py --task industry
+        run: cd soc-agent && python agent/main.py --task feedback
 
-      - name: Commit and push reports
+      - name: Commit and push skills
         run: |
           git config user.name "SOC Strategy Agent"
           git config user.email "soc-agent@users.noreply.github.com"
-          git add docs/soc-agent/reports/industry/ \
-                  soc-agent/data/latest_industry.json \
-                  soc-agent/data/knowledge_graph.json \
-                  soc-agent/data/search.md || true
-          git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "feat(reports): industry dynamics $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git add soc-agent/skills/learned_skills.json || true
+          git diff --staged --quiet && echo "No new skills learned" && exit 0
+          git commit -m "learn(skills): update from GitHub issue #${{ github.event.issue.number }}"
           for attempt in 1 2 3; do
             git pull --rebase origin ${{ env.BRANCH_NAME }} && git push origin ${{ env.BRANCH_NAME }} && break
             echo "Push attempt $attempt failed, retrying in ${attempt}0s..."
