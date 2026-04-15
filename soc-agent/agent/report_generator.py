@@ -287,7 +287,7 @@ class ReportGenerator:
         # Also write as latest
         (out_dir / "latest.html").write_text(html, encoding="utf-8")
 
-        url = f"{REPORT_BASE_URL}/industry/latest.html"
+        url = f"{REPORT_BASE_URL}/industry/{filename}"
         self.last_summary = data.get("summary", "")
         self.last_highlights = data.get("highlights", [])
         print(f"Industry report saved: {out_path}")
@@ -443,7 +443,7 @@ class ReportGenerator:
         out_path.write_text(html, encoding="utf-8")
         (out_dir / "latest.html").write_text(html, encoding="utf-8")
 
-        url = f"{REPORT_BASE_URL}/use-cases/latest.html"
+        url = f"{REPORT_BASE_URL}/use-cases/{filename}"
         self.last_summary = analysis.get("summary", "")
         self.last_highlights = analysis.get("highlights", [])
         print(f"Use-case report saved: {out_path}")
@@ -634,7 +634,7 @@ Identify use cases and pain points. Return ONLY valid JSON:
         out_path.write_text(html, encoding="utf-8")
         (out_dir / "latest.html").write_text(html, encoding="utf-8")
 
-        url = f"{REPORT_BASE_URL}/strategy/latest.html"
+        url = f"{REPORT_BASE_URL}/strategy/{filename}"
         self.last_summary = strategy.get("summary", "")
         self.last_highlights = strategy.get("highlights", [])
         print(f"Strategy report saved: {out_path}")

@@ -5,6 +5,7 @@ Sends formatted messages via Slack Incoming Webhook.
 import json
 import os
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -26,7 +27,7 @@ class SlackNotifier:
             return
 
         hl_text = "\n".join(f"• {h}" for h in highlights[:5]) if highlights else "N/A"
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        ts = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M CST")
 
         blocks = [
             {
