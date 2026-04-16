@@ -116,6 +116,10 @@ def print_summary(report: IntelReport) -> None:
     print("=" * 70)
 
 
+LATEST_JSON = Path(__file__).parent / "latest_intel_output.json"
+LATEST_MD = Path(__file__).parent / "latest_intel_report.md"
+
+
 def main() -> None:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     session_dir = SESSIONS_DIR / ts
@@ -123,11 +127,20 @@ def main() -> None:
     collector = IntelCollector()
     report = collector.run()
 
+    # Save timestamped copies (kept for other agents)
     json_path, md_path = save_report(report, session_dir)
+
+    # Overwrite fixed-path latest files (easy browsing)
+    LATEST_JSON.write_text(
+        json.dumps(json.loads(report.model_dump_json()), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    LATEST_MD.write_text(_build_markdown(report), encoding="utf-8")
+
     print_summary(report)
 
-    log(f"[run.py] JSON → {json_path}")
-    log(f"[run.py] Report → {md_path}")
+    log(f"[run.py] Session → {json_path}")
+    log(f"[run.py] Latest  → {LATEST_MD}")
 
 
 if __name__ == "__main__":
