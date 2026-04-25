@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-04-25</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-04-25 &nbsp;·&nbsp; 9 篇 &nbsp;·&nbsp; 更新：2026-04-25 22:43 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy" target="_blank">Microsoft will allow users to indefinitely pause updates in Windows 11 — first change in over a decade to the mandatory update policy</a></div>
+    <div class="title-zh">Microsoft 將允許用戶無限期暫停 Windows 11 更新 — 超過十年來強制更新政策的首次改變</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Microsoft is introducing major changes to Windows 11 updates, giving users greater control by allowing extended or indefinite update pausing, restoring normal shutdown and restart options even when updates are pending, and improving clarity about which updates are installed.</div>
+  <div class="summary-zh">Microsoft 推出 Windows 11 更新的重大變更，允許用戶延長或無限期暫停更新，恢復正常關閉和重啟選項，並改進對已安裝更新的透明度。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy&quot;, &quot;title_en&quot;: &quot;Microsoft will allow users to indefinitely pause updates in Windows 11 \u2014 first change in over a decade to the mandatory update policy&quot;, &quot;title_zh&quot;: &quot;Microsoft \u5c07\u5141\u8a31\u7528\u6236\u7121\u9650\u671f\u66ab\u505c Windows 11 \u66f4\u65b0 \u2014 \u8d85\u904e\u5341\u5e74\u4f86\u5f37\u5236\u66f4\u65b0\u653f\u7b56\u7684\u9996\u6b21\u6539\u8b8a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy&quot;, &quot;title_en&quot;: &quot;Microsoft will allow users to indefinitely pause updates in Windows 11 \u2014 first change in over a decade to the mandatory update policy&quot;, &quot;title_zh&quot;: &quot;Microsoft \u5c07\u5141\u8a31\u7528\u6236\u7121\u9650\u671f\u66ab\u505c Windows 11 \u66f4\u65b0 \u2014 \u8d85\u904e\u5341\u5e74\u4f86\u5f37\u5236\u66f4\u65b0\u653f\u7b56\u7684\u9996\u6b21\u6539\u8b8a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-will-allow-users-to-indefinitely-pause-updates-in-windows-11-first-change-in-over-a-decade-to-the-mandatory-update-policy&quot;, &quot;title_en&quot;: &quot;Microsoft will allow users to indefinitely pause updates in Windows 11 \u2014 first change in over a decade to the mandatory update policy&quot;, &quot;title_zh&quot;: &quot;Microsoft \u5c07\u5141\u8a31\u7528\u6236\u7121\u9650\u671f\u66ab\u505c Windows 11 \u66f4\u65b0 \u2014 \u8d85\u904e\u5341\u5e74\u4f86\u5f37\u5236\u66f4\u65b0\u653f\u7b56\u7684\u9996\u6b21\u6539\u8b8a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center" target="_blank">Maine governor vetoes bill that bans large new data centers — says legislature should’ve exempted one particular well-supported data center</a></div>
+    <div class="title-zh">緬因州州長否決禁止大型數據中心法案 — 稱立法機構應豁免一個特定的受支持數據中心</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Governor Janet Mills vetoed a bill that would have enacted a moratorium on all data center projects because it would affect one site to be built on a former paper mill in Jay, Franklin County.</div>
+  <div class="summary-zh">州長 Janet Mills 否決了一項將對所有數據中心項目實施禁令的法案，因為它將影響一個在 Jay 市 Franklin County 前造紙廠上建設的站點。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center&quot;, &quot;title_en&quot;: &quot;Maine governor vetoes bill that bans large new data centers \u2014 says legislature should\u2019ve exempted one particular well-supported data center&quot;, &quot;title_zh&quot;: &quot;\u7dec\u56e0\u5dde\u5dde\u9577\u5426\u6c7a\u7981\u6b62\u5927\u578b\u6578\u64da\u4e2d\u5fc3\u6cd5\u6848 \u2014 \u7a31\u7acb\u6cd5\u6a5f\u69cb\u61c9\u8c41\u514d\u4e00\u500b\u7279\u5b9a\u7684\u53d7\u652f\u6301\u6578\u64da\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center&quot;, &quot;title_en&quot;: &quot;Maine governor vetoes bill that bans large new data centers \u2014 says legislature should\u2019ve exempted one particular well-supported data center&quot;, &quot;title_zh&quot;: &quot;\u7dec\u56e0\u5dde\u5dde\u9577\u5426\u6c7a\u7981\u6b62\u5927\u578b\u6578\u64da\u4e2d\u5fc3\u6cd5\u6848 \u2014 \u7a31\u7acb\u6cd5\u6a5f\u69cb\u61c9\u8c41\u514d\u4e00\u500b\u7279\u5b9a\u7684\u53d7\u652f\u6301\u6578\u64da\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/desktops/servers/maine-governor-vetoes-bill-that-bans-large-new-data-centers-says-legislature-shouldve-exempted-one-particular-well-supported-data-center&quot;, &quot;title_en&quot;: &quot;Maine governor vetoes bill that bans large new data centers \u2014 says legislature should\u2019ve exempted one particular well-supported data center&quot;, &quot;title_zh&quot;: &quot;\u7dec\u56e0\u5dde\u5dde\u9577\u5426\u6c7a\u7981\u6b62\u5927\u578b\u6578\u64da\u4e2d\u5fc3\u6cd5\u6848 \u2014 \u7a31\u7acb\u6cd5\u6a5f\u69cb\u61c9\u8c41\u514d\u4e00\u500b\u7279\u5b9a\u7684\u53d7\u652f\u6301\u6578\u64da\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027" target="_blank">Intel has reportedly cancelled discrete gaming GPUs for the upcoming Xe3P Arc &quot;Celestial&quot; family — Gaming GPU remains uncertain even for the next-gen Xe4 &quot;Druid&quot; lineup that lands in 2027</a></div>
+    <div class="title-zh">Intel 據報已取消即將推出的 Xe3P Arc &quot;Celestial&quot; 系列離散遊戲 GPU — 遊戲 GPU 即使在 2027 年推出的下一代 Xe4 &quot;Druid&quot; 產品線中仍不確定</div>
+    
+<div class="summary-block">
+  <div class="summary-en">New leaks claim that Intel's upcoming Xe3P graphics architecture won't feature any discrete gaming GPUs, and even the next-gen Xe4 lineup isn't confirmed to. Intel is instead prioritizing the datacenter and workstation segments for new graphics IP, and is featuring them on mobile parts.</div>
+  <div class="summary-zh">新洩露聲稱 Intel 即將推出的 Xe3P 圖形架構將不包含任何離散遊戲 GPU，下一代 Xe4 產品線也未確認。Intel 正將重點轉向數據中心和工作站領域的新圖形 IP。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027&quot;, &quot;title_en&quot;: &quot;Intel has reportedly cancelled discrete gaming GPUs for the upcoming Xe3P Arc \&quot;Celestial\&quot; family \u2014 Gaming GPU remains uncertain even for the next-gen Xe4 \&quot;Druid\&quot; lineup that lands in 2027&quot;, &quot;title_zh&quot;: &quot;Intel \u64da\u5831\u5df2\u53d6\u6d88\u5373\u5c07\u63a8\u51fa\u7684 Xe3P Arc \&quot;Celestial\&quot; \u7cfb\u5217\u96e2\u6563\u904a\u6232 GPU \u2014 \u904a\u6232 GPU \u5373\u4f7f\u5728 2027 \u5e74\u63a8\u51fa\u7684\u4e0b\u4e00\u4ee3 Xe4 \&quot;Druid\&quot; \u7522\u54c1\u7dda\u4e2d\u4ecd\u4e0d\u78ba\u5b9a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027&quot;, &quot;title_en&quot;: &quot;Intel has reportedly cancelled discrete gaming GPUs for the upcoming Xe3P Arc \&quot;Celestial\&quot; family \u2014 Gaming GPU remains uncertain even for the next-gen Xe4 \&quot;Druid\&quot; lineup that lands in 2027&quot;, &quot;title_zh&quot;: &quot;Intel \u64da\u5831\u5df2\u53d6\u6d88\u5373\u5c07\u63a8\u51fa\u7684 Xe3P Arc \&quot;Celestial\&quot; \u7cfb\u5217\u96e2\u6563\u904a\u6232 GPU \u2014 \u904a\u6232 GPU \u5373\u4f7f\u5728 2027 \u5e74\u63a8\u51fa\u7684\u4e0b\u4e00\u4ee3 Xe4 \&quot;Druid\&quot; \u7522\u54c1\u7dda\u4e2d\u4ecd\u4e0d\u78ba\u5b9a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-has-reportedly-killed-discrete-gaming-gpus-for-the-upcoming-xe3p-arc-celestial-family-gaming-gpu-remains-uncertain-even-for-the-next-gen-xe4-druid-lineup-that-lands-in-2027&quot;, &quot;title_en&quot;: &quot;Intel has reportedly cancelled discrete gaming GPUs for the upcoming Xe3P Arc \&quot;Celestial\&quot; family \u2014 Gaming GPU remains uncertain even for the next-gen Xe4 \&quot;Druid\&quot; lineup that lands in 2027&quot;, &quot;title_zh&quot;: &quot;Intel \u64da\u5831\u5df2\u53d6\u6d88\u5373\u5c07\u63a8\u51fa\u7684 Xe3P Arc \&quot;Celestial\&quot; \u7cfb\u5217\u96e2\u6563\u904a\u6232 GPU \u2014 \u904a\u6232 GPU \u5373\u4f7f\u5728 2027 \u5e74\u63a8\u51fa\u7684\u4e0b\u4e00\u4ee3 Xe4 \&quot;Druid\&quot; \u7522\u54c1\u7dda\u4e2d\u4ecd\u4e0d\u78ba\u5b9a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff" target="_blank">Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D — Can Intel finally beat X3D?</a></div>
+    <div class="title-zh">Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D — Intel 終於能擊敗 X3D 嗎？</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Intel's new Core Ultra 7 270K Plus is a productivity beast, but can it hang with the Ryzen 7 7800X3D in games? We put the two CPUs head-to-head.</div>
+  <div class="summary-zh">Intel 新款 Core Ultra 7 270K Plus 在生產力方面表現出色，但在遊戲中能與 Ryzen 7 7800X3D 匹敵嗎？我們將兩款 CPU 進行了對比測試。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff&quot;, &quot;title_en&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Can Intel finally beat X3D?&quot;, &quot;title_zh&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Intel \u7d42\u65bc\u80fd\u64ca\u6557 X3D \u55ce\uff1f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff&quot;, &quot;title_en&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Can Intel finally beat X3D?&quot;, &quot;title_zh&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Intel \u7d42\u65bc\u80fd\u64ca\u6557 X3D \u55ce\uff1f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-core-ultra-7-270k-plus-vs-amd-ryzen-7-7800x3d-cpu-faceoff&quot;, &quot;title_en&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Can Intel finally beat X3D?&quot;, &quot;title_zh&quot;: &quot;Intel Core Ultra 7 270K Plus vs AMD Ryzen 7 7800X3D \u2014 Intel \u7d42\u65bc\u80fd\u64ca\u6557 X3D \u55ce\uff1f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots" target="_blank">Your Walmart might be 3D printed — firm building more than a dozen 3D-printed Walmart expansions with concrete-printing robots</a></div>
+    <div class="title-zh">你的沃爾瑪可能是 3D 打印的 — 公司用混凝土打印機器人建造超過一打的 3D 打印沃爾瑪擴建</div>
+    
+<div class="summary-block">
+  <div class="summary-en">For years, 3D Concrete Printing (3DCP) has been an experimental novelty. Alquist 3D, based in Greeley, CO, is pushing the technology past the demonstration phase with their A1X, a robotic arm printer that lays down inch-thick layers at a whopping 200mm/s.</div>
+  <div class="summary-zh">位於科羅拉多州 Greeley 的 Alquist 3D 公司用其 A1X 機器人臂打印機推動 3D 混凝土打印技術，該打印機以 200mm/s 的速度逐層鋪設混凝土。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots&quot;, &quot;title_en&quot;: &quot;Your Walmart might be 3D printed \u2014 firm building more than a dozen 3D-printed Walmart expansions with concrete-printing robots&quot;, &quot;title_zh&quot;: &quot;\u4f60\u7684\u6c83\u723e\u746a\u53ef\u80fd\u662f 3D \u6253\u5370\u7684 \u2014 \u516c\u53f8\u7528\u6df7\u51dd\u571f\u6253\u5370\u6a5f\u5668\u4eba\u5efa\u9020\u8d85\u904e\u4e00\u6253\u7684 3D \u6253\u5370\u6c83\u723e\u746a\u64f4\u5efa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots&quot;, &quot;title_en&quot;: &quot;Your Walmart might be 3D printed \u2014 firm building more than a dozen 3D-printed Walmart expansions with concrete-printing robots&quot;, &quot;title_zh&quot;: &quot;\u4f60\u7684\u6c83\u723e\u746a\u53ef\u80fd\u662f 3D \u6253\u5370\u7684 \u2014 \u516c\u53f8\u7528\u6df7\u51dd\u571f\u6253\u5370\u6a5f\u5668\u4eba\u5efa\u9020\u8d85\u904e\u4e00\u6253\u7684 3D \u6253\u5370\u6c83\u723e\u746a\u64f4\u5efa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/your-walmart-might-be-3d-printed-firm-building-more-than-a-dozen-3d-printed-walmart-expansions-alquist-sells-superstore-on-3d-concrete-printing-robots&quot;, &quot;title_en&quot;: &quot;Your Walmart might be 3D printed \u2014 firm building more than a dozen 3D-printed Walmart expansions with concrete-printing robots&quot;, &quot;title_zh&quot;: &quot;\u4f60\u7684\u6c83\u723e\u746a\u53ef\u80fd\u662f 3D \u6253\u5370\u7684 \u2014 \u516c\u53f8\u7528\u6df7\u51dd\u571f\u6253\u5370\u6a5f\u5668\u4eba\u5efa\u9020\u8d85\u904e\u4e00\u6253\u7684 3D \u6253\u5370\u6c83\u723e\u746a\u64f4\u5efa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus" target="_blank">Intel VP claims up to 30% of CPU performance is untapped by modern games — software optimization is critical to unlocking full potential of hybrid CPUs</a></div>
+    <div class="title-zh">Intel 副總裁聲稱現代遊戲未充分利用達 30% 的 CPU 性能 — 軟件優化對於解鎖混合 CPU 的全部潛力至關重要</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Intel is claiming that better software optimization for hybrid architecture CPUs can unlock up to 30% more performance without hardware upgrades. The silicon itself is very capable, but its true potential is held back by code that perhaps prioritizes more conventional silicon and, therefore, benefits from brute-force upgrades like extra L3 cache.</div>
+  <div class="summary-zh">Intel 聲稱針對混合架構 CPU 的更好軟件優化可在無需硬件升級的情況下解鎖高達 30% 的額外性能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus&quot;, &quot;title_en&quot;: &quot;Intel VP claims up to 30% of CPU performance is untapped by modern games \u2014 software optimization is critical to unlocking full potential of hybrid CPUs&quot;, &quot;title_zh&quot;: &quot;Intel \u526f\u7e3d\u88c1\u8072\u7a31\u73fe\u4ee3\u904a\u6232\u672a\u5145\u5206\u5229\u7528\u9054 30% \u7684 CPU \u6027\u80fd \u2014 \u8edf\u4ef6\u512a\u5316\u5c0d\u65bc\u89e3\u9396\u6df7\u5408 CPU \u7684\u5168\u90e8\u6f5b\u529b\u81f3\u95dc\u91cd\u8981&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus&quot;, &quot;title_en&quot;: &quot;Intel VP claims up to 30% of CPU performance is untapped by modern games \u2014 software optimization is critical to unlocking full potential of hybrid CPUs&quot;, &quot;title_zh&quot;: &quot;Intel \u526f\u7e3d\u88c1\u8072\u7a31\u73fe\u4ee3\u904a\u6232\u672a\u5145\u5206\u5229\u7528\u9054 30% \u7684 CPU \u6027\u80fd \u2014 \u8edf\u4ef6\u512a\u5316\u5c0d\u65bc\u89e3\u9396\u6df7\u5408 CPU \u7684\u5168\u90e8\u6f5b\u529b\u81f3\u95dc\u91cd\u8981&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-vp-claims-up-to-30-percent-of-cpu-performance-is-untapped-by-modern-games-software-optimization-is-critical-to-unlocking-full-potential-of-hybrid-cpus&quot;, &quot;title_en&quot;: &quot;Intel VP claims up to 30% of CPU performance is untapped by modern games \u2014 software optimization is critical to unlocking full potential of hybrid CPUs&quot;, &quot;title_zh&quot;: &quot;Intel \u526f\u7e3d\u88c1\u8072\u7a31\u73fe\u4ee3\u904a\u6232\u672a\u5145\u5206\u5229\u7528\u9054 30% \u7684 CPU \u6027\u80fd \u2014 \u8edf\u4ef6\u512a\u5316\u5c0d\u65bc\u89e3\u9396\u6df7\u5408 CPU \u7684\u5168\u90e8\u6f5b\u529b\u81f3\u95dc\u91cd\u8981&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus" target="_blank">AMD's memory-boosting EXPO 1.2 is here, adds support for three Chinese memory vendors — performance gains could be muted until Zen 6</a></div>
+    <div class="title-zh">AMD 內存增強技術 EXPO 1.2 推出，新增對三家中國內存廠商的支持 — 性能提升可能在 Zen 6 之前有限</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Third-party AMD developer and hardware leakers share details of the new AMD EXPO 1.2 technology arriving on AMD AM5 motherboards.</div>
+  <div class="summary-zh">第三方 AMD 開發者和硬件洩露者分享了即將在 AMD AM5 主板上推出的新型 AMD EXPO 1.2 技術的詳細信息。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus&quot;, &quot;title_en&quot;: &quot;AMD's memory-boosting EXPO 1.2 is here, adds support for three Chinese memory vendors \u2014 performance gains could be muted until Zen 6&quot;, &quot;title_zh&quot;: &quot;AMD \u5167\u5b58\u589e\u5f37\u6280\u8853 EXPO 1.2 \u63a8\u51fa\uff0c\u65b0\u589e\u5c0d\u4e09\u5bb6\u4e2d\u570b\u5167\u5b58\u5ee0\u5546\u7684\u652f\u6301 \u2014 \u6027\u80fd\u63d0\u5347\u53ef\u80fd\u5728 Zen 6 \u4e4b\u524d\u6709\u9650&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus&quot;, &quot;title_en&quot;: &quot;AMD's memory-boosting EXPO 1.2 is here, adds support for three Chinese memory vendors \u2014 performance gains could be muted until Zen 6&quot;, &quot;title_zh&quot;: &quot;AMD \u5167\u5b58\u589e\u5f37\u6280\u8853 EXPO 1.2 \u63a8\u51fa\uff0c\u65b0\u589e\u5c0d\u4e09\u5bb6\u4e2d\u570b\u5167\u5b58\u5ee0\u5546\u7684\u652f\u6301 \u2014 \u6027\u80fd\u63d0\u5347\u53ef\u80fd\u5728 Zen 6 \u4e4b\u524d\u6709\u9650&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/amd-expo-1-2-is-here-but-you-may-not-notice-significant-gains-until-zen-6-upgraded-ram-overclocking-tech-will-unlock-the-next-level-of-memory-speed-on-ryzen-cpus&quot;, &quot;title_en&quot;: &quot;AMD's memory-boosting EXPO 1.2 is here, adds support for three Chinese memory vendors \u2014 performance gains could be muted until Zen 6&quot;, &quot;title_zh&quot;: &quot;AMD \u5167\u5b58\u589e\u5f37\u6280\u8853 EXPO 1.2 \u63a8\u51fa\uff0c\u65b0\u589e\u5c0d\u4e09\u5bb6\u4e2d\u570b\u5167\u5b58\u5ee0\u5546\u7684\u652f\u6301 \u2014 \u6027\u80fd\u63d0\u5347\u53ef\u80fd\u5728 Zen 6 \u4e4b\u524d\u6709\u9650&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit" target="_blank">Enthusiast fixes 30-year issue with S3 graphics card — hacking the VBIOS fixes black levels by scalpelling out the Virge DX’s ‘pedestal bit’</a></div>
+    <div class="title-zh">愛好者修復了 S3 顯卡 30 年的問題 — 通過 VBIOS 黑客修復解決了 Virge DX 的「基座位」問題</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A retro hardware enthusiast has demonstrated a fix that eliminates the washed-out appearance people witness when using 1990s graphics cards from S3.</div>
+  <div class="summary-zh">一位復古硬件愛好者展示了一個修復程序，消除了使用 1990 年代 S3 顯卡時出現的泛白現象。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit&quot;, &quot;title_en&quot;: &quot;Enthusiast fixes 30-year issue with S3 graphics card \u2014 hacking the VBIOS fixes black levels by scalpelling out the Virge DX\u2019s \u2018pedestal bit\u2019&quot;, &quot;title_zh&quot;: &quot;\u611b\u597d\u8005\u4fee\u5fa9\u4e86 S3 \u986f\u5361 30 \u5e74\u7684\u554f\u984c \u2014 \u901a\u904e VBIOS \u9ed1\u5ba2\u4fee\u5fa9\u89e3\u6c7a\u4e86 Virge DX \u7684\u300c\u57fa\u5ea7\u4f4d\u300d\u554f\u984c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit&quot;, &quot;title_en&quot;: &quot;Enthusiast fixes 30-year issue with S3 graphics card \u2014 hacking the VBIOS fixes black levels by scalpelling out the Virge DX\u2019s \u2018pedestal bit\u2019&quot;, &quot;title_zh&quot;: &quot;\u611b\u597d\u8005\u4fee\u5fa9\u4e86 S3 \u986f\u5361 30 \u5e74\u7684\u554f\u984c \u2014 \u901a\u904e VBIOS \u9ed1\u5ba2\u4fee\u5fa9\u89e3\u6c7a\u4e86 Virge DX \u7684\u300c\u57fa\u5ea7\u4f4d\u300d\u554f\u984c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/enthusiast-fixes-30-year-issue-with-s3-graphics-card-hacking-the-vbios-fixes-black-levels-by-scalpelling-out-the-virge-dxs-pedestal-bit&quot;, &quot;title_en&quot;: &quot;Enthusiast fixes 30-year issue with S3 graphics card \u2014 hacking the VBIOS fixes black levels by scalpelling out the Virge DX\u2019s \u2018pedestal bit\u2019&quot;, &quot;title_zh&quot;: &quot;\u611b\u597d\u8005\u4fee\u5fa9\u4e86 S3 \u986f\u5361 30 \u5e74\u7684\u554f\u984c \u2014 \u901a\u904e VBIOS \u9ed1\u5ba2\u4fee\u5fa9\u89e3\u6c7a\u4e86 Virge DX \u7684\u300c\u57fa\u5ea7\u4f4d\u300d\u554f\u984c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sat, 25 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source" target="_blank">US Navy tests laser weapon that shoots down drones on the USS George H.W. Bush supercarrier — ‘system tracked, engaged, and neutralized multiple target drones,’ has  essentially unlimited power source</a></div>
+    <div class="title-zh">美國海軍在 USS George H.W. Bush 航母上測試激光武器擊落無人機 — 「系統追蹤、交戰並中和了多個目標無人機」，具有本質上無限的電源</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The LOCUST Laser Weapon System was tested aboard the USS George H.W. Bush and neutralized multiple target drones.</div>
+  <div class="summary-zh">LOCUST 激光武器系統在 USS George H.W. Bush 航母上完成測試，成功中和了多個目標無人機。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source&quot;, &quot;title_en&quot;: &quot;US Navy tests laser weapon that shoots down drones on the USS George H.W. Bush supercarrier \u2014 \u2018system tracked, engaged, and neutralized multiple target drones,\u2019 has  essentially unlimited power source&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u6d77\u8ecd\u5728 USS George H.W. Bush \u822a\u6bcd\u4e0a\u6e2c\u8a66\u6fc0\u5149\u6b66\u5668\u64ca\u843d\u7121\u4eba\u6a5f \u2014 \u300c\u7cfb\u7d71\u8ffd\u8e64\u3001\u4ea4\u6230\u4e26\u4e2d\u548c\u4e86\u591a\u500b\u76ee\u6a19\u7121\u4eba\u6a5f\u300d\uff0c\u5177\u6709\u672c\u8cea\u4e0a\u7121\u9650\u7684\u96fb\u6e90&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source&quot;, &quot;title_en&quot;: &quot;US Navy tests laser weapon that shoots down drones on the USS George H.W. Bush supercarrier \u2014 \u2018system tracked, engaged, and neutralized multiple target drones,\u2019 has  essentially unlimited power source&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u6d77\u8ecd\u5728 USS George H.W. Bush \u822a\u6bcd\u4e0a\u6e2c\u8a66\u6fc0\u5149\u6b66\u5668\u64ca\u843d\u7121\u4eba\u6a5f \u2014 \u300c\u7cfb\u7d71\u8ffd\u8e64\u3001\u4ea4\u6230\u4e26\u4e2d\u548c\u4e86\u591a\u500b\u76ee\u6a19\u7121\u4eba\u6a5f\u300d\uff0c\u5177\u6709\u672c\u8cea\u4e0a\u7121\u9650\u7684\u96fb\u6e90&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/us-navy-tests-laser-weapon-that-shoots-down-drones-on-the-uss-george-h-w-bush-supercarrier-system-tracked-engaged-and-neutralized-multiple-target-drones-has-essentially-unlimited-power-source&quot;, &quot;title_en&quot;: &quot;US Navy tests laser weapon that shoots down drones on the USS George H.W. Bush supercarrier \u2014 \u2018system tracked, engaged, and neutralized multiple target drones,\u2019 has  essentially unlimited power source&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u6d77\u8ecd\u5728 USS George H.W. Bush \u822a\u6bcd\u4e0a\u6e2c\u8a66\u6fc0\u5149\u6b66\u5668\u64ca\u843d\u7121\u4eba\u6a5f \u2014 \u300c\u7cfb\u7d71\u8ffd\u8e64\u3001\u4ea4\u6230\u4e26\u4e2d\u548c\u4e86\u591a\u500b\u76ee\u6a19\u7121\u4eba\u6a5f\u300d\uff0c\u5177\u6709\u672c\u8cea\u4e0a\u7121\u9650\u7684\u96fb\u6e90&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sat, 25 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
