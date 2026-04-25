@@ -210,16 +210,24 @@ def run_trend_analysis(client, articles: list[dict]) -> str:
     prompt = TREND_PROMPT.format(article_summary=article_summary)
 
     print(f"  → Sending {len(articles)} articles to Claude {MODEL_TREND}...")
-    try:
-        resp = client.messages.create(
-            model=MODEL_TREND,
-            max_tokens=8000,
-            system=TREND_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return resp.content[0].text
-    except Exception as e:
-        return f"⚠️ Analysis failed: {e}"
+    for attempt in range(4):
+        try:
+            resp = client.messages.create(
+                model=MODEL_TREND,
+                max_tokens=8000,
+                system=TREND_SYSTEM,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return resp.content[0].text
+        except Exception as e:
+            err = str(e)
+            if "529" in err or "overloaded" in err.lower():
+                wait = 30 * (2 ** attempt)   # 30s → 60s → 120s → 240s
+                print(f"  ⚠ API overloaded (attempt {attempt+1}/4), retry in {wait}s...")
+                import time; time.sleep(wait)
+            else:
+                return f"⚠️ Analysis failed: {e}"
+    return "⚠️ Analysis failed: API overloaded after 4 retries"
 
 
 # ---------------------------------------------------------------------------
@@ -355,13 +363,12 @@ def _update_index_with_trend(trend_filename: str, date: str, total_articles: int
 # ---------------------------------------------------------------------------
 
 def send_slack_trend(webhook_url: str, date: str, total_articles: int,
-                     analysis_text: str):
+                     analysis_text: str, trend_url: str = ""):
     """Send Slack notification for weekly trend report."""
     import urllib.request
-    import urllib.parse
 
-    # Extract first structural opportunity (first 300 chars of analysis)
     preview = analysis_text[:400].replace("\n", " ").replace('"', '\\"')
+    report_url = trend_url or PAGES_URL
 
     payload = json.dumps({
         "blocks": [
@@ -386,6 +393,11 @@ def send_slack_trend(webhook_url: str, date: str, total_articles: int,
                     {
                         "type": "button",
                         "text": {"type": "plain_text", "text": "📊 查看完整趨勢報告"},
+                        "url": report_url
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "🏠 Dashboard"},
                         "url": PAGES_URL
                     }
                 ]
@@ -448,7 +460,8 @@ def main():
     # Slack notification
     webhook = os.environ.get("SLACK_WEBHOOK_URL", "")
     if webhook:
-        send_slack_trend(webhook, today, len(articles), analysis)
+        trend_url = f"{PAGES_URL}/{trend_fname}"
+        send_slack_trend(webhook, today, len(articles), analysis, trend_url=trend_url)
 
     _write_output(len(articles), today)
     print(f"\n✅ Trend analysis done — {len(articles)} articles analyzed")
