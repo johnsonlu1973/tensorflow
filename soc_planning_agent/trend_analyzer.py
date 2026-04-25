@@ -21,7 +21,7 @@ ROOT     = Path(__file__).parent
 ARCHIVE_RSS_DIR = ROOT / "archive" / "rss"
 DOCS_DIR = ROOT.parent / "docs"
 
-MODEL_TREND = "claude-opus-4-6"
+MODEL_TREND = "claude-opus-4-7"
 GITHUB_REPO = "johnsonlu1973/tensorflow"
 PAGES_URL   = "https://johnsonlu1973.github.io/tensorflow"
 
