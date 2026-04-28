@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌐 Tech — 2026-04-28</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>🌐 Tech</h1>
+<div class="page-meta">2026-04-28 &nbsp;·&nbsp; 39 篇 &nbsp;·&nbsp; 更新：2026-04-28 12:36 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-tec0" data-url="https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/" target="_blank">Some Musk v. Altman Jurors Don't Like Elon Musk</a></div>
+    <div class="title-zh">部分Musk訴Altman案陪審團成員不看好埃隆·馬斯克</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Musk’s lawsuit challenges OpenAI’s evolution under Sam Altman. But during jury selection, several potential jurors voiced negative views of Musk himself.</div>
+  <div class="summary-zh">馬斯克的訴訟挑戰OpenAI在Sam Altman領導下的演變，但在陪審團甄選過程中，多名潛在陪審團成員表達了對馬斯克本人的負面看法。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec0"
+              onclick="toggleAnalysis('tec0', {&quot;url&quot;: &quot;https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/&quot;, &quot;title_en&quot;: &quot;Some Musk v. Altman Jurors Don't Like Elon Musk&quot;, &quot;title_zh&quot;: &quot;\u90e8\u5206Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\u4e0d\u770b\u597d\u57c3\u9686\u00b7\u99ac\u65af\u514b&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec0"
+              onclick="bookmarkArticle('tec0', {&quot;url&quot;: &quot;https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/&quot;, &quot;title_en&quot;: &quot;Some Musk v. Altman Jurors Don't Like Elon Musk&quot;, &quot;title_zh&quot;: &quot;\u90e8\u5206Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\u4e0d\u770b\u597d\u57c3\u9686\u00b7\u99ac\u65af\u514b&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec0', {&quot;url&quot;: &quot;https://www.wired.com/story/some-musk-v-altman-jurors-dont-like-elon-musk/&quot;, &quot;title_en&quot;: &quot;Some Musk v. Altman Jurors Don't Like Elon Musk&quot;, &quot;title_zh&quot;: &quot;\u90e8\u5206Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\u4e0d\u770b\u597d\u57c3\u9686\u00b7\u99ac\u65af\u514b&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec0"
+              onclick="copyPrompt('tec0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec1" data-url="https://www.wired.com/story/m5-macbook-air-never-been-cheaper/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/m5-macbook-air-never-been-cheaper/" target="_blank">The M5 MacBook Air Has Never Been Cheaper</a></div>
+    <div class="title-zh">M5 MacBook Air歷史新低</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Despite launching less than two months ago, the M5 MacBook Air has dropped back down to its lowest price since launching.</div>
+  <div class="summary-zh">儘管推出不到兩個月，M5 MacBook Air的價格已經回落到發售以來的最低水平。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/m5-macbook-air-never-been-cheaper/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec1"
+              onclick="toggleAnalysis('tec1', {&quot;url&quot;: &quot;https://www.wired.com/story/m5-macbook-air-never-been-cheaper/&quot;, &quot;title_en&quot;: &quot;The M5 MacBook Air Has Never Been Cheaper&quot;, &quot;title_zh&quot;: &quot;M5 MacBook Air\u6b77\u53f2\u65b0\u4f4e&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec1"
+              onclick="bookmarkArticle('tec1', {&quot;url&quot;: &quot;https://www.wired.com/story/m5-macbook-air-never-been-cheaper/&quot;, &quot;title_en&quot;: &quot;The M5 MacBook Air Has Never Been Cheaper&quot;, &quot;title_zh&quot;: &quot;M5 MacBook Air\u6b77\u53f2\u65b0\u4f4e&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec1', {&quot;url&quot;: &quot;https://www.wired.com/story/m5-macbook-air-never-been-cheaper/&quot;, &quot;title_en&quot;: &quot;The M5 MacBook Air Has Never Been Cheaper&quot;, &quot;title_zh&quot;: &quot;M5 MacBook Air\u6b77\u53f2\u65b0\u4f4e&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec1"
+              onclick="copyPrompt('tec1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec2" data-url="https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/" target="_blank">Elon Musk Boosts New Yorker’s Sam Altman Exposé on X as Trial Begins</a></div>
+    <div class="title-zh">埃隆·馬斯克在X上推廣《紐約客》Sam Altman深度報導，正值審判開始</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The move comes as the trial for Elon Musk’s lawsuit against OpenAI kicks off in federal court in Oakland.</div>
+  <div class="summary-zh">這一舉動恰逢埃隆·馬斯克對OpenAI的訴訟在奧克蘭聯邦法院正式開庭。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec2"
+              onclick="toggleAnalysis('tec2', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/&quot;, &quot;title_en&quot;: &quot;Elon Musk Boosts New Yorker\u2019s Sam Altman Expos\u00e9 on X as Trial Begins&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u5728X\u4e0a\u63a8\u5ee3\u300a\u7d10\u7d04\u5ba2\u300bSam Altman\u6df1\u5ea6\u5831\u5c0e\uff0c\u6b63\u503c\u5be9\u5224\u958b\u59cb&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec2"
+              onclick="bookmarkArticle('tec2', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/&quot;, &quot;title_en&quot;: &quot;Elon Musk Boosts New Yorker\u2019s Sam Altman Expos\u00e9 on X as Trial Begins&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u5728X\u4e0a\u63a8\u5ee3\u300a\u7d10\u7d04\u5ba2\u300bSam Altman\u6df1\u5ea6\u5831\u5c0e\uff0c\u6b63\u503c\u5be9\u5224\u958b\u59cb&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec2', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-boost-new-yorker-article-sam-altman-x/&quot;, &quot;title_en&quot;: &quot;Elon Musk Boosts New Yorker\u2019s Sam Altman Expos\u00e9 on X as Trial Begins&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u5728X\u4e0a\u63a8\u5ee3\u300a\u7d10\u7d04\u5ba2\u300bSam Altman\u6df1\u5ea6\u5831\u5c0e\uff0c\u6b63\u503c\u5be9\u5224\u958b\u59cb&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec2"
+              onclick="copyPrompt('tec2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec3" data-url="https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/" target="_blank">Cole Allen Charged With Attempting to Assassinate Trump</a></div>
+    <div class="title-zh">Cole Allen因企圖暗殺特朗普被起訴</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The suspected shooter at Saturday night’s White House Correspondents’ Dinner faces three felony charges. He remains in custody following Monday’s hearing.</div>
+  <div class="summary-zh">這名周六白宮記者晚宴槍擊事件的疑似槍手面臨三項重罪指控，在週一的聽證會後仍被羈押。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec3"
+              onclick="toggleAnalysis('tec3', {&quot;url&quot;: &quot;https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/&quot;, &quot;title_en&quot;: &quot;Cole Allen Charged With Attempting to Assassinate Trump&quot;, &quot;title_zh&quot;: &quot;Cole Allen\u56e0\u4f01\u5716\u6697\u6bba\u7279\u6717\u666e\u88ab\u8d77\u8a34&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec3"
+              onclick="bookmarkArticle('tec3', {&quot;url&quot;: &quot;https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/&quot;, &quot;title_en&quot;: &quot;Cole Allen Charged With Attempting to Assassinate Trump&quot;, &quot;title_zh&quot;: &quot;Cole Allen\u56e0\u4f01\u5716\u6697\u6bba\u7279\u6717\u666e\u88ab\u8d77\u8a34&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec3', {&quot;url&quot;: &quot;https://www.wired.com/story/cole-allen-charged-with-attempting-to-assassinate-trump/&quot;, &quot;title_en&quot;: &quot;Cole Allen Charged With Attempting to Assassinate Trump&quot;, &quot;title_zh&quot;: &quot;Cole Allen\u56e0\u4f01\u5716\u6697\u6bba\u7279\u6717\u666e\u88ab\u8d77\u8a34&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec3"
+              onclick="copyPrompt('tec3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec4" data-url="https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/" target="_blank">A Brain Implant for Depression Is About to Be Tested in Humans</a></div>
+    <div class="title-zh">抑鬱症腦植入設備即將進行人體測試</div>
+    
+<div class="summary-block">
+  <div class="summary-en">While many brain-computer interface companies are focused on helping paralyzed people communicate, Motif Neurotech is targeting mental health disorders.</div>
+  <div class="summary-zh">當許多腦機介面公司專注於幫助癱瘓患者溝通時，Motif Neurotech正將目標對準心理健康障礙。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec4"
+              onclick="toggleAnalysis('tec4', {&quot;url&quot;: &quot;https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/&quot;, &quot;title_en&quot;: &quot;A Brain Implant for Depression Is About to Be Tested in Humans&quot;, &quot;title_zh&quot;: &quot;\u6291\u9b31\u75c7\u8166\u690d\u5165\u8a2d\u5099\u5373\u5c07\u9032\u884c\u4eba\u9ad4\u6e2c\u8a66&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec4"
+              onclick="bookmarkArticle('tec4', {&quot;url&quot;: &quot;https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/&quot;, &quot;title_en&quot;: &quot;A Brain Implant for Depression Is About to Be Tested in Humans&quot;, &quot;title_zh&quot;: &quot;\u6291\u9b31\u75c7\u8166\u690d\u5165\u8a2d\u5099\u5373\u5c07\u9032\u884c\u4eba\u9ad4\u6e2c\u8a66&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec4', {&quot;url&quot;: &quot;https://www.wired.com/story/a-brain-implant-for-depression-is-about-to-be-tested-in-humans/&quot;, &quot;title_en&quot;: &quot;A Brain Implant for Depression Is About to Be Tested in Humans&quot;, &quot;title_zh&quot;: &quot;\u6291\u9b31\u75c7\u8166\u690d\u5165\u8a2d\u5099\u5373\u5c07\u9032\u884c\u4eba\u9ad4\u6e2c\u8a66&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec4"
+              onclick="copyPrompt('tec4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec5" data-url="https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/" target="_blank">Elon Musk’s XChat App Is More Like Facebook’s Messenger Than Signal</a></div>
+    <div class="title-zh">埃隆·馬斯克的XChat應用更像Facebook的Messenger而非Signal</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Rather than launching a sleek, worthwhile encrypted messaging app, Musk dropped a junky, insular extension of his social media platform.</div>
+  <div class="summary-zh">馬斯克並未推出一款時尚、可靠的加密消息應用，而是推出了他社交媒體平台的一個粗糙、封閉的延伸。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec5"
+              onclick="toggleAnalysis('tec5', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/&quot;, &quot;title_en&quot;: &quot;Elon Musk\u2019s XChat App Is More Like Facebook\u2019s Messenger Than Signal&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u7684XChat\u61c9\u7528\u66f4\u50cfFacebook\u7684Messenger\u800c\u975eSignal&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec5"
+              onclick="bookmarkArticle('tec5', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/&quot;, &quot;title_en&quot;: &quot;Elon Musk\u2019s XChat App Is More Like Facebook\u2019s Messenger Than Signal&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u7684XChat\u61c9\u7528\u66f4\u50cfFacebook\u7684Messenger\u800c\u975eSignal&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec5', {&quot;url&quot;: &quot;https://www.wired.com/story/elon-musk-xchat-app-is-more-like-facebook-messenger-than-signal/&quot;, &quot;title_en&quot;: &quot;Elon Musk\u2019s XChat App Is More Like Facebook\u2019s Messenger Than Signal&quot;, &quot;title_zh&quot;: &quot;\u57c3\u9686\u00b7\u99ac\u65af\u514b\u7684XChat\u61c9\u7528\u66f4\u50cfFacebook\u7684Messenger\u800c\u975eSignal&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec5"
+              onclick="copyPrompt('tec5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec6" data-url="https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Wired</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/" target="_blank">Mother’s Day Deals on Smart Bird Feeders (2026)</a></div>
+    <div class="title-zh">母親節智能餵鳥器優惠（2026）</div>
+    
+<div class="summary-block">
+  <div class="summary-en">These are some of the lowest prices we’ve seen on our favorite bird feeders with cameras. Save even more with our WIRED-exclusive coupon codes.</div>
+  <div class="summary-zh">這些是我們在最喜歡的帶攝像頭的餵鳥器上見過的最低價格，使用WIRED獨家優惠券代碼可節省更多。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec6"
+              onclick="toggleAnalysis('tec6', {&quot;url&quot;: &quot;https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/&quot;, &quot;title_en&quot;: &quot;Mother\u2019s Day Deals on Smart Bird Feeders (2026)&quot;, &quot;title_zh&quot;: &quot;\u6bcd\u89aa\u7bc0\u667a\u80fd\u9935\u9ce5\u5668\u512a\u60e0\uff082026\uff09&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec6"
+              onclick="bookmarkArticle('tec6', {&quot;url&quot;: &quot;https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/&quot;, &quot;title_en&quot;: &quot;Mother\u2019s Day Deals on Smart Bird Feeders (2026)&quot;, &quot;title_zh&quot;: &quot;\u6bcd\u89aa\u7bc0\u667a\u80fd\u9935\u9ce5\u5668\u512a\u60e0\uff082026\uff09&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec6', {&quot;url&quot;: &quot;https://www.wired.com/story/mothers-day-deals-on-smart-bird-feeders-2026/&quot;, &quot;title_en&quot;: &quot;Mother\u2019s Day Deals on Smart Bird Feeders (2026)&quot;, &quot;title_zh&quot;: &quot;\u6bcd\u89aa\u7bc0\u667a\u80fd\u9935\u9ce5\u5668\u512a\u60e0\uff082026\uff09&quot;, &quot;source&quot;: &quot;Wired&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec6"
+              onclick="copyPrompt('tec6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec7" data-url="https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry" target="_blank">BYD, Geely Results to Provide Pointers in China EV Stock Rivalry</a></div>
+    <div class="title-zh">比亞迪、吉利業績將為中國電動車股競爭提供線索</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Chinese EV stocks face a key test in upcoming results, which will offer clues for investors betting on the recently diverging performance of major players.</div>
+  <div class="summary-zh">中國電動車股面臨即將發布的業績考驗，這將為投資者提供關於主要參與者最近分化表現的線索。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec7"
+              onclick="toggleAnalysis('tec7', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry&quot;, &quot;title_en&quot;: &quot;BYD, Geely Results to Provide Pointers in China EV Stock Rivalry&quot;, &quot;title_zh&quot;: &quot;\u6bd4\u4e9e\u8fea\u3001\u5409\u5229\u696d\u7e3e\u5c07\u70ba\u4e2d\u570b\u96fb\u52d5\u8eca\u80a1\u7af6\u722d\u63d0\u4f9b\u7dda\u7d22&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec7"
+              onclick="bookmarkArticle('tec7', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry&quot;, &quot;title_en&quot;: &quot;BYD, Geely Results to Provide Pointers in China EV Stock Rivalry&quot;, &quot;title_zh&quot;: &quot;\u6bd4\u4e9e\u8fea\u3001\u5409\u5229\u696d\u7e3e\u5c07\u70ba\u4e2d\u570b\u96fb\u52d5\u8eca\u80a1\u7af6\u722d\u63d0\u4f9b\u7dda\u7d22&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec7', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/byd-geely-results-to-provide-pointers-in-china-ev-stock-rivalry&quot;, &quot;title_en&quot;: &quot;BYD, Geely Results to Provide Pointers in China EV Stock Rivalry&quot;, &quot;title_zh&quot;: &quot;\u6bd4\u4e9e\u8fea\u3001\u5409\u5229\u696d\u7e3e\u5c07\u70ba\u4e2d\u570b\u96fb\u52d5\u8eca\u80a1\u7af6\u722d\u63d0\u4f9b\u7dda\u7d22&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec7"
+              onclick="copyPrompt('tec7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec8" data-url="https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports" target="_blank">OpenAI Misses Its Own User and Sales Goals, WSJ Reports</a></div>
+    <div class="title-zh">OpenAI未能達成自身用戶和銷售目標，據WSJ報導</div>
+    
+<div class="summary-block">
+  <div class="summary-en">OpenAI recently failed to meet its own goals for new user acquisition and sales, fueling internal concerns that the company may struggle to support its astronomical spending on AI infrastructure, the Wall Street Journal reported.</div>
+  <div class="summary-zh">據《華爾街日報》報導，OpenAI最近未能達成新用戶獲取和銷售目標，引發內部擔憂公司可能難以支持其在AI基礎設施上的天文級支出。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec8"
+              onclick="toggleAnalysis('tec8', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports&quot;, &quot;title_en&quot;: &quot;OpenAI Misses Its Own User and Sales Goals, WSJ Reports&quot;, &quot;title_zh&quot;: &quot;OpenAI\u672a\u80fd\u9054\u6210\u81ea\u8eab\u7528\u6236\u548c\u92b7\u552e\u76ee\u6a19\uff0c\u64daWSJ\u5831\u5c0e&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec8"
+              onclick="bookmarkArticle('tec8', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports&quot;, &quot;title_en&quot;: &quot;OpenAI Misses Its Own User and Sales Goals, WSJ Reports&quot;, &quot;title_zh&quot;: &quot;OpenAI\u672a\u80fd\u9054\u6210\u81ea\u8eab\u7528\u6236\u548c\u92b7\u552e\u76ee\u6a19\uff0c\u64daWSJ\u5831\u5c0e&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec8', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/openai-misses-its-own-user-and-sales-goals-wsj-reports&quot;, &quot;title_en&quot;: &quot;OpenAI Misses Its Own User and Sales Goals, WSJ Reports&quot;, &quot;title_zh&quot;: &quot;OpenAI\u672a\u80fd\u9054\u6210\u81ea\u8eab\u7528\u6236\u548c\u92b7\u552e\u76ee\u6a19\uff0c\u64daWSJ\u5831\u5c0e&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec8"
+              onclick="copyPrompt('tec8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec9" data-url="https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done" target="_blank">Xi Tests China’s Reach by Blocking Already-Done Meta Deal</a></div>
+    <div class="title-zh">習近平通過封殺已完成的Meta交易來測試中國影響力</div>
+    
+<div class="summary-block">
+  <div class="summary-en">China has sought for years to exert influence over business deals beyond its home turf. Still, its decision to press Meta Platforms Inc. to unwind a $2 billion acquisition of AI startup Manus marks a step unlike anything it’s tried before.</div>
+  <div class="summary-zh">中國多年來一直尋求對超出其邊界的商業交易施加影響，但其決定促使Meta Platforms Inc.解除對AI初創公司Manus 20億美元收購的做法標誌著前所未有的舉措。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec9"
+              onclick="toggleAnalysis('tec9', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done&quot;, &quot;title_en&quot;: &quot;Xi Tests China\u2019s Reach by Blocking Already-Done Meta Deal&quot;, &quot;title_zh&quot;: &quot;\u7fd2\u8fd1\u5e73\u901a\u904e\u5c01\u6bba\u5df2\u5b8c\u6210\u7684Meta\u4ea4\u6613\u4f86\u6e2c\u8a66\u4e2d\u570b\u5f71\u97ff\u529b&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec9"
+              onclick="bookmarkArticle('tec9', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done&quot;, &quot;title_en&quot;: &quot;Xi Tests China\u2019s Reach by Blocking Already-Done Meta Deal&quot;, &quot;title_zh&quot;: &quot;\u7fd2\u8fd1\u5e73\u901a\u904e\u5c01\u6bba\u5df2\u5b8c\u6210\u7684Meta\u4ea4\u6613\u4f86\u6e2c\u8a66\u4e2d\u570b\u5f71\u97ff\u529b&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec9', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/xi-tests-china-s-reach-by-blocking-meta-deal-that-s-already-done&quot;, &quot;title_en&quot;: &quot;Xi Tests China\u2019s Reach by Blocking Already-Done Meta Deal&quot;, &quot;title_zh&quot;: &quot;\u7fd2\u8fd1\u5e73\u901a\u904e\u5c01\u6bba\u5df2\u5b8c\u6210\u7684Meta\u4ea4\u6613\u4f86\u6e2c\u8a66\u4e2d\u570b\u5f71\u97ff\u529b&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec9"
+              onclick="copyPrompt('tec9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec10" data-url="https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo" target="_blank">Optical Computing Firm Lightelligence Jumps 408% in HK Debut</a></div>
+    <div class="title-zh">光學計算公司Lightelligence在香港上市首日漲408%</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Lightelligence, a Chinese optical-computing provider, surged in its Hong Kong trading debut, underscoring investor interest in an industry seen as critical to supplying parts for the artificial-intelligence buildout.</div>
+  <div class="summary-zh">中國光學計算供應商Lightelligence在香港首日交易大幅上漲，凸顯投資者對被視為AI建設關鍵零部件供應商的該行業的興趣。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec10"
+              onclick="toggleAnalysis('tec10', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo&quot;, &quot;title_en&quot;: &quot;Optical Computing Firm Lightelligence Jumps 408% in HK Debut&quot;, &quot;title_zh&quot;: &quot;\u5149\u5b78\u8a08\u7b97\u516c\u53f8Lightelligence\u5728\u9999\u6e2f\u4e0a\u5e02\u9996\u65e5\u6f32408%&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec10"
+              onclick="bookmarkArticle('tec10', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo&quot;, &quot;title_en&quot;: &quot;Optical Computing Firm Lightelligence Jumps 408% in HK Debut&quot;, &quot;title_zh&quot;: &quot;\u5149\u5b78\u8a08\u7b97\u516c\u53f8Lightelligence\u5728\u9999\u6e2f\u4e0a\u5e02\u9996\u65e5\u6f32408%&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec10', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/optical-computing-firm-lightelligence-set-for-hk-debut-after-ipo&quot;, &quot;title_en&quot;: &quot;Optical Computing Firm Lightelligence Jumps 408% in HK Debut&quot;, &quot;title_zh&quot;: &quot;\u5149\u5b78\u8a08\u7b97\u516c\u53f8Lightelligence\u5728\u9999\u6e2f\u4e0a\u5e02\u9996\u65e5\u6f32408%&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec10"
+              onclick="copyPrompt('tec10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec11" data-url="https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe" target="_blank">South Korean Lawmakers Condemn US Pressure Over Coupang Probe</a></div>
+    <div class="title-zh">韓國議員譴責美國在Coupang調查上的施壓</div>
+    
+<div class="summary-block">
+  <div class="summary-en">South Korean lawmakers protested what they described as US political pressure over a legal case involving Coupang Inc., with about 90 legislators planning to deliver a formal complaint to the US ambassador.</div>
+  <div class="summary-zh">韓國議員抗議他們所稱的美國對涉及Coupang Inc.的法律案件的政治施壓，約90名議員計畫向美國大使提交正式投訴。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec11"
+              onclick="toggleAnalysis('tec11', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe&quot;, &quot;title_en&quot;: &quot;South Korean Lawmakers Condemn US Pressure Over Coupang Probe&quot;, &quot;title_zh&quot;: &quot;\u97d3\u570b\u8b70\u54e1\u8b74\u8cac\u7f8e\u570b\u5728Coupang\u8abf\u67e5\u4e0a\u7684\u65bd\u58d3&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec11"
+              onclick="bookmarkArticle('tec11', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe&quot;, &quot;title_en&quot;: &quot;South Korean Lawmakers Condemn US Pressure Over Coupang Probe&quot;, &quot;title_zh&quot;: &quot;\u97d3\u570b\u8b70\u54e1\u8b74\u8cac\u7f8e\u570b\u5728Coupang\u8abf\u67e5\u4e0a\u7684\u65bd\u58d3&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec11', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/south-korean-lawmakers-condemn-us-pressure-over-coupang-probe&quot;, &quot;title_en&quot;: &quot;South Korean Lawmakers Condemn US Pressure Over Coupang Probe&quot;, &quot;title_zh&quot;: &quot;\u97d3\u570b\u8b70\u54e1\u8b74\u8cac\u7f8e\u570b\u5728Coupang\u8abf\u67e5\u4e0a\u7684\u65bd\u58d3&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec11"
+              onclick="copyPrompt('tec11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec12" data-url="https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video" target="_blank">BofA's Mensah on Business Strategy, Role of AI</a></div>
+    <div class="title-zh">美銀Mensah談商業策略和AI角色</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Bernard Mensah, President of International at Bank of America, discusses the bank's international business strategy and the role of AI and technology. He speaks with Haslinda Amin from the sidelines of the Bank of America’s Breakthrough Technology Dialogue in Singapore. (Source: Bloomberg)</div>
+  <div class="summary-zh">美國銀行國際業務總裁Bernard Mensah討論銀行的國際業務戰略及AI和技術的角色，於新加坡美銀突破性技術對話會邊線接受採訪。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec12"
+              onclick="toggleAnalysis('tec12', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video&quot;, &quot;title_en&quot;: &quot;BofA's Mensah on Business Strategy, Role of AI&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u9280Mensah\u8ac7\u5546\u696d\u7b56\u7565\u548cAI\u89d2\u8272&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec12"
+              onclick="bookmarkArticle('tec12', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video&quot;, &quot;title_en&quot;: &quot;BofA's Mensah on Business Strategy, Role of AI&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u9280Mensah\u8ac7\u5546\u696d\u7b56\u7565\u548cAI\u89d2\u8272&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec12', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-28/bofa-s-mensah-on-business-strategy-role-of-ai-video&quot;, &quot;title_en&quot;: &quot;BofA's Mensah on Business Strategy, Role of AI&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u9280Mensah\u8ac7\u5546\u696d\u7b56\u7565\u548cAI\u89d2\u8272&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec12"
+              onclick="copyPrompt('tec12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec13" data-url="https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity" target="_blank">Advantest Shares Decline After Outlook Misses on Tight Capacity</a></div>
+    <div class="title-zh">Advantest股價下跌，前景預期因產能緊張而不佳</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Advantest Corp.’s stock dropped as much as 6.9% after the maker of AI chip testers gave a lackluster outlook and pointed to continued capacity constraints.</div>
+  <div class="summary-zh">AI芯片測試設備製造商Advantest Corp.股價下跌最多6.9%，該公司給出了黯淡的前景展望並指出產能限制將持續。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec13')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec13"
+              onclick="toggleAnalysis('tec13', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity&quot;, &quot;title_en&quot;: &quot;Advantest Shares Decline After Outlook Misses on Tight Capacity&quot;, &quot;title_zh&quot;: &quot;Advantest\u80a1\u50f9\u4e0b\u8dcc\uff0c\u524d\u666f\u9810\u671f\u56e0\u7522\u80fd\u7dca\u5f35\u800c\u4e0d\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec13"
+              onclick="bookmarkArticle('tec13', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity&quot;, &quot;title_en&quot;: &quot;Advantest Shares Decline After Outlook Misses on Tight Capacity&quot;, &quot;title_zh&quot;: &quot;Advantest\u80a1\u50f9\u4e0b\u8dcc\uff0c\u524d\u666f\u9810\u671f\u56e0\u7522\u80fd\u7dca\u5f35\u800c\u4e0d\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec13">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec13"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec13')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec13', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/advantest-shares-decline-after-outlook-misses-on-tight-capacity&quot;, &quot;title_en&quot;: &quot;Advantest Shares Decline After Outlook Misses on Tight Capacity&quot;, &quot;title_zh&quot;: &quot;Advantest\u80a1\u50f9\u4e0b\u8dcc\uff0c\u524d\u666f\u9810\u671f\u56e0\u7522\u80fd\u7dca\u5f35\u800c\u4e0d\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec13"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec13">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec13"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec13"
+              onclick="copyPrompt('tec13')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec14" data-url="https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine" target="_blank">Musk v. Altman Jurors ‘Rose Up to the Plate,’ Judge Seats Nine</a></div>
+    <div class="title-zh">Musk訴Altman案陪審團成員&quot;勇敢應戰&quot;，法官確認九名陪審員</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nine jurors were seated Monday in the AI industry’s closely watched trial between Elon Musk and OpenAI chief Sam Altman from a pool of San Francisco Bay Area residents who are expected to hear three weeks of testimony in federal court.</div>
+  <div class="summary-zh">週一有九名陪審員在AI產業受關注的埃隆·馬斯克與OpenAI首席執行官Sam Altman之間的訴訟中被確認，他們將聽取為期三週的在聯邦法院進行的證詞。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec14')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec14"
+              onclick="toggleAnalysis('tec14', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine&quot;, &quot;title_en&quot;: &quot;Musk v. Altman Jurors \u2018Rose Up to the Plate,\u2019 Judge Seats Nine&quot;, &quot;title_zh&quot;: &quot;Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\&quot;\u52c7\u6562\u61c9\u6230\&quot;\uff0c\u6cd5\u5b98\u78ba\u8a8d\u4e5d\u540d\u966a\u5be9\u54e1&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec14"
+              onclick="bookmarkArticle('tec14', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine&quot;, &quot;title_en&quot;: &quot;Musk v. Altman Jurors \u2018Rose Up to the Plate,\u2019 Judge Seats Nine&quot;, &quot;title_zh&quot;: &quot;Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\&quot;\u52c7\u6562\u61c9\u6230\&quot;\uff0c\u6cd5\u5b98\u78ba\u8a8d\u4e5d\u540d\u966a\u5be9\u54e1&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec14">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec14"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec14')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec14', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/musk-v-altman-jurors-rose-up-to-the-plate-judge-seats-nine&quot;, &quot;title_en&quot;: &quot;Musk v. Altman Jurors \u2018Rose Up to the Plate,\u2019 Judge Seats Nine&quot;, &quot;title_zh&quot;: &quot;Musk\u8a34Altman\u6848\u966a\u5be9\u5718\u6210\u54e1\&quot;\u52c7\u6562\u61c9\u6230\&quot;\uff0c\u6cd5\u5b98\u78ba\u8a8d\u4e5d\u540d\u966a\u5be9\u54e1&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec14"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec14">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec14"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec14"
+              onclick="copyPrompt('tec14')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec15" data-url="https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake" target="_blank">Dynatrace Rallies on Report That Starboard Value Took a Stake</a></div>
+    <div class="title-zh">Dynatrace因Starboard Value買入消息反彈</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Dynatrace Inc. shares rose more than 6% in late trading on a report that Starboard Value LP took a stake and is pushing the company to better capitalize on the shift to artificial intelligence.</div>
+  <div class="summary-zh">根據Starboard Value LP買入該公司股份並推動其更好利用向人工智能轉變的報導，Dynatrace Inc.股價在尾盤交易中上漲超過6%。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec15')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec15"
+              onclick="toggleAnalysis('tec15', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake&quot;, &quot;title_en&quot;: &quot;Dynatrace Rallies on Report That Starboard Value Took a Stake&quot;, &quot;title_zh&quot;: &quot;Dynatrace\u56e0Starboard Value\u8cb7\u5165\u6d88\u606f\u53cd\u5f48&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec15"
+              onclick="bookmarkArticle('tec15', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake&quot;, &quot;title_en&quot;: &quot;Dynatrace Rallies on Report That Starboard Value Took a Stake&quot;, &quot;title_zh&quot;: &quot;Dynatrace\u56e0Starboard Value\u8cb7\u5165\u6d88\u606f\u53cd\u5f48&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec15">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec15"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec15')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec15', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-28/dynatrace-rallies-on-report-that-starboard-value-took-a-stake&quot;, &quot;title_en&quot;: &quot;Dynatrace Rallies on Report That Starboard Value Took a Stake&quot;, &quot;title_zh&quot;: &quot;Dynatrace\u56e0Starboard Value\u8cb7\u5165\u6d88\u606f\u53cd\u5f48&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec15"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec15">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec15"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec15"
+              onclick="copyPrompt('tec15')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec16" data-url="https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video" target="_blank">Monroe's Koenig: AI Will Make Select Software Better</a></div>
+    <div class="title-zh">Monroe的Koenig：AI將使部分軟件表現更佳</div>
+    
+<div class="summary-block">
+  <div class="summary-en">&quot;There's a lot less anxiety&quot; in the private credit landscape says Monroe Capital Chairman &amp; CEO Ted Koenig. He joined Romaine Bostick and Katie Greifeld on &quot;The Close&quot; to discuss his outlook on private credit and the real but misdiagnosed AI risk. (Source: Bloomberg)</div>
+  <div class="summary-zh">Monroe Capital董事長兼首席執行官Ted Koenig表示私人信貸領域&quot;焦慮明顯減少&quot;，他與Romaine Bostick和Katie Greifeld在&quot;The Close&quot;討論了他對私人信貸的前景看法和真實但診斷錯誤的AI風險。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec16')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec16"
+              onclick="toggleAnalysis('tec16', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video&quot;, &quot;title_en&quot;: &quot;Monroe's Koenig: AI Will Make Select Software Better&quot;, &quot;title_zh&quot;: &quot;Monroe\u7684Koenig\uff1aAI\u5c07\u4f7f\u90e8\u5206\u8edf\u4ef6\u8868\u73fe\u66f4\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec16"
+              onclick="bookmarkArticle('tec16', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video&quot;, &quot;title_en&quot;: &quot;Monroe's Koenig: AI Will Make Select Software Better&quot;, &quot;title_zh&quot;: &quot;Monroe\u7684Koenig\uff1aAI\u5c07\u4f7f\u90e8\u5206\u8edf\u4ef6\u8868\u73fe\u66f4\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec16">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec16"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec16')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec16', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/monroe-s-koenig-ai-will-make-select-software-better-video&quot;, &quot;title_en&quot;: &quot;Monroe's Koenig: AI Will Make Select Software Better&quot;, &quot;title_zh&quot;: &quot;Monroe\u7684Koenig\uff1aAI\u5c07\u4f7f\u90e8\u5206\u8edf\u4ef6\u8868\u73fe\u66f4\u4f73&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec16"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec16">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec16"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec16"
+              onclick="copyPrompt('tec16')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec17" data-url="https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy" target="_blank">Match Invests $100 Million in Grindr Rival Sniffies With Option to Buy</a></div>
+    <div class="title-zh">Match投資1億美元於Grindr競爭對手Sniffies並可選擇收購</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Match Group Inc., whose dating-app portfolio includes brands like Hinge, Tinder and Match.com, is investing $100 million in Sniffies, a platform for queer men, paving the way for a possible acquisition.</div>
+  <div class="summary-zh">Match Group Inc.（旗下包括Hinge、Tinder和Match.com等約會應用品牌）向同志男性平台Sniffies投資1億美元，為可能的收購鋪平道路。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec17')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec17"
+              onclick="toggleAnalysis('tec17', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy&quot;, &quot;title_en&quot;: &quot;Match\u00a0Invests $100 Million in Grindr Rival Sniffies With Option to Buy&quot;, &quot;title_zh&quot;: &quot;Match\u6295\u8cc71\u5104\u7f8e\u5143\u65bcGrindr\u7af6\u722d\u5c0d\u624bSniffies\u4e26\u53ef\u9078\u64c7\u6536\u8cfc&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec17"
+              onclick="bookmarkArticle('tec17', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy&quot;, &quot;title_en&quot;: &quot;Match\u00a0Invests $100 Million in Grindr Rival Sniffies With Option to Buy&quot;, &quot;title_zh&quot;: &quot;Match\u6295\u8cc71\u5104\u7f8e\u5143\u65bcGrindr\u7af6\u722d\u5c0d\u624bSniffies\u4e26\u53ef\u9078\u64c7\u6536\u8cfc&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec17">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec17"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec17')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec17', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/match-invests-100-million-in-grindr-rival-sniffies-with-option-to-buy&quot;, &quot;title_en&quot;: &quot;Match\u00a0Invests $100 Million in Grindr Rival Sniffies With Option to Buy&quot;, &quot;title_zh&quot;: &quot;Match\u6295\u8cc71\u5104\u7f8e\u5143\u65bcGrindr\u7af6\u722d\u5c0d\u624bSniffies\u4e26\u53ef\u9078\u64c7\u6536\u8cfc&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec17"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec17">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec17"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec17"
+              onclick="copyPrompt('tec17')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec18" data-url="https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video" target="_blank">OpenAI Drops Exclusivity Deal with Microsoft | Bloomberg Tech 4/27/2026</a></div>
+    <div class="title-zh">OpenAI終止與微軟獨家交易｜彭博科技 4/27/2026</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Bloomberg’s Ed Ludlow discusses Microsoft’s and OpenAI’s decision to drop exclusivity rights on AI models in a move that opens the doors for the rivals to make new deals. Plus, China blocks Meta's $2 billion purchase of AI startup Manus. And, the feud between Elon Musk and Sam Altman heads to court with the Tesla CEO alleging OpenAI abandoned its founding mission. (Source: Bloomberg)</div>
+  <div class="summary-zh">彭博社的Ed Ludlow討論微軟和OpenAI決定放棄AI模型獨家權的舉措，該決定為競爭對手進行新交易開放大門；另外中國封殺Meta對AI初創公司Manus的20億美元收購；埃隆·馬斯克與Sam Altman的爭端訴諸法庭。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec18')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec18"
+              onclick="toggleAnalysis('tec18', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video&quot;, &quot;title_en&quot;: &quot;OpenAI Drops Exclusivity Deal with Microsoft | Bloomberg Tech 4/27/2026&quot;, &quot;title_zh&quot;: &quot;OpenAI\u7d42\u6b62\u8207\u5fae\u8edf\u7368\u5bb6\u4ea4\u6613\uff5c\u5f6d\u535a\u79d1\u6280 4/27/2026&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec18"
+              onclick="bookmarkArticle('tec18', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video&quot;, &quot;title_en&quot;: &quot;OpenAI Drops Exclusivity Deal with Microsoft | Bloomberg Tech 4/27/2026&quot;, &quot;title_zh&quot;: &quot;OpenAI\u7d42\u6b62\u8207\u5fae\u8edf\u7368\u5bb6\u4ea4\u6613\uff5c\u5f6d\u535a\u79d1\u6280 4/27/2026&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec18">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec18"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec18')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec18', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/bloomberg-tech-4-27-2026-video&quot;, &quot;title_en&quot;: &quot;OpenAI Drops Exclusivity Deal with Microsoft | Bloomberg Tech 4/27/2026&quot;, &quot;title_zh&quot;: &quot;OpenAI\u7d42\u6b62\u8207\u5fae\u8edf\u7368\u5bb6\u4ea4\u6613\uff5c\u5f6d\u535a\u79d1\u6280 4/27/2026&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec18"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec18">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec18"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec18"
+              onclick="copyPrompt('tec18')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec19" data-url="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video" target="_blank">Joby Tests Air Taxis Between JFK Airport and Manhattan</a></div>
+    <div class="title-zh">Joby在JFK機場和曼哈頓之間測試空中計程車</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Joby Aviation is flying electric air taxis between John F. Kennedy International Airport and Manhattan this week to show off its quieter, zero-emission aircraft in a city weary of noise pollution. (Source: Bloomberg)</div>
+  <div class="summary-zh">Joby Aviation本週在約翰·肯尼迪國際機場和曼哈頓之間運營電動空中計程車，展示其更安靜、零排放的飛機，以應對該市對噪音污染的疲勞。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec19')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec19"
+              onclick="toggleAnalysis('tec19', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec19"
+              onclick="bookmarkArticle('tec19', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec19">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec19"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec19')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec19', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan-video&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec19"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec19">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec19"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec19"
+              onclick="copyPrompt('tec19')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec20" data-url="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan" target="_blank">Joby Tests Air Taxis Between JFK Airport and Manhattan</a></div>
+    <div class="title-zh">Joby在JFK機場和曼哈頓之間測試空中計程車</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Joby Aviation is flying electric air taxis between John F. Kennedy International Airport and Manhattan this week to show off its quieter, zero-emission aircraft in a city weary of noise pollution. (Source: Bloomberg)</div>
+  <div class="summary-zh">Joby Aviation本週在約翰·肯尼迪國際機場和曼哈頓之間運營電動空中計程車，展示其更安靜、零排放的飛機，以應對該市對噪音污染的疲勞。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec20')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec20"
+              onclick="toggleAnalysis('tec20', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec20"
+              onclick="bookmarkArticle('tec20', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec20">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec20"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec20')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec20', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/joby-tests-air-taxis-between-jfk-airport-and-manhattan&quot;, &quot;title_en&quot;: &quot;Joby Tests Air Taxis Between JFK Airport and Manhattan&quot;, &quot;title_zh&quot;: &quot;Joby\u5728JFK\u6a5f\u5834\u548c\u66fc\u54c8\u9813\u4e4b\u9593\u6e2c\u8a66\u7a7a\u4e2d\u8a08\u7a0b\u8eca&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec20"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec20">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec20"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec20"
+              onclick="copyPrompt('tec20')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec21" data-url="https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video" target="_blank">Big Job Cuts Come Ahead of Big Tech Earnings</a></div>
+    <div class="title-zh">大規模裁員在科技巨頭財報發布前出現</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Microsoft and Meta have announced plans that could reduce their workforces by thousands ahead of releasing their quarterly earnings later this week. Sarah Franklin, CEO of the human resources platform Lattice, says &quot;Tokenmaxxing&quot;, AI use and large job cuts aren’t the right things to focus on to free up capital. She joins Ed Ludlow on “Bloomberg Tech.” (Source: Bloomberg)</div>
+  <div class="summary-zh">微軟和Meta已宣布可能削減數千名員工的計劃，此舉發生在他們本週發布季度財報之前，人力資源平台Lattice首席執行官Sarah Franklin表示&quot;Tokenmaxxing&quot;、AI使用和大規模裁員不是集中關注的正確事項。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec21')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec21"
+              onclick="toggleAnalysis('tec21', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video&quot;, &quot;title_en&quot;: &quot;Big Job Cuts Come Ahead of Big Tech Earnings&quot;, &quot;title_zh&quot;: &quot;\u5927\u898f\u6a21\u88c1\u54e1\u5728\u79d1\u6280\u5de8\u982d\u8ca1\u5831\u767c\u5e03\u524d\u51fa\u73fe&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec21"
+              onclick="bookmarkArticle('tec21', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video&quot;, &quot;title_en&quot;: &quot;Big Job Cuts Come Ahead of Big Tech Earnings&quot;, &quot;title_zh&quot;: &quot;\u5927\u898f\u6a21\u88c1\u54e1\u5728\u79d1\u6280\u5de8\u982d\u8ca1\u5831\u767c\u5e03\u524d\u51fa\u73fe&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec21">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec21"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec21')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec21', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/big-job-cuts-come-ahead-of-big-tech-earnings-video&quot;, &quot;title_en&quot;: &quot;Big Job Cuts Come Ahead of Big Tech Earnings&quot;, &quot;title_zh&quot;: &quot;\u5927\u898f\u6a21\u88c1\u54e1\u5728\u79d1\u6280\u5de8\u982d\u8ca1\u5831\u767c\u5e03\u524d\u51fa\u73fe&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec21"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec21">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec21"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec21"
+              onclick="copyPrompt('tec21')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec22" data-url="https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video" target="_blank">Musk, Altman Feud Heads to Court Over Future of OpenAI</a></div>
+    <div class="title-zh">馬斯克、Altman爭端訴諸法庭以決定OpenAI未來</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Jury selection begins in the legal battle between Elon Musk and Sam Altman over the corporate structure of OpenAI, in a case that could determine the company’s future. Dorothy Lund, professor of law at Columbia Law School specializing in corporate governance, joins Ed Ludlow on “Bloomberg Tech.” (Source: Bloomberg)</div>
+  <div class="summary-zh">埃隆·馬斯克與Sam Altman關於OpenAI公司結構的法律戰中陪審團甄選開始，該案例可能決定該公司的未來，哥倫比亞法學院法律教授、公司治理專家Dorothy Lund與Ed Ludlow在&quot;Bloomberg Tech&quot;中討論。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec22')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec22"
+              onclick="toggleAnalysis('tec22', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video&quot;, &quot;title_en&quot;: &quot;Musk, Altman Feud Heads to Court Over Future of OpenAI&quot;, &quot;title_zh&quot;: &quot;\u99ac\u65af\u514b\u3001Altman\u722d\u7aef\u8a34\u8af8\u6cd5\u5ead\u4ee5\u6c7a\u5b9aOpenAI\u672a\u4f86&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec22"
+              onclick="bookmarkArticle('tec22', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video&quot;, &quot;title_en&quot;: &quot;Musk, Altman Feud Heads to Court Over Future of OpenAI&quot;, &quot;title_zh&quot;: &quot;\u99ac\u65af\u514b\u3001Altman\u722d\u7aef\u8a34\u8af8\u6cd5\u5ead\u4ee5\u6c7a\u5b9aOpenAI\u672a\u4f86&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec22">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec22"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec22')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec22', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/musk-altman-feud-heads-to-court-over-future-of-openai-video&quot;, &quot;title_en&quot;: &quot;Musk, Altman Feud Heads to Court Over Future of OpenAI&quot;, &quot;title_zh&quot;: &quot;\u99ac\u65af\u514b\u3001Altman\u722d\u7aef\u8a34\u8af8\u6cd5\u5ead\u4ee5\u6c7a\u5b9aOpenAI\u672a\u4f86&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec22"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec22">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec22"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec22"
+              onclick="copyPrompt('tec22')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec23" data-url="https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video" target="_blank">US Is Doubling Down on Tech Deals with the Gulf: Helberg</a></div>
+    <div class="title-zh">美國加強與海灣地區科技交易：Helberg</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Under Secretary of State for Economic Affairs Jacob Helberg says the US is doubling down on partnerships with Gulf countries, and the conflict in the Middle East only highlights the need for international partnerships that shore up the tech supply chain. Helberg joins Ed Ludlow on “Bloomberg Tech.” (Source: Bloomberg)</div>
+  <div class="summary-zh">國務院經濟事務次卿Jacob Helberg表示美國正加強與海灣國家的夥伴關係，中東衝突凸顯了需要加強科技供應鏈的國際夥伴關係，他與Ed Ludlow在&quot;Bloomberg Tech&quot;中討論。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec23')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec23"
+              onclick="toggleAnalysis('tec23', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video&quot;, &quot;title_en&quot;: &quot;US Is Doubling Down on Tech Deals with the Gulf: Helberg&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u52a0\u5f37\u8207\u6d77\u7063\u5730\u5340\u79d1\u6280\u4ea4\u6613\uff1aHelberg&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec23"
+              onclick="bookmarkArticle('tec23', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video&quot;, &quot;title_en&quot;: &quot;US Is Doubling Down on Tech Deals with the Gulf: Helberg&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u52a0\u5f37\u8207\u6d77\u7063\u5730\u5340\u79d1\u6280\u4ea4\u6613\uff1aHelberg&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec23">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec23"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec23')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec23', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/us-is-doubling-down-on-tech-deals-with-the-gulf-helberg-video&quot;, &quot;title_en&quot;: &quot;US Is Doubling Down on Tech Deals with the Gulf: Helberg&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u52a0\u5f37\u8207\u6d77\u7063\u5730\u5340\u79d1\u6280\u4ea4\u6613\uff1aHelberg&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec23"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec23">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec23"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec23"
+              onclick="copyPrompt('tec23')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec24" data-url="https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video" target="_blank">Markets Are Ignoring Rising War Risks: Patterson</a></div>
+    <div class="title-zh">市場忽視上升的戰爭風險：Patterson</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Markets are hitting all-time highs&amp;mdash;but Rebecca Patterson, a former chief investment strategist at Bridgewater who's now a senior fellow at the Council on Foreign Relations. is warning that investors may be ignoring serious geopolitical risks. From the ticking clock on oil supply disruptions to the fragile AI boom, she explains why today’s rally could face sudden reality checks if global tensions escalate or growth assumptions falter. (Source: Bloomberg)</div>
+  <div class="summary-zh">市場創歷史新高，但前Bridgewater首席投資策略師、現任外交關係委員會高級研究員Rebecca Patterson警告投資者可能忽視了嚴重地緣政治風險。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec24')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec24"
+              onclick="toggleAnalysis('tec24', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video&quot;, &quot;title_en&quot;: &quot;Markets Are Ignoring Rising War Risks: Patterson&quot;, &quot;title_zh&quot;: &quot;\u5e02\u5834\u5ffd\u8996\u4e0a\u5347\u7684\u6230\u722d\u98a8\u96aa\uff1aPatterson&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec24"
+              onclick="bookmarkArticle('tec24', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video&quot;, &quot;title_en&quot;: &quot;Markets Are Ignoring Rising War Risks: Patterson&quot;, &quot;title_zh&quot;: &quot;\u5e02\u5834\u5ffd\u8996\u4e0a\u5347\u7684\u6230\u722d\u98a8\u96aa\uff1aPatterson&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec24">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec24"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec24')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec24', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/videos/2026-04-27/markets-are-ignoring-rising-war-risks-patterson-video&quot;, &quot;title_en&quot;: &quot;Markets Are Ignoring Rising War Risks: Patterson&quot;, &quot;title_zh&quot;: &quot;\u5e02\u5834\u5ffd\u8996\u4e0a\u5347\u7684\u6230\u722d\u98a8\u96aa\uff1aPatterson&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec24"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec24">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec24"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec24"
+              onclick="copyPrompt('tec24')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec25" data-url="https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu" target="_blank">Google’s AI Power Over Android Ecosystem Targeted by EU</a></div>
+    <div class="title-zh">谷歌對Android生態系統的AI控制力成為歐盟目標</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Google was targeted by European Union watchdogs who unveiled a slate of proposals aimed at prising open its Android ecosystem to rivals’ AI services.</div>
+  <div class="summary-zh">歐盟監管機構針對谷歌推出了一系列提案，旨在開放其Android生態系統以應對競爭對手的AI服務。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec25')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec25"
+              onclick="toggleAnalysis('tec25', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Power Over Android Ecosystem Targeted by EU&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u5c0dAndroid\u751f\u614b\u7cfb\u7d71\u7684AI\u63a7\u5236\u529b\u6210\u70ba\u6b50\u76df\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec25"
+              onclick="bookmarkArticle('tec25', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Power Over Android Ecosystem Targeted by EU&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u5c0dAndroid\u751f\u614b\u7cfb\u7d71\u7684AI\u63a7\u5236\u529b\u6210\u70ba\u6b50\u76df\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec25">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec25"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec25')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec25', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-s-ai-power-over-android-ecosystem-targeted-by-eu&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Power Over Android Ecosystem Targeted by EU&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u5c0dAndroid\u751f\u614b\u7cfb\u7d71\u7684AI\u63a7\u5236\u529b\u6210\u70ba\u6b50\u76df\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec25"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec25">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec25"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec25"
+              onclick="copyPrompt('tec25')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec26" data-url="https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize" target="_blank">Hasbro ‘Magic: The Gathering’ Video Game Staff Try to Unionize</a></div>
+    <div class="title-zh">孩之寶&quot;萬智牌&quot;視頻遊戲員工嘗試組織工會</div>
+    
+<div class="summary-block">
+  <div class="summary-en">More than 100 employees at Hasbro Inc. who are involved in designing the video game rendition of the popular card game Magic: The Gathering are forming plans to unionize with the Communications Workers of America.</div>
+  <div class="summary-zh">參與設計熱門卡牌遊戲&quot;萬智牌&quot;視頻遊戲版本的孩之寶Inc.超過100名員工正計劃與美國通訊工作者協會組織工會。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec26')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec26"
+              onclick="toggleAnalysis('tec26', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize&quot;, &quot;title_en&quot;: &quot;Hasbro \u2018Magic: The Gathering\u2019 Video Game Staff Try to Unionize&quot;, &quot;title_zh&quot;: &quot;\u5b69\u4e4b\u5bf6\&quot;\u842c\u667a\u724c\&quot;\u8996\u983b\u904a\u6232\u54e1\u5de5\u5617\u8a66\u7d44\u7e54\u5de5\u6703&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec26"
+              onclick="bookmarkArticle('tec26', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize&quot;, &quot;title_en&quot;: &quot;Hasbro \u2018Magic: The Gathering\u2019 Video Game Staff Try to Unionize&quot;, &quot;title_zh&quot;: &quot;\u5b69\u4e4b\u5bf6\&quot;\u842c\u667a\u724c\&quot;\u8996\u983b\u904a\u6232\u54e1\u5de5\u5617\u8a66\u7d44\u7e54\u5de5\u6703&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec26">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec26"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec26')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec26', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/hasbro-magic-the-gathering-video-game-staff-try-to-unionize&quot;, &quot;title_en&quot;: &quot;Hasbro \u2018Magic: The Gathering\u2019 Video Game Staff Try to Unionize&quot;, &quot;title_zh&quot;: &quot;\u5b69\u4e4b\u5bf6\&quot;\u842c\u667a\u724c\&quot;\u8996\u983b\u904a\u6232\u54e1\u5de5\u5617\u8a66\u7d44\u7e54\u5de5\u6703&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec26"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec26">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec26"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec26"
+              onclick="copyPrompt('tec26')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec27" data-url="https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work" target="_blank">Google Staff Urge Pichai to Refuse Classified Military AI Work</a></div>
+    <div class="title-zh">谷歌員工敦促Pichai拒絕機密軍事AI工作</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Hundreds of AI researchers at Alphabet Inc.’s Google have signed onto a letter urging Chief Executive Officer Sundar Pichai to refuse to make the company’s artificial intelligence systems available for classified workloads for US defense missions, according to organizers of the effort.</div>
+  <div class="summary-zh">Alphabet Inc.旗下谷歌的數百名AI研究人員簽署了一封信，敦促首席執行官Sundar Pichai拒絕為美國國防任務的機密工作提供人工智能系統。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec27')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec27"
+              onclick="toggleAnalysis('tec27', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work&quot;, &quot;title_en&quot;: &quot;Google Staff Urge Pichai to Refuse Classified Military AI Work&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u54e1\u5de5\u6566\u4fc3Pichai\u62d2\u7d55\u6a5f\u5bc6\u8ecd\u4e8bAI\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec27"
+              onclick="bookmarkArticle('tec27', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work&quot;, &quot;title_en&quot;: &quot;Google Staff Urge Pichai to Refuse Classified Military AI Work&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u54e1\u5de5\u6566\u4fc3Pichai\u62d2\u7d55\u6a5f\u5bc6\u8ecd\u4e8bAI\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec27">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec27"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec27')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec27', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/google-staff-urge-pichai-to-refuse-classified-military-ai-work&quot;, &quot;title_en&quot;: &quot;Google Staff Urge Pichai to Refuse Classified Military AI Work&quot;, &quot;title_zh&quot;: &quot;\u8c37\u6b4c\u54e1\u5de5\u6566\u4fc3Pichai\u62d2\u7d55\u6a5f\u5bc6\u8ecd\u4e8bAI\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec27"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec27">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec27"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec27"
+              onclick="copyPrompt('tec27')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec28" data-url="https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Bloomberg Tech</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation" target="_blank">Apple Store Union Workers at Closing Location Accuse Company of Retaliation</a></div>
+    <div class="title-zh">關閉地點的Apple Store工會工人指控公司報復</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Union representatives said Apple denied workers the ability to easily transfer to other locations, in a departure from its typical practice.</div>
+  <div class="summary-zh">工會代表表示蘋果拒絕讓員工輕易轉至其他門店，這與其典型做法不符。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec28')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec28"
+              onclick="toggleAnalysis('tec28', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation&quot;, &quot;title_en&quot;: &quot;Apple Store Union Workers at Closing Location Accuse Company of Retaliation&quot;, &quot;title_zh&quot;: &quot;\u95dc\u9589\u5730\u9ede\u7684Apple Store\u5de5\u6703\u5de5\u4eba\u6307\u63a7\u516c\u53f8\u5831\u5fa9&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec28"
+              onclick="bookmarkArticle('tec28', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation&quot;, &quot;title_en&quot;: &quot;Apple Store Union Workers at Closing Location Accuse Company of Retaliation&quot;, &quot;title_zh&quot;: &quot;\u95dc\u9589\u5730\u9ede\u7684Apple Store\u5de5\u6703\u5de5\u4eba\u6307\u63a7\u516c\u53f8\u5831\u5fa9&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec28">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec28"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec28')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec28', {&quot;url&quot;: &quot;https://www.bloomberg.com/news/articles/2026-04-27/apple-store-union-staff-at-closing-location-accuse-company-of-retaliation&quot;, &quot;title_en&quot;: &quot;Apple Store Union Workers at Closing Location Accuse Company of Retaliation&quot;, &quot;title_zh&quot;: &quot;\u95dc\u9589\u5730\u9ede\u7684Apple Store\u5de5\u6703\u5de5\u4eba\u6307\u63a7\u516c\u53f8\u5831\u5fa9&quot;, &quot;source&quot;: &quot;Bloomberg Tech&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec28"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec28">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec28"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec28"
+              onclick="copyPrompt('tec28')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec29" data-url="https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Tue, 28 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/" target="_blank">Put it in pencil: NASA's Artemis III mission will launch no earlier than late 2027</a></div>
+    <div class="title-zh">用鉛筆記下：NASA的Artemis III任務最早將在2027年末發射</div>
+    
+<div class="summary-block">
+  <div class="summary-en">NASA Administrator Jared Isaacman told lawmakers on Monday that SpaceX and Blue Origin, the agency's two lunar lander contractors, say they could have their spacecraft ready for the next Artemis mission in Earth orbit in late 2027, somewhat later than NASA's previous schedule. This mission, Artemis III, will not fly to the Moon . Instead, NASA will launch an Orion capsule with a team of astronauts to rendezvous and potentially dock with one or both landers in Earth orbit. The details of the Artemis III flight plan remain under review, with key questions about the orbit's altitude and the configuration of the Space Launch System rocket still unanswered. A mission to low-Earth orbit, just a few hundred miles in altitude, may not require NASA to use up an SLS upper stage that is already built</div>
+  <div class="summary-zh">NASA局長Jared Isaacman週一告訴議員，SpaceX和Blue Origin（該機構兩家月球著陸器承包商）表示他們可在2027年末為下一次Artemis任務在地球軌道上準備好航天器，比NASA先前的時間表稍晚。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec29')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec29"
+              onclick="toggleAnalysis('tec29', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/&quot;, &quot;title_en&quot;: &quot;Put it in pencil: NASA's Artemis III mission will launch no earlier than late 2027&quot;, &quot;title_zh&quot;: &quot;\u7528\u925b\u7b46\u8a18\u4e0b\uff1aNASA\u7684Artemis III\u4efb\u52d9\u6700\u65e9\u5c07\u57282027\u5e74\u672b\u767c\u5c04&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec29"
+              onclick="bookmarkArticle('tec29', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/&quot;, &quot;title_en&quot;: &quot;Put it in pencil: NASA's Artemis III mission will launch no earlier than late 2027&quot;, &quot;title_zh&quot;: &quot;\u7528\u925b\u7b46\u8a18\u4e0b\uff1aNASA\u7684Artemis III\u4efb\u52d9\u6700\u65e9\u5c07\u57282027\u5e74\u672b\u767c\u5c04&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec29">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec29"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec29')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec29', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/put-it-in-pencil-nasas-artemis-iii-mission-will-launch-no-earlier-than-late-2027/&quot;, &quot;title_en&quot;: &quot;Put it in pencil: NASA's Artemis III mission will launch no earlier than late 2027&quot;, &quot;title_zh&quot;: &quot;\u7528\u925b\u7b46\u8a18\u4e0b\uff1aNASA\u7684Artemis III\u4efb\u52d9\u6700\u65e9\u5c07\u57282027\u5e74\u672b\u767c\u5c04&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Tue, 28 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec29"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec29">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec29"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec29"
+              onclick="copyPrompt('tec29')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec30" data-url="https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/" target="_blank">Open source package with 1 million monthly downloads stole user credentials</a></div>
+    <div class="title-zh">擁有每月 100 萬次下載的開源套件竊取使用者憑證</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Open source software with more than 1 million monthly downloads was compromised after a threat actor exploited a vulnerability in the developers’ account workflow that gave access to its signing keys and other sensitive information. On Friday, unknown attackers exploited the vulnerability to push a new version of element-data , a command-line interface that helps users monitor performance and anomalies in machine-learning systems. When run, the malicious package scoured systems for sensitive data, including user profiles, warehouse credentials, cloud provider keys, API tokens, and SSH keys, developers said . The malicious version was tagged as 0.23.3 and was published to the developers’ Python Package Index and Docker image accounts. It was removed about 12 hours later, on Saturday. Elemen</div>
+  <div class="summary-zh">一個擁有超過 100 萬月度下載次數的開源軟體遭到入侵，威脅行為人利用開發者帳戶工作流程的漏洞獲取簽署密鑰和其他敏感資訊。攻擊者於周五利用該漏洞推送惡意更新。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec30')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec30"
+              onclick="toggleAnalysis('tec30', {&quot;url&quot;: &quot;https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/&quot;, &quot;title_en&quot;: &quot;Open source package with 1 million monthly downloads stole user credentials&quot;, &quot;title_zh&quot;: &quot;\u64c1\u6709\u6bcf\u6708 100 \u842c\u6b21\u4e0b\u8f09\u7684\u958b\u6e90\u5957\u4ef6\u7aca\u53d6\u4f7f\u7528\u8005\u6191\u8b49&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec30"
+              onclick="bookmarkArticle('tec30', {&quot;url&quot;: &quot;https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/&quot;, &quot;title_en&quot;: &quot;Open source package with 1 million monthly downloads stole user credentials&quot;, &quot;title_zh&quot;: &quot;\u64c1\u6709\u6bcf\u6708 100 \u842c\u6b21\u4e0b\u8f09\u7684\u958b\u6e90\u5957\u4ef6\u7aca\u53d6\u4f7f\u7528\u8005\u6191\u8b49&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec30">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec30"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec30')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec30', {&quot;url&quot;: &quot;https://arstechnica.com/security/2026/04/open-source-package-with-1-million-monthly-downloads-stole-user-credentials/&quot;, &quot;title_en&quot;: &quot;Open source package with 1 million monthly downloads stole user credentials&quot;, &quot;title_zh&quot;: &quot;\u64c1\u6709\u6bcf\u6708 100 \u842c\u6b21\u4e0b\u8f09\u7684\u958b\u6e90\u5957\u4ef6\u7aca\u53d6\u4f7f\u7528\u8005\u6191\u8b49&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec30"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec30">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec30"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec30"
+              onclick="copyPrompt('tec30')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec31" data-url="https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/" target="_blank">Musk and Altman face off in trial that will determine OpenAI's future</a></div>
+    <div class="title-zh">Musk 和 Altman 在決定 OpenAI 未來的試訟中對簿公堂</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A hotly anticipated trial starts this week, where Elon Musk will attempt to prove that OpenAI, under Sam Altman, has abandoned its mission to remain a nonprofit in order to ensure that artificial intelligence serves humanity, and not just billionaires. Many view the lawsuit as a grudge match between Musk—who left OpenAI after serving as an early major donor and advisor—and Altman—who currently runs OpenAI, despite insiders' allegedly growing distrust in his commitment to the dominant AI firm's mission. But the lawsuit is about much more than a couple billionaires' big egos. The outcome could radically change the AI landscape, impacting how OpenAI runs and what resources the firm will have to uphold its mission. If Musk wins, OpenAI's hopes of growing a for-profit arm that can fund the nonp</div>
+  <div class="summary-zh">一場備受期待的訴訟本週開庭，Elon Musk 將試圖證明在 Sam Altman 領導下的 OpenAI 已放棄其非營利使命，以確保人工智慧造福全人類而非只服務億萬富豪。許多人將這場訴訟視為兩人間的對決。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec31')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec31"
+              onclick="toggleAnalysis('tec31', {&quot;url&quot;: &quot;https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/&quot;, &quot;title_en&quot;: &quot;Musk and Altman face off in trial that will determine OpenAI's future&quot;, &quot;title_zh&quot;: &quot;Musk \u548c Altman \u5728\u6c7a\u5b9a OpenAI \u672a\u4f86\u7684\u8a66\u8a1f\u4e2d\u5c0d\u7c3f\u516c\u5802&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec31"
+              onclick="bookmarkArticle('tec31', {&quot;url&quot;: &quot;https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/&quot;, &quot;title_en&quot;: &quot;Musk and Altman face off in trial that will determine OpenAI's future&quot;, &quot;title_zh&quot;: &quot;Musk \u548c Altman \u5728\u6c7a\u5b9a OpenAI \u672a\u4f86\u7684\u8a66\u8a1f\u4e2d\u5c0d\u7c3f\u516c\u5802&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec31">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec31"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec31')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec31', {&quot;url&quot;: &quot;https://arstechnica.com/tech-policy/2026/04/musk-and-altman-face-off-in-trial-that-will-determine-openais-future/&quot;, &quot;title_en&quot;: &quot;Musk and Altman face off in trial that will determine OpenAI's future&quot;, &quot;title_zh&quot;: &quot;Musk \u548c Altman \u5728\u6c7a\u5b9a OpenAI \u672a\u4f86\u7684\u8a66\u8a1f\u4e2d\u5c0d\u7c3f\u516c\u5802&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec31"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec31">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec31"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec31"
+              onclick="copyPrompt('tec31')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec32" data-url="https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/" target="_blank">OpenAI ends its exclusive partnership with Microsoft</a></div>
+    <div class="title-zh">OpenAI 終止與 Microsoft 的獨家合作夥伴關係</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Since Microsoft invested $1 billion in OpenAI in 2019 , the exclusive partnership between the two firms has been one of the strongest and most consequential in the AI industry. Today, though, OpenAI and Microsoft jointly announced an amended agreement that will allow the company to go beyond Microsoft's Azure and &quot;serve all its products to customers across any cloud provider.&quot; The announcement clarifies that Microsoft will continue to have a license for OpenAI's IP and models through 2032 and that Azure will remain the &quot;primary cloud partner&quot; for OpenAI during that time (should Microsoft continue to be able to honor that). But Microsoft's license &quot;will now be non-exclusive,&quot; the announcement reads, letting OpenAI make its models available through other major cloud providers going forward. </div>
+  <div class="summary-zh">自 Microsoft 在 2019 年對 OpenAI 投資 10 億美元以來，兩家公司的獨家合作夥伴關係一直是 AI 產業中最強大且最具影響力的之一。不過今日 OpenAI 與 Microsoft 聯合宣布修訂協議，允許該公司超越 Microsoft 的範圍。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec32')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec32"
+              onclick="toggleAnalysis('tec32', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/&quot;, &quot;title_en&quot;: &quot;OpenAI ends its exclusive partnership with Microsoft&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7d42\u6b62\u8207 Microsoft \u7684\u7368\u5bb6\u5408\u4f5c\u5925\u4f34\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec32"
+              onclick="bookmarkArticle('tec32', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/&quot;, &quot;title_en&quot;: &quot;OpenAI ends its exclusive partnership with Microsoft&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7d42\u6b62\u8207 Microsoft \u7684\u7368\u5bb6\u5408\u4f5c\u5925\u4f34\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec32">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec32"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec32')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec32', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/no-longer-exclusive-microsoft-agrees-to-let-openai-see-other-cloud-providers/&quot;, &quot;title_en&quot;: &quot;OpenAI ends its exclusive partnership with Microsoft&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7d42\u6b62\u8207 Microsoft \u7684\u7368\u5bb6\u5408\u4f5c\u5925\u4f34\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec32"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec32">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec32"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec32"
+              onclick="copyPrompt('tec32')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec33" data-url="https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/" target="_blank">EU tells Google to open up AI on Android; Google says that's &quot;unwarranted intervention&quot;</a></div>
+    <div class="title-zh">EU 要求 Google 開放 Android 上的 AI；Google 稱這是「不當干預」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">In January, the European Commission began an initial investigation, known as a specification proceeding, into how Google has implemented AI in the Android operating system. The results are in, and the EU says Android needs to be more open, which is not surprising. Meanwhile, Google says this amounts to &quot;unwarranted intervention,&quot; which is equally unsurprising. Regardless of Google's characterization of the investigation, the commission may force Google to make Android AI changes this summer. This action stems from the continent's Digital Markets Act (DMA), a sweeping law that designates seven dominant technology companies as &quot;gatekeepers&quot; that are subject to greater regulation to ensure fair competition. Google has consistently spoken against the regulations imposed under the DMA, but it a</div>
+  <div class="summary-zh">歐盟委員會在 1 月開始對 Google 在 Android 作業系統中的 AI 實施方式進行初步調查。調查結果顯示 Android 需要更加開放，而 Google 聲稱這構成不當干預。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec33')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec33"
+              onclick="toggleAnalysis('tec33', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/&quot;, &quot;title_en&quot;: &quot;EU tells Google to open up AI on Android; Google says that's \&quot;unwarranted intervention\&quot;&quot;, &quot;title_zh&quot;: &quot;EU \u8981\u6c42 Google \u958b\u653e Android \u4e0a\u7684 AI\uff1bGoogle \u7a31\u9019\u662f\u300c\u4e0d\u7576\u5e72\u9810\u300d&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec33"
+              onclick="bookmarkArticle('tec33', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/&quot;, &quot;title_en&quot;: &quot;EU tells Google to open up AI on Android; Google says that's \&quot;unwarranted intervention\&quot;&quot;, &quot;title_zh&quot;: &quot;EU \u8981\u6c42 Google \u958b\u653e Android \u4e0a\u7684 AI\uff1bGoogle \u7a31\u9019\u662f\u300c\u4e0d\u7576\u5e72\u9810\u300d&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec33">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec33"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec33')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec33', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/europe-could-force-google-to-open-android-to-other-ai-assistants/&quot;, &quot;title_en&quot;: &quot;EU tells Google to open up AI on Android; Google says that's \&quot;unwarranted intervention\&quot;&quot;, &quot;title_zh&quot;: &quot;EU \u8981\u6c42 Google \u958b\u653e Android \u4e0a\u7684 AI\uff1bGoogle \u7a31\u9019\u662f\u300c\u4e0d\u7576\u5e72\u9810\u300d&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec33"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec33">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec33"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec33"
+              onclick="copyPrompt('tec33')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec34" data-url="https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/" target="_blank">With new patch design, the Crew-13 astronauts clearly aren't superstitious</a></div>
+    <div class="title-zh">採用新徽章設計，Crew-13 太空人顯然不迷信</div>
+    
+<div class="summary-block">
+  <div class="summary-en">NASA has assigned its first crew to launch on a mission &quot;13&quot; since Apollo 13 &quot;had a problem&quot; on the way to the Moon 56 years ago. Jessica Watkins and Luke Delaney with NASA, Joshua Kutryk with the Canadian Space Agency, and Roscosmos cosmonaut Sergey Teteryatnikov will lift off for the International Space Station as Crew-13 on a SpaceX Dragon spacecraft in mid-September. The four will serve as members of the station's Expedition 75 and 76 crews, before returning to Earth about five months later. &quot;This flight is the 13th crew rotation with SpaceX,&quot; NASA's announcement read. &quot;The crew will conduct scientific investigations and technology demonstrations to help prepare humans for future exploration missions to the moon and Mars, and benefit people on Earth.&quot; Read full article Comments</div>
+  <div class="summary-zh">NASA 指派首批宇航員執行「13」號任務，距離 Apollo 13 在月球途中發生事故已有 56 年。Jessica Watkins 和 Luke Delaney（NASA）、Joshua Kutryk（加拿大太空總署）及 Roscosmos 宇航員 Sergey Teteryatnikov 將啟程前往國際太空站。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec34')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec34"
+              onclick="toggleAnalysis('tec34', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/&quot;, &quot;title_en&quot;: &quot;With new patch design, the Crew-13 astronauts clearly aren't superstitious&quot;, &quot;title_zh&quot;: &quot;\u63a1\u7528\u65b0\u5fbd\u7ae0\u8a2d\u8a08\uff0cCrew-13 \u592a\u7a7a\u4eba\u986f\u7136\u4e0d\u8ff7\u4fe1&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec34"
+              onclick="bookmarkArticle('tec34', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/&quot;, &quot;title_en&quot;: &quot;With new patch design, the Crew-13 astronauts clearly aren't superstitious&quot;, &quot;title_zh&quot;: &quot;\u63a1\u7528\u65b0\u5fbd\u7ae0\u8a2d\u8a08\uff0cCrew-13 \u592a\u7a7a\u4eba\u986f\u7136\u4e0d\u8ff7\u4fe1&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec34">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec34"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec34')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec34', {&quot;url&quot;: &quot;https://arstechnica.com/space/2026/04/nasas-spacex-crew-13-pays-homage-to-apollo-13-on-mission-patch/&quot;, &quot;title_en&quot;: &quot;With new patch design, the Crew-13 astronauts clearly aren't superstitious&quot;, &quot;title_zh&quot;: &quot;\u63a1\u7528\u65b0\u5fbd\u7ae0\u8a2d\u8a08\uff0cCrew-13 \u592a\u7a7a\u4eba\u986f\u7136\u4e0d\u8ff7\u4fe1&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec34"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec34">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec34"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec34"
+              onclick="copyPrompt('tec34')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec35" data-url="https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/" target="_blank">&quot;Super ZSNES&quot; is a stab at a modern SNES emulator from the original developers</a></div>
+    <div class="title-zh">「Super ZSNES」是來自原始開發者對現代 SNES 模擬器的嘗試</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Aficionados of game console emulator history will almost certainly be familiar with ZSNES, an MS-DOS-based (and, later, Windows-based) emulator for the Super Nintendo Entertainment System that originally launched back in 1997. Originally written in x86 assembly code, it was known best for its performance on low-end PCs and was capable of running some games at full speed on chips as slow as a 233 MHz Pentium II, though it usually did so at the expense of emulation accuracy . ZSNES developed rapidly (alongside the contemporary, competing Snes9x project) throughout the late ’90s and early 2000s. Updates slowed after the original creators left the project, and new releases ceased entirely around 2007. But a successor to ZSNES has arrived. The project's original creators (who go by the handles </div>
+  <div class="summary-zh">遊戲主機模擬器歷史愛好者對 ZSNES 應該不陌生，這是一款針對超級任天堂的模擬器，原本基於 MS-DOS（後來是 Windows），於 1997 年推出。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec35')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec35"
+              onclick="toggleAnalysis('tec35', {&quot;url&quot;: &quot;https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/&quot;, &quot;title_en&quot;: &quot;\&quot;Super ZSNES\&quot; is a stab at a modern SNES emulator from the original developers&quot;, &quot;title_zh&quot;: &quot;\u300cSuper ZSNES\u300d\u662f\u4f86\u81ea\u539f\u59cb\u958b\u767c\u8005\u5c0d\u73fe\u4ee3 SNES \u6a21\u64ec\u5668\u7684\u5617\u8a66&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec35"
+              onclick="bookmarkArticle('tec35', {&quot;url&quot;: &quot;https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/&quot;, &quot;title_en&quot;: &quot;\&quot;Super ZSNES\&quot; is a stab at a modern SNES emulator from the original developers&quot;, &quot;title_zh&quot;: &quot;\u300cSuper ZSNES\u300d\u662f\u4f86\u81ea\u539f\u59cb\u958b\u767c\u8005\u5c0d\u73fe\u4ee3 SNES \u6a21\u64ec\u5668\u7684\u5617\u8a66&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec35">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec35"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec35')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec35', {&quot;url&quot;: &quot;https://arstechnica.com/gadgets/2026/04/super-zsnes-is-a-stab-at-a-modern-snes-emulator-from-the-original-developers/&quot;, &quot;title_en&quot;: &quot;\&quot;Super ZSNES\&quot; is a stab at a modern SNES emulator from the original developers&quot;, &quot;title_zh&quot;: &quot;\u300cSuper ZSNES\u300d\u662f\u4f86\u81ea\u539f\u59cb\u958b\u767c\u8005\u5c0d\u73fe\u4ee3 SNES \u6a21\u64ec\u5668\u7684\u5617\u8a66&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec35"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec35">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec35"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec35"
+              onclick="copyPrompt('tec35')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec36" data-url="https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/" target="_blank">China kills Meta’s acquisition of Manus as US-China AI rivalry deepens</a></div>
+    <div class="title-zh">中國終止 Meta 對 Manus 的收購，美中 AI 競爭加劇</div>
+    
+<div class="summary-block">
+  <div class="summary-en">China has blocked US tech giant Meta’s acquisition of the AI company Manus that was founded by Chinese tech entrepreneurs. That development indicates how difficult it has become for US and Chinese tech companies to strike and sustain such deals as government authorities on both sides take an increasingly hard line amid the deepening US-China AI rivalry. The Chinese government formally asked Meta to unwind the acquisition on April 27 after deciding to ban foreign investment in Manus based on national security concerns. It had already spent months officially scrutinizing Meta’s $2 billion acquisition of Manus that took place in December 2025—Chinese regulators announced they were reviewing the deal in January 2026 and instructed the two Manus cofounders to not leave China while the investiga</div>
+  <div class="summary-zh">中國已封殺美國科技巨頭 Meta 對 AI 公司 Manus 的收購，該公司由中國科技企業家創辦。此舉表明隨著兩國政府部門日益介入，美中科技公司達成並維持此類交易變得愈發困難。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec36')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec36"
+              onclick="toggleAnalysis('tec36', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/&quot;, &quot;title_en&quot;: &quot;China kills Meta\u2019s acquisition of Manus as US-China AI rivalry deepens&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7d42\u6b62 Meta \u5c0d Manus \u7684\u6536\u8cfc\uff0c\u7f8e\u4e2d AI \u7af6\u722d\u52a0\u5287&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec36"
+              onclick="bookmarkArticle('tec36', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/&quot;, &quot;title_en&quot;: &quot;China kills Meta\u2019s acquisition of Manus as US-China AI rivalry deepens&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7d42\u6b62 Meta \u5c0d Manus \u7684\u6536\u8cfc\uff0c\u7f8e\u4e2d AI \u7af6\u722d\u52a0\u5287&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec36">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec36"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec36')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec36', {&quot;url&quot;: &quot;https://arstechnica.com/ai/2026/04/china-kills-metas-acquisition-of-manus-as-us-china-ai-rivalry-deepens/&quot;, &quot;title_en&quot;: &quot;China kills Meta\u2019s acquisition of Manus as US-China AI rivalry deepens&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7d42\u6b62 Meta \u5c0d Manus \u7684\u6536\u8cfc\uff0c\u7f8e\u4e2d AI \u7af6\u722d\u52a0\u5287&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec36"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec36">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec36"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec36"
+              onclick="copyPrompt('tec36')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec37" data-url="https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/" target="_blank">Study: Infrasound likely a key factor in alleged hauntings</a></div>
+    <div class="title-zh">研究：次聲波可能是所謂鬼屋事件的關鍵因素</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The next time you walk into a purportedly &quot;haunted&quot; house and sense a ghostly presence, consider that those feelings might be due to vibrating pipes, mechanical or climate control systems, rumbling from traffic, or wind turbines, rather than anything paranormal. That's the conclusion of a new paper published in the journal Frontiers in Behavioral Neuroscience. All of those are sources of infrasound . Scientists have long sought to find logical explanations for alleged hauntings. In 2003, for instance, University of Hertfordshire psychologist Richard Wiseman conducted two studies that investigated the psychological mechanisms underlying supposed &quot;ghostly&quot; activity. Subjects walked around Hampton Court Palace in Surrey, England, and the South Bridge Vaults in Edinburgh, Scotland—both with re</div>
+  <div class="summary-zh">下次進入據稱「鬼屋」的地方並感受到幽靈存在時，該感覺可能來自管道振動、機械或氣候控制系統、交通隆隆聲或風力渦輪機，而非超自然現象。一份新論文的結論即是如此。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec37')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec37"
+              onclick="toggleAnalysis('tec37', {&quot;url&quot;: &quot;https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/&quot;, &quot;title_en&quot;: &quot;Study: Infrasound likely a key factor in alleged hauntings&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\uff1a\u6b21\u8072\u6ce2\u53ef\u80fd\u662f\u6240\u8b02\u9b3c\u5c4b\u4e8b\u4ef6\u7684\u95dc\u9375\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec37"
+              onclick="bookmarkArticle('tec37', {&quot;url&quot;: &quot;https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/&quot;, &quot;title_en&quot;: &quot;Study: Infrasound likely a key factor in alleged hauntings&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\uff1a\u6b21\u8072\u6ce2\u53ef\u80fd\u662f\u6240\u8b02\u9b3c\u5c4b\u4e8b\u4ef6\u7684\u95dc\u9375\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec37">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec37"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec37')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec37', {&quot;url&quot;: &quot;https://arstechnica.com/science/2026/04/that-spooky-sensation-likely-due-to-rumbling-pipes-not-spirits/&quot;, &quot;title_en&quot;: &quot;Study: Infrasound likely a key factor in alleged hauntings&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\uff1a\u6b21\u8072\u6ce2\u53ef\u80fd\u662f\u6240\u8b02\u9b3c\u5c4b\u4e8b\u4ef6\u7684\u95dc\u9375\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec37"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec37">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec37"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec37"
+              onclick="copyPrompt('tec37')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-tec38" data-url="https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Ars Technica</span>
+      <span class="date-tag">Mon, 27 Ap</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/" target="_blank">Steam Controller: The Ars Technica review</a></div>
+    <div class="title-zh">Steam Controller：Ars Technica 評測</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Since time immemorial, serious PC gamers have proselytized about the superiority of mouse and keyboard control schemes over the more input-limited handheld controllers used by most console gamers ( and others ). In recent years, though, many PC gamers have started keeping a spare Xbox controller ( or similar ) nearby for the increasing number of PC games designed primarily or exclusively with thumbsticks and buttons in mind. Valve's upcoming Steam Controller (not to be confused with the 2015 controller of the same name ) is the Steam maker's effort to replace those controllers with something more explicitly designed for the PC, and for the upcoming Steam Machine . After spending a few weeks with the controller, though, we're not quite sure it sets itself apart from the competition enough t</div>
+  <div class="summary-zh">多年來，資深 PC 遊戲玩家一直宣揚滑鼠和鍵盤控制方案優於大多數主機遊戲玩家使用的輸入受限手持控制器。近年來，許多 PC 遊戲玩家開始備用 Xbox 控制器。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('tec38')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-tec38"
+              onclick="toggleAnalysis('tec38', {&quot;url&quot;: &quot;https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/&quot;, &quot;title_en&quot;: &quot;Steam Controller: The Ars Technica review&quot;, &quot;title_zh&quot;: &quot;Steam Controller\uff1aArs Technica \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-tec38"
+              onclick="bookmarkArticle('tec38', {&quot;url&quot;: &quot;https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/&quot;, &quot;title_en&quot;: &quot;Steam Controller: The Ars Technica review&quot;, &quot;title_zh&quot;: &quot;Steam Controller\uff1aArs Technica \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-tec38">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-tec38"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('tec38')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('tec38', {&quot;url&quot;: &quot;https://arstechnica.com/gaming/2026/04/steam-controller-the-ars-technica-review/&quot;, &quot;title_en&quot;: &quot;Steam Controller: The Ars Technica review&quot;, &quot;title_zh&quot;: &quot;Steam Controller\uff1aArs Technica \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;Ars Technica&quot;, &quot;date&quot;: &quot;Mon, 27 Ap&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-tec38"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-tec38">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-tec38"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-tec38"
+              onclick="copyPrompt('tec38')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
