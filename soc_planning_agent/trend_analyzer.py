@@ -406,7 +406,73 @@ h3 { color: var(--green); font-size: 0.95em; margin: 16px 0 6px; }
   border-radius: 12px; padding: 3px 10px; font-size: 0.75em;
   color: var(--text-dim);
 }
+.kn-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85em;
+  margin: 8px 0 16px;
+}
+.kn-table th {
+  background: #1f2937; color: var(--yellow); font-weight: 600;
+  padding: 7px 12px; text-align: left; border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.kn-table td {
+  padding: 6px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+.kn-table tr:last-child td { border-bottom: none; }
+.kn-table tr:hover td { background: rgba(255,255,255,0.03); }
+.kn-table td:first-child { color: var(--text-bright); font-weight: 600; white-space: nowrap; }
 """
+
+def _pipe_lines_to_table(lines: list[str]) -> str:
+    """Convert pipe-delimited lines to an HTML table. Skip markdown separator rows (---|---)."""
+    rows = []
+    for line in lines:
+        stripped = line.strip().strip("｜|")
+        cells = [c.strip() for c in re.split(r"[｜|]", stripped)]
+        if all(re.fullmatch(r"[-: ]+", c) for c in cells):
+            continue  # markdown separator row
+        rows.append(cells)
+    if not rows:
+        return ""
+    is_header = lambda r: any(kw in "".join(r) for kw in ("數字", "來源", "日期", "意涵", "number", "source"))
+    header, body = (rows[0], rows[1:]) if is_header(rows[0]) else (None, rows)
+    def esc(s): return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    html = ['<table class="kn-table">']
+    if header:
+        html.append("<thead><tr>" + "".join(f"<th>{esc(c)}</th>" for c in header) + "</tr></thead>")
+    html.append("<tbody>")
+    for row in body:
+        html.append("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>")
+    html.append("</tbody></table>")
+    return "\n".join(html)
+
+
+def _process_analysis_html(text: str) -> str:
+    """Convert pipe-table blocks in analysis text to HTML tables; escape rest for pre-wrap."""
+    def esc(s):
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    lines = text.split("\n")
+    output = []
+    table_buf = []
+
+    def flush_table():
+        if table_buf:
+            output.append(_pipe_lines_to_table(table_buf))
+            table_buf.clear()
+
+    for line in lines:
+        # A pipe-table line has 2+ pipe characters (｜ or |)
+        if len(re.findall(r"[｜|]", line)) >= 2:
+            table_buf.append(line)
+        else:
+            flush_table()
+            output.append(esc(line))
+
+    flush_table()
+    return "\n".join(output)
+
 
 def _render_trend_html(date: str, analysis_text: str, articles: list[dict],
                         period_days: int) -> str:
@@ -418,9 +484,7 @@ def _render_trend_html(date: str, analysis_text: str, articles: list[dict],
         emoji, label = CATEGORY_LABEL.get(cat, ("📰", cat))
         cat_pills += f'<span class="cat-pill">{emoji} {label} {len(arts)}</span>'
 
-    # Escape the analysis text for HTML pre-wrap display
-    def _esc(s):
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    processed = _process_analysis_html(analysis_text)
 
     return f"""<!DOCTYPE html>
 <html lang="zh-TW">
@@ -453,7 +517,7 @@ def _render_trend_html(date: str, analysis_text: str, articles: list[dict],
 <div class="cat-breakdown">{cat_pills}</div>
 
 <h2>🔍 Claude Opus 深度分析</h2>
-<div class="analysis-body">{_esc(analysis_text)}</div>
+<div class="analysis-body">{processed}</div>
 
 </body></html>"""
 
