@@ -43,9 +43,17 @@ TAIWAN_CATS   = {"taiwan"}
 # Load archive data
 # ---------------------------------------------------------------------------
 
-def load_recent_articles(days: int = 7) -> list[dict]:
-    """Load articles from past N days of RSS archives + user bookmarks/fulltext."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+def load_recent_articles(days: int = 7, end_date: str = "") -> list[dict]:
+    """Load articles from past N days of RSS archives + user bookmarks/fulltext.
+
+    end_date: YYYY-MM-DD string; defaults to today (UTC). Articles between
+    (end_date - days) and end_date inclusive are loaded.
+    """
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    else:
+        end_dt = datetime.now(timezone.utc)
+    cutoff = end_dt - timedelta(days=days)
     articles = []
 
     # ── RSS archive ──
@@ -54,7 +62,7 @@ def load_recent_articles(days: int = 7) -> list[dict]:
             try:
                 date_str = f.stem  # YYYY-MM-DD
                 file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                if file_date < cutoff:
+                if file_date < cutoff or file_date > end_dt:
                     continue
                 data = json.loads(f.read_text(encoding="utf-8"))
                 for a in data.get("articles", []):
@@ -820,12 +828,15 @@ def main():
         sys.exit(1)
 
     period_days = int(os.environ.get("TREND_DAYS", "7"))
+    trend_date  = os.environ.get("TREND_DATE", "").strip()  # e.g. "2026-05-04"
     client = anthropic.Anthropic(api_key=api_key)
-    today  = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today  = trend_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     print(f"=== SOC Planning — Weekly Trend Analyzer ({today}, {period_days}d) ===\n")
+    if trend_date:
+        print(f"  ℹ️  TREND_DATE override: analyzing week ending {trend_date}\n")
 
     # Load recent articles
-    articles = load_recent_articles(days=period_days)
+    articles = load_recent_articles(days=period_days, end_date=trend_date)
     if len(articles) < 5:
         print(f"⚠ Only {len(articles)} articles found — skipping analysis")
         _write_output(0, today)
