@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Mobile — 2026-05-10</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>📱 Mobile</h1>
+<div class="page-meta">2026-05-10 &nbsp;·&nbsp; 8 篇 &nbsp;·&nbsp; 更新：2026-05-10 12:45 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-mob0" data-url="https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Mac</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/" target="_blank">Indie App Spotlight: The ‘Before You’ bundle offers four effective screen time apps</a></div>
+    <div class="title-zh">獨立應用程式焦點：「Before You」套組提供四款高效的螢幕使用時間應用程式</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Welcome to Indie App Spotlight . This is a weekly 9to5Mac series where we showcase the latest apps in the indie app world. If you’re a developer and would like your app featured, get in contact . Most people believe they’re spending too much time on their phones – but don’t necessarily know how to do better. Developer Florian Schimanke has created four great apps to help you with your screen time in different ways. You can get them individually, or you can also buy them all as a bundle at a discounted rate. more…</div>
+  <div class="summary-zh">歡迎來到獨立應用程式焦點，這是 9to5Mac 的每週系列，展示獨立應用程式世界的最新應用。大多數人認為他們在手機上花費過多時間，但不一定知道如何改變。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob0"
+              onclick="toggleAnalysis('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/&quot;, &quot;title_en&quot;: &quot;Indie App Spotlight: The \u2018Before You\u2019 bundle offers four effective screen time apps&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u61c9\u7528\u7a0b\u5f0f\u7126\u9ede\uff1a\u300cBefore You\u300d\u5957\u7d44\u63d0\u4f9b\u56db\u6b3e\u9ad8\u6548\u7684\u87a2\u5e55\u4f7f\u7528\u6642\u9593\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob0"
+              onclick="bookmarkArticle('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/&quot;, &quot;title_en&quot;: &quot;Indie App Spotlight: The \u2018Before You\u2019 bundle offers four effective screen time apps&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u61c9\u7528\u7a0b\u5f0f\u7126\u9ede\uff1a\u300cBefore You\u300d\u5957\u7d44\u63d0\u4f9b\u56db\u6b3e\u9ad8\u6548\u7684\u87a2\u5e55\u4f7f\u7528\u6642\u9593\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/indie-app-spotlight-the-before-you-bundle-offers-four-effective-screen-time-apps/&quot;, &quot;title_en&quot;: &quot;Indie App Spotlight: The \u2018Before You\u2019 bundle offers four effective screen time apps&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u61c9\u7528\u7a0b\u5f0f\u7126\u9ede\uff1a\u300cBefore You\u300d\u5957\u7d44\u63d0\u4f9b\u56db\u6b3e\u9ad8\u6548\u7684\u87a2\u5e55\u4f7f\u7528\u6642\u9593\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob0"
+              onclick="copyPrompt('mob0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob1" data-url="https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Mac</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/" target="_blank">Here’s why I’m optimistic about iOS 27 and Apple’s renewed focus on stability</a></div>
+    <div class="title-zh">我為何對 iOS 27 及 Apple 更新的穩定性重點感到樂觀</div>
+    
+<div class="summary-block">
+  <div class="summary-en">This year, Apple is rumored to be doing a code cleanup for iOS 27 , as well as overall having a renewed focus for stability and performance – on top of a plethora of Apple Intelligence features. While this on its own sounds good, I think there’s a higher reason for why we should expect an impressively stable release. more…</div>
+  <div class="summary-zh">今年 Apple 據傳將進行 iOS 27 的代碼清理，並重新關注穩定性和性能，同時還有眾多 Apple Intelligence 功能。這本身聽起來不錯，但我認為我們應該期待更令人印象深刻的原因。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob1"
+              onclick="toggleAnalysis('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/&quot;, &quot;title_en&quot;: &quot;Here\u2019s why I\u2019m optimistic about iOS 27 and Apple\u2019s renewed focus on stability&quot;, &quot;title_zh&quot;: &quot;\u6211\u70ba\u4f55\u5c0d iOS 27 \u53ca Apple \u66f4\u65b0\u7684\u7a69\u5b9a\u6027\u91cd\u9ede\u611f\u5230\u6a02\u89c0&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob1"
+              onclick="bookmarkArticle('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/&quot;, &quot;title_en&quot;: &quot;Here\u2019s why I\u2019m optimistic about iOS 27 and Apple\u2019s renewed focus on stability&quot;, &quot;title_zh&quot;: &quot;\u6211\u70ba\u4f55\u5c0d iOS 27 \u53ca Apple \u66f4\u65b0\u7684\u7a69\u5b9a\u6027\u91cd\u9ede\u611f\u5230\u6a02\u89c0&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/09/ios-27-focus-on-stability-why-im-optimistic/&quot;, &quot;title_en&quot;: &quot;Here\u2019s why I\u2019m optimistic about iOS 27 and Apple\u2019s renewed focus on stability&quot;, &quot;title_zh&quot;: &quot;\u6211\u70ba\u4f55\u5c0d iOS 27 \u53ca Apple \u66f4\u65b0\u7684\u7a69\u5b9a\u6027\u91cd\u9ede\u611f\u5230\u6a02\u89c0&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob1"
+              onclick="copyPrompt('mob1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob2" data-url="https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/" target="_blank">Review: I want to love Belkin’s 3-in-1 Pixel Watch charging dock, but Google ruined it [Gallery]</a></div>
+    <div class="title-zh">評測：我想愛上 Belkin 的 3 合 1 Pixel Watch 充電座，但 Google 毀了它 [圖庫]</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Four generations in, perhaps the most annoying thing about Google’s Pixel Watch lineup is the lack of accessories and, in particular, charging stations. The appeal of a multi-device charging station that tops off your phone, earbuds, and smartwatch is obvious, but one that Pixel Watch owners are sadly left out of. Belkin is now showcasing what is easily the best Pixel Watch-compatible charging station I’ve seen, but Google’s seeming inability to stick with a decision basically ruins it. more…</div>
+  <div class="summary-zh">經過四代產品，Google Pixel Watch 系列最令人煩惱的地方是配件和充電站的缺乏。能同時為手機、耳機和智慧手錶充電的多設備充電站的吸引力是顯而易見的，但 Pixel Watch 用戶卻感到遺憾。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob2"
+              onclick="toggleAnalysis('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/&quot;, &quot;title_en&quot;: &quot;Review: I want to love Belkin\u2019s 3-in-1 Pixel Watch charging dock, but Google ruined it [Gallery]&quot;, &quot;title_zh&quot;: &quot;\u8a55\u6e2c\uff1a\u6211\u60f3\u611b\u4e0a Belkin \u7684 3 \u5408 1 Pixel Watch \u5145\u96fb\u5ea7\uff0c\u4f46 Google \u6bc0\u4e86\u5b83 [\u5716\u5eab]&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob2"
+              onclick="bookmarkArticle('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/&quot;, &quot;title_en&quot;: &quot;Review: I want to love Belkin\u2019s 3-in-1 Pixel Watch charging dock, but Google ruined it [Gallery]&quot;, &quot;title_zh&quot;: &quot;\u8a55\u6e2c\uff1a\u6211\u60f3\u611b\u4e0a Belkin \u7684 3 \u5408 1 Pixel Watch \u5145\u96fb\u5ea7\uff0c\u4f46 Google \u6bc0\u4e86\u5b83 [\u5716\u5eab]&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/09/belkin-modular-charging-dock-pixel-watch-review/&quot;, &quot;title_en&quot;: &quot;Review: I want to love Belkin\u2019s 3-in-1 Pixel Watch charging dock, but Google ruined it [Gallery]&quot;, &quot;title_zh&quot;: &quot;\u8a55\u6e2c\uff1a\u6211\u60f3\u611b\u4e0a Belkin \u7684 3 \u5408 1 Pixel Watch \u5145\u96fb\u5ea7\uff0c\u4f46 Google \u6bc0\u4e86\u5b83 [\u5716\u5eab]&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob2"
+              onclick="copyPrompt('mob2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob3" data-url="https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sun, 10 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php" target="_blank">Weekly poll results: the Oppo Find X9 Ultra is like a diamond, brilliant but expensive</a></div>
+    <div class="title-zh">每週投票結果：Oppo Find X9 Ultra 就像鑽石，璀璨但昂貴</div>
+    
+<div class="summary-block">
+  <div class="summary-en">We know that everything has been getting more expensive lately, but the prices of Ultra-class phones have gone too high for many who are interested in getting one. In last week’s poll, there was a lot of interest in the Oppo Find X9 Ultra with two-thirds of voters showing interest in the device – but only half of those thought that they could afford it. And the X9 Ultra isn’t even the most expensive Ultra on the market, although it does cost more than most. People are looking at trade-in bonuses, freebies like the Hasselblad Earth Explorer Kit and other ways to try and justify the...</div>
+  <div class="summary-zh">我們知道最近什麼都變得更貴了，但超旗艦級手機的價格對許多有興趣購買的人來說已經太高。在上週的投票中，Oppo Find X9 Ultra 引發了許多關注，三分之二的投票者表示對該設備感興趣。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob3"
+              onclick="toggleAnalysis('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php&quot;, &quot;title_en&quot;: &quot;Weekly poll results: the Oppo Find X9 Ultra is like a diamond, brilliant but expensive&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u6295\u7968\u7d50\u679c\uff1aOppo Find X9 Ultra \u5c31\u50cf\u947d\u77f3\uff0c\u7480\u74a8\u4f46\u6602\u8cb4&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob3"
+              onclick="bookmarkArticle('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php&quot;, &quot;title_en&quot;: &quot;Weekly poll results: the Oppo Find X9 Ultra is like a diamond, brilliant but expensive&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u6295\u7968\u7d50\u679c\uff1aOppo Find X9 Ultra \u5c31\u50cf\u947d\u77f3\uff0c\u7480\u74a8\u4f46\u6602\u8cb4&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_poll_results_the_oppo_find_x9_ultra_is_like_a_diamond_brilliant_but_expensive-news-72722.php&quot;, &quot;title_en&quot;: &quot;Weekly poll results: the Oppo Find X9 Ultra is like a diamond, brilliant but expensive&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u6295\u7968\u7d50\u679c\uff1aOppo Find X9 Ultra \u5c31\u50cf\u947d\u77f3\uff0c\u7480\u74a8\u4f46\u6602\u8cb4&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob3"
+              onclick="copyPrompt('mob3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob4" data-url="https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sun, 10 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php" target="_blank">Huawei Watch Fit 5 Pro in for review</a></div>
+    <div class="title-zh">Huawei Watch Fit 5 Pro 評測中</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Huawei's Watch Fit 5 Pro is officially global, and is priced at £250. The watch comes in Orange, White, and Black. In the box, you'll find the watch, a nice orange fabric strap (in our case), and the universal wireless charging puck (though one that sadly still ends on a USB-A port). The lineup's design is very similar to Apple's Watch and Watch Ultra, but this year we are starting to see more difference. The front is no longer a flat glass surface like on the Huawei Watch Fit 4 Pro, and instead, there's a noticeable 2.5D curve to the glass. It's still a sapphire crystal glass, so you...</div>
+  <div class="summary-zh">Huawei Watch Fit 5 Pro 正式進入全球市場，定價為 £250。手錶提供橙色、白色和黑色三種款式，盒內包含手錶、精美的橙色織物表帶和通用無線充電片。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob4"
+              onclick="toggleAnalysis('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php&quot;, &quot;title_en&quot;: &quot;Huawei Watch Fit 5 Pro in for review&quot;, &quot;title_zh&quot;: &quot;Huawei Watch Fit 5 Pro \u8a55\u6e2c\u4e2d&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob4"
+              onclick="bookmarkArticle('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php&quot;, &quot;title_en&quot;: &quot;Huawei Watch Fit 5 Pro in for review&quot;, &quot;title_zh&quot;: &quot;Huawei Watch Fit 5 Pro \u8a55\u6e2c\u4e2d&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/huawei_watch_fit_5_pro_in_for_review-news-72733.php&quot;, &quot;title_en&quot;: &quot;Huawei Watch Fit 5 Pro in for review&quot;, &quot;title_zh&quot;: &quot;Huawei Watch Fit 5 Pro \u8a55\u6e2c\u4e2d&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 10 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob4"
+              onclick="copyPrompt('mob4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob5" data-url="https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php" target="_blank">Weekly deals: the Google Pixel 10 series is up to $300 off, Galaxy A37 gets its first real discount</a></div>
+    <div class="title-zh">每週優惠：Google Pixel 10 系列最高優惠 $300，Galaxy A37 首次獲得實際折扣</div>
+    
+<div class="summary-block">
+  <div class="summary-en">We’ve been watching the prices of Pixel 10 phones fluctuate over the last few weeks, but it’s rare to see all four non-folding models get solid discounts at the same time. Meanwhile, the Galaxy A37 got its first actual price drop. The Google Pixel 10 Pro XL is $300 off at the moment – this puts the base model (which has 256GB storage, unlike the other three) at $900. The 512GB model is just over $1,000. We have a detailed comparison article that pits the Pixel 10 Pro XL against the Galaxy S26 Ultra to help you choose between the two flagships. ...</div>
+  <div class="summary-zh">在過去幾週，我們一直在觀察 Pixel 10 手機的價格波動，但很少看到所有四款非折疊機型同時獲得實質折扣。同時，Galaxy A37 首次獲得實際降價。Google Pixel 10 Pro XL 目前優惠 $300。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob5"
+              onclick="toggleAnalysis('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php&quot;, &quot;title_en&quot;: &quot;Weekly deals: the Google Pixel 10 series is up to $300 off, Galaxy A37 gets its first real discount&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u512a\u60e0\uff1aGoogle Pixel 10 \u7cfb\u5217\u6700\u9ad8\u512a\u60e0 $300\uff0cGalaxy A37 \u9996\u6b21\u7372\u5f97\u5be6\u969b\u6298\u6263&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob5"
+              onclick="bookmarkArticle('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php&quot;, &quot;title_en&quot;: &quot;Weekly deals: the Google Pixel 10 series is up to $300 off, Galaxy A37 gets its first real discount&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u512a\u60e0\uff1aGoogle Pixel 10 \u7cfb\u5217\u6700\u9ad8\u512a\u60e0 $300\uff0cGalaxy A37 \u9996\u6b21\u7372\u5f97\u5be6\u969b\u6298\u6263&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/weekly_deals_the_google_pixel_10_series_is_up_to_300_off_galaxy_a37_gets_its_first_real_discount-news-72735.php&quot;, &quot;title_en&quot;: &quot;Weekly deals: the Google Pixel 10 series is up to $300 off, Galaxy A37 gets its first real discount&quot;, &quot;title_zh&quot;: &quot;\u6bcf\u9031\u512a\u60e0\uff1aGoogle Pixel 10 \u7cfb\u5217\u6700\u9ad8\u512a\u60e0 $300\uff0cGalaxy A37 \u9996\u6b21\u7372\u5f97\u5be6\u969b\u6298\u6263&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob5"
+              onclick="copyPrompt('mob5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob6" data-url="https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php" target="_blank">Samsung Galaxy Buds3 Pro and Buds4 Pro receive stability-focused software updates</a></div>
+    <div class="title-zh">Samsung Galaxy Buds3 Pro 和 Buds4 Pro 獲得穩定性為重點的軟體更新</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Samsung has released new software updates for the Galaxy Buds3 Pro and Galaxy Buds4 Pro TWS earphones. The update for the Samsung Galaxy Buds3 Pro comes with firmware version R630XXU0AZD2, requires a download of about 8MB, and brings stability-focused improvements to the earphones. The update for the Samsung Galaxy Buds4 Pro, on the other hand, weighs around 8.5MB and comes with firmware version R640XXU0AZD2. But the Buds4 Pro's update, like the Buds3 Pro's, also focuses on stability, as the changelog says the device's behavior has been improved. The software update for the...</div>
+  <div class="summary-zh">Samsung 為 Galaxy Buds3 Pro 和 Galaxy Buds4 Pro TWS 耳機發布了新軟體更新。Galaxy Buds3 Pro 的更新版本號為 R630XXU0AZD2，下載大小約 8MB，為耳機帶來穩定性改進。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob6"
+              onclick="toggleAnalysis('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php&quot;, &quot;title_en&quot;: &quot;Samsung Galaxy Buds3 Pro and Buds4 Pro receive stability-focused software updates&quot;, &quot;title_zh&quot;: &quot;Samsung Galaxy Buds3 Pro \u548c Buds4 Pro \u7372\u5f97\u7a69\u5b9a\u6027\u70ba\u91cd\u9ede\u7684\u8edf\u9ad4\u66f4\u65b0&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob6"
+              onclick="bookmarkArticle('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php&quot;, &quot;title_en&quot;: &quot;Samsung Galaxy Buds3 Pro and Buds4 Pro receive stability-focused software updates&quot;, &quot;title_zh&quot;: &quot;Samsung Galaxy Buds3 Pro \u548c Buds4 Pro \u7372\u5f97\u7a69\u5b9a\u6027\u70ba\u91cd\u9ede\u7684\u8edf\u9ad4\u66f4\u65b0&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/samsung_galaxy_buds3_pro_buds4_pro_stability_update-news-72751.php&quot;, &quot;title_en&quot;: &quot;Samsung Galaxy Buds3 Pro and Buds4 Pro receive stability-focused software updates&quot;, &quot;title_zh&quot;: &quot;Samsung Galaxy Buds3 Pro \u548c Buds4 Pro \u7372\u5f97\u7a69\u5b9a\u6027\u70ba\u91cd\u9ede\u7684\u8edf\u9ad4\u66f4\u65b0&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob6"
+              onclick="copyPrompt('mob6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob7" data-url="https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sat, 09 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php" target="_blank">Nothing Ear (open) Bluetooth earphones are getting a new color on May 11</a></div>
+    <div class="title-zh">Nothing Ear (open) Bluetooth 耳機將於 5 月 11 日推出新配色</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nothing launched the Ear (open) TWS earphones in September 2024, but they are still offered in a single color - white. Well, the white model will be joined by a new color next week, as Nothing has announced it will launch the blue version of the Ear (open) on May 11. Nothing hasn't revealed the blue Ear (open) entirely yet, but it did give us a glimpse of the new colorway by sharing its photo on X. You can check it below. Lots of things are blue: the sky, the ocean, a 1996-era Walkman. Swimming pools, tennis courts, everything by Yves Klein. Ear (open) is blue too.11.05....</div>
+  <div class="summary-zh">Nothing 於 2024 年 9 月推出了 Ear (open) TWS 耳機，但目前仍只有白色單一配色。白色款將於下週新增藍色版本，Nothing 已宣布將於 5 月 11 日推出 Ear (open) 藍色款。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob7"
+              onclick="toggleAnalysis('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php&quot;, &quot;title_en&quot;: &quot;Nothing Ear (open) Bluetooth earphones are getting a new color on May 11&quot;, &quot;title_zh&quot;: &quot;Nothing Ear (open) Bluetooth \u8033\u6a5f\u5c07\u65bc 5 \u6708 11 \u65e5\u63a8\u51fa\u65b0\u914d\u8272&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob7"
+              onclick="bookmarkArticle('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php&quot;, &quot;title_en&quot;: &quot;Nothing Ear (open) Bluetooth earphones are getting a new color on May 11&quot;, &quot;title_zh&quot;: &quot;Nothing Ear (open) Bluetooth \u8033\u6a5f\u5c07\u65bc 5 \u6708 11 \u65e5\u63a8\u51fa\u65b0\u914d\u8272&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/nothing_ear_open_blue_color_model_launch_date-news-72750.php&quot;, &quot;title_en&quot;: &quot;Nothing Ear (open) Bluetooth earphones are getting a new color on May 11&quot;, &quot;title_zh&quot;: &quot;Nothing Ear (open) Bluetooth \u8033\u6a5f\u5c07\u65bc 5 \u6708 11 \u65e5\u63a8\u51fa\u65b0\u914d\u8272&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sat, 09 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob7"
+              onclick="copyPrompt('mob7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
