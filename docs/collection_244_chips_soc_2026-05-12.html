@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-05-12</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-05-12 &nbsp;·&nbsp; 28 篇 &nbsp;·&nbsp; 更新：2026-05-13 00:22 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems" target="_blank">Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown — potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A Financial Times report claims the Trump administration is considering restrictions on Chinese cellular modules as the FCC escalates its crackdown on Chinese communications technology, potentially affecting massive portions of the global IoT and electronics supply chain.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems&quot;, &quot;title_en&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;title_zh&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems&quot;, &quot;title_en&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;title_zh&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/trump-administration-reportedly-debating-ban-on-chinese-cellular-modules-in-expansion-of-fcc-crackdown-potential-restrictions-could-impact-everything-from-smart-devices-and-routers-to-connected-cars-and-industrial-iot-systems&quot;, &quot;title_en&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;title_zh&quot;: &quot;Trump administration reportedly debating ban on Chinese cellular modules in expansion of FCC crackdown \u2014 potential restrictions could impact everything from smart devices and routers to connected cars and industrial IoT systems&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules" target="_blank">TSMC allocates $20 billion to Arizona expansion — project faces water and labor shortages, complicated by visa rules</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">TSMC's Fab 21 becomes profitable in the first year of operations, though TSMC continues to struggle with labor shortage, water shortage, and is concerned about the long-term power supply. Nevertheless, it allocates $20 billion on further development of the project.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules&quot;, &quot;title_en&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;title_zh&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules&quot;, &quot;title_en&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;title_zh&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tsmc-allocates-usd20-billion-to-arizona-expansion-project-faces-water-and-labor-shortages-complicated-by-visa-rules&quot;, &quot;title_en&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;title_zh&quot;: &quot;TSMC allocates $20 billion to Arizona expansion \u2014 project faces water and labor shortages, complicated by visa rules&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times" target="_blank">Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash — says every other OS already boosts CPU speeds for quicker load times</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">After a new &quot;low Latency Profile&quot; for Windows 11 was discovered last week, the community has responded severely, criticizing Microsoft for suppressing a bigger issue. The company, however, is defending the decision on social media, saying that it's only doing what every other operating system already does.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times&quot;, &quot;title_en&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;title_zh&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times&quot;, &quot;title_en&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;title_zh&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/microsoft-staunchly-defends-its-new-low-latency-profile-for-windows-11-after-community-backlash-says-every-other-os-already-boosts-cpu-speeds-for-quicker-load-times&quot;, &quot;title_en&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;title_zh&quot;: &quot;Microsoft staunchly defends its new 'Low Latency Profile' for Windows 11 after community backlash \u2014 says every other OS already boosts CPU speeds for quicker load times&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk" target="_blank">Jensen Huang snubbed by White House for President Trump’s China state visit — Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Jensen Huang was reportedly not invited to President Trump's state visit to China, even though the Nvidia CEO has accompanied the U.S. president in several state visits across the globe. One expert says that this is a &quot;strong signal&quot; to Beijing that Washington won't budge on its stance of banning the export of high-end chips to China.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk&quot;, &quot;title_en&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;title_zh&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk&quot;, &quot;title_en&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;title_zh&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-snubbed-by-white-house-for-president-trumps-china-state-visit-nvidia-ceo-not-on-roster-which-includes-apples-tim-cook-and-elon-musk&quot;, &quot;title_en&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;title_zh&quot;: &quot;Jensen Huang snubbed by White House for President Trump\u2019s China state visit \u2014 Nvidia CEO not on roster, which includes Apple's Tim Cook and Elon Musk&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit" target="_blank">Amazon employees admit to using AI unnecessarily to pump up internal usage scores — workers complain of intense pressure to use AI tools</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Amazon is the latest hyperscaler where employees have been caught inflating AI token consumption to hit internal usage targets.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit&quot;, &quot;title_en&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;title_zh&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit&quot;, &quot;title_en&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;title_zh&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/big-tech-has-a-tokenmaxxing-habit&quot;, &quot;title_en&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;title_zh&quot;: &quot;Amazon employees admit to using AI unnecessarily to pump up internal usage scores \u2014 workers complain of intense pressure to use AI tools&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire" target="_blank">Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection — supply-chain campaign spreads across npm and AI developer ecosystems like wildfire</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Microsoft says attackers compromised the mistralai PyPI package with malware that executed on import, while researchers link related npm compromises affecting TanStack and Mistral SDKs to the broader “Mini Shai-Hulud” supply-chain campaign.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire&quot;, &quot;title_en&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;title_zh&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire&quot;, &quot;title_en&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;title_zh&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/compromised-mistral-ai-and-tanstack-packages-may-have-exposed-github-cloud-and-ci-cd-credentials-in-mini-shai-hulud-malware-infection-supply-chain-campaign-spreads-across-npm-and-ai-developer-ecosystems-like-wildfire&quot;, &quot;title_en&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;title_zh&quot;: &quot;Compromised Mistral AI and TanStack packages may have exposed GitHub, cloud and CI/CD credentials in 'mini Shai Hulud' malware infection \u2014 supply-chain campaign spreads across npm and AI developer ecosystems like wildfire&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops" target="_blank">Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops — the boot service built for system recovery is the culprit of unending instability</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">SupportAssist Remediation is a background service that Dell bundles on its Windows PCs to automate system recovery and repair tasks, and a recent update is reportedly causing BSOD loops.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops&quot;, &quot;title_en&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;title_zh&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops&quot;, &quot;title_en&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;title_zh&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/dell-supportassist-update-is-crashing-pcs-with-constant-blue-screens-and-reboot-loops&quot;, &quot;title_en&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;title_zh&quot;: &quot;Dell SupportAssist update is crashing PCs with constant blue screens and reboot loops \u2014 the boot service built for system recovery is the culprit of unending instability&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders" target="_blank">Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes — LLM-assisted bug-hunting ushers in a new cyberworld order</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">AI-assisted bug detection has massively accelerated the timeline in which new security vulnerabilities are discovered, and one researcher argues that has killed the standard 90-day disclosure policy.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders&quot;, &quot;title_en&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;title_zh&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders&quot;, &quot;title_en&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;title_zh&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/standard-90-day-vulnerability-disclosure-policy-is-likely-dead-thanks-to-ai-leaving-worlds-systems-exposed-to-zero-day-attacks-security-expert-details-how-llm-assisted-bug-hunting-ushers-in-a-new-cyberworld-orders&quot;, &quot;title_en&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;title_zh&quot;: &quot;Standard 90-day vulnerability disclosure policy is likely dead thanks to AI, expert warns that AI can weaponize patches in 30 minutes \u2014 LLM-assisted bug-hunting ushers in a new cyberworld order&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more" target="_blank">Build the perfect RTX 5070 Ti gaming PC for $2074 — Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A near-complete gaming PC bundle from Newegg saves you $769. The combo includes a 9850X3D, RTX 5070 Ti, 2TB SSD, 32GB of DDR5 RAM, 240mm AIO cooler, and an X870E motherboard for $2074.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more&quot;, &quot;title_en&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;title_zh&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more&quot;, &quot;title_en&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;title_zh&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/build-the-perfect-rtx-5070-ti-gaming-pc-for-usd2074-save-usd769-on-32gb-of-corsair-ram-9850x3d-2tb-samsung-9100-pro-ssd-and-more&quot;, &quot;title_en&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;title_zh&quot;: &quot;Build the perfect RTX 5070 Ti gaming PC for $2074 \u2014 Save $769 on 32GB of Corsair RAM, 9850X3D, 2TB Samsung 9100 Pro SSD, and more&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars" target="_blank">NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings — chip designed to withstand radiation for extended missions on the Moon and Mars</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The public-private partnership aims to develop an SoC that offers 100x the computing power of current chips designed for spaceflight. NASA envisions that the technologies developed from this project will also be widely implemented on Earth-bound applications, like the automotive and aerospace industries.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars&quot;, &quot;title_en&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;title_zh&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars&quot;, &quot;title_en&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;title_zh&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/nasa-partners-with-microchip-to-build-next-generation-spaceflight-chips-with-100x-the-power-of-current-offerings-chip-designed-to-withstand-radiation-for-extended-missions-on-the-moon-and-mars&quot;, &quot;title_en&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;title_zh&quot;: &quot;NASA partners with Microchip to build next-generation spaceflight chips with 100x the power of current offerings \u2014 chip designed to withstand radiation for extended missions on the Moon and Mars&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers" target="_blank">SoftBank to manufacture its own batteries with water-based tech to power AI data centers — targets gigawatt-hour-scale production by 2028</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The Japanese company is partnering with two South Korean startups, Cosmos Lab and DeltaX, to produce zinc-halogen batteries.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers&quot;, &quot;title_en&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;title_zh&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers&quot;, &quot;title_en&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;title_zh&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/softbank-to-manufacture-its-own-batteries-to-power-ai-data-centers&quot;, &quot;title_en&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;title_zh&quot;: &quot;SoftBank to manufacture its own batteries with water-based tech to power AI data centers \u2014 targets gigawatt-hour-scale production by 2028&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi11" data-url="https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime" target="_blank">Google finds first AI-developed zero-day that bypasses 2FA — self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Google cybersecurity boffins found at least one AI-developed zero-day exploit</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi11"
+              onclick="toggleAnalysis('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime&quot;, &quot;title_en&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;title_zh&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi11"
+              onclick="bookmarkArticle('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime&quot;, &quot;title_en&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;title_zh&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/cyber-security/google-finds-first-ai-developed-zero-day-that-bypasses-2fa-self-morphing-malware-and-gemini-powered-backdoors-signal-a-new-era-of-cybercrime&quot;, &quot;title_en&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;title_zh&quot;: &quot;Google finds first AI-developed zero-day that bypasses 2FA \u2014 self-morphing malware and Gemini-powered backdoors signal a new era of cybercrime&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi11"
+              onclick="copyPrompt('chi11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi12" data-url="https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550" target="_blank">China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 — Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Loongson has provided updates on the company's upcoming 3B6600 processor and 9A1000 graphics card during its 2025 annual and 2026 Q1 earnings calls.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi12"
+              onclick="toggleAnalysis('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550&quot;, &quot;title_en&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;title_zh&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi12"
+              onclick="bookmarkArticle('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550&quot;, &quot;title_en&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;title_zh&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/chinas-next-gen-cpus-and-gpus-prepare-to-challenge-last-gen-intel-and-amd-in-2027-loongson-3b6600-and-9a1000-aim-to-match-intels-12th-gen-and-amds-rx-550&quot;, &quot;title_en&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;title_zh&quot;: &quot;China's next-gen CPUs and GPUs prepare to challenge last-gen Intel and AMD in 2027 \u2014 Loongson 3B6600 and 9A1000 aim to match Intel's 12th Gen and AMD's RX 550&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi12"
+              onclick="copyPrompt('chi12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi13" data-url="https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity" target="_blank">Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says — $1 billion project stalls over capacity disagreements and lack of infrastructure</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The project was supposed to bring a geothermal-powered data center to the Olkaria region in Kenya's Rift Valley.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi13')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi13"
+              onclick="toggleAnalysis('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity&quot;, &quot;title_en&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;title_zh&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi13"
+              onclick="bookmarkArticle('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity&quot;, &quot;title_en&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;title_zh&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi13">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi13"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi13')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/microsofts-1-billion-kenya-data-center-stalls-over-disagreements-on-power-capacity&quot;, &quot;title_en&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;title_zh&quot;: &quot;Microsoft's massive Kenya AI data center would require switching off 'half the country' to meet power requirements, government says \u2014 $1 billion project stalls over capacity disagreements and lack of infrastructure&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi13"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi13">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi13"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi13"
+              onclick="copyPrompt('chi13')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi14" data-url="https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler" target="_blank">2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle — $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Get a 9850X3D, X870E motherboard, liquid cooler, 2TB Gen SSD, and 32GB of DDR5 RAM for just $1,215.</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi14')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi14"
+              onclick="toggleAnalysis('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler&quot;, &quot;title_en&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;title_zh&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi14"
+              onclick="bookmarkArticle('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler&quot;, &quot;title_en&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;title_zh&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi14">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi14"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi14')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/2tb-samsung-9100-pro-ssd-and-32gb-of-corsair-vengeance-ram-is-just-usd363-in-this-staggering-newegg-9850x3d-bundle-usd558-off-this-usd1-200-am5-haul-includes-an-x870e-motherboard-and-a-cooler&quot;, &quot;title_en&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;title_zh&quot;: &quot;2TB Samsung 9100 Pro SSD and 32GB of Corsair Vengeance RAM is just $363 in this staggering Newegg 9850X3D bundle \u2014 $558 off this $1,200 AM5 haul includes an X870E motherboard and a cooler&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi14"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi14">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi14"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi14"
+              onclick="copyPrompt('chi14')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi15" data-url="https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/" target="_blank">Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The reported preliminary agreement between Apple and Intel for Intel to manufacture some Apple-designed chips could signal far more than a new customer relationship. If realized at a meaningful scale, the</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi15')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi15"
+              onclick="toggleAnalysis('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/&quot;, &quot;title_en&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;title_zh&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi15"
+              onclick="bookmarkArticle('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/&quot;, &quot;title_en&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;title_zh&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi15">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi15"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi15')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/apple-intel-foundry-deal-could-reshape-u-s-chip-manufacturing/&quot;, &quot;title_en&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;title_zh&quot;: &quot;Apple-Intel Foundry Deal Could Reshape U.S. Chip Manufacturing&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi15"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi15">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi15"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi15"
+              onclick="copyPrompt('chi15')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi16" data-url="https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/" target="_blank">AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Manufacturing SoCs at advanced nodes&amp;nbsp;isn’t&amp;nbsp;just about scaling&amp;nbsp;transistors—it’s&amp;nbsp;about scaling expertise and tools to keep up with monumental increases in verification data. As technologies push to</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi16')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi16"
+              onclick="toggleAnalysis('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/&quot;, &quot;title_en&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;title_zh&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi16"
+              onclick="bookmarkArticle('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/&quot;, &quot;title_en&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;title_zh&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi16">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi16"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi16')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-delivers-faster-actionable-drc-closure-for-complex-soc-designs/&quot;, &quot;title_en&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;title_zh&quot;: &quot;AI Delivers Faster, Actionable DRC Closure for Complex SoC Designs&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi16"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi16">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi16"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi16"
+              onclick="copyPrompt('chi16')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi17" data-url="https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/" target="_blank">Rising EV and AI Loads Bring Connectors Into Early Design Decisions</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The move toward software-driven systems, higher current requirements, and decentralized architectures has boosted demand for advanced interconnect solutions across electric EVs, industrial systems, and</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi17')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi17"
+              onclick="toggleAnalysis('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/&quot;, &quot;title_en&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;title_zh&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi17"
+              onclick="bookmarkArticle('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/&quot;, &quot;title_en&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;title_zh&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi17">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi17"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi17')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/rising-ev-and-ai-loads-bring-connectors-into-early-design-decisions/&quot;, &quot;title_en&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;title_zh&quot;: &quot;Rising EV and AI Loads Bring Connectors Into Early Design Decisions&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi17"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi17">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi17"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi17"
+              onclick="copyPrompt('chi17')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi18" data-url="https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/" target="_blank">A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A new technical paper, &amp;#8220;Challenges and prospects of 2D electronics for future monolithic complementary field-effect transistors,&amp;#8221; was published by researchers at Sungkyunkwan University, Hangyang University, Istituto Italiano di Tecnologia, Shanghai University, Jeonbuk National University, and Kyonggi University. Abstract &amp;#8220;With planar complementary metal-oxide-semiconductor (CMOS) scaling nearing its physical limits, the transistor roadmap is transitioning toward monolithic three-dimensional (M3D) integration through complementary field-effect transistors (CFETs). While silicon (Si)-CFETs demonstrate the viability of monolithic stacking, their scalability is constrained by high thermal budgets, dopant diffusion, and alignment complexity. Two-dimensional (2D) materials off</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi18')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi18"
+              onclick="toggleAnalysis('chi18', {&quot;url&quot;: &quot;https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/&quot;, &quot;title_en&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;title_zh&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi18"
+              onclick="bookmarkArticle('chi18', {&quot;url&quot;: &quot;https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/&quot;, &quot;title_en&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;title_zh&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi18">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi18"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi18')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi18', {&quot;url&quot;: &quot;https://semiengineering.com/a-comprehensive-study-on-integrating-2d-materials-with-cfet-architecture-skku-et-al/&quot;, &quot;title_en&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;title_zh&quot;: &quot;A Comprehensive Study Of Integrating 2D Materials With CFET Architecture (SKKU, et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi18"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi18">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi18"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi18"
+              onclick="copyPrompt('chi18')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi19" data-url="https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/" target="_blank">ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A new technical paper, &amp;#8220;A Device-Physics-Informed Artificial Neural Network Approach for Thermal-Aware I-V and C-V Modeling of GAA FETs,&amp;#8221; was published by researchers at National Yang Ming Chiao Tung University. Abstract &amp;#8220;This work introduces a device-physics-informed neural network framework for simultaneous modeling of thermal-aware I-V and C-V characteristics of gate-all-around (GAA) field-effect transistors (FETs). The approach integrates the Grove–Frohman I-V and Meyer C-V analytical expressions within artificial neural networks (ANNs), enforcing a shared temperature-dependent threshold voltage and embedding temperature effects in both ANN parameters and analytical expressions. A Gummel symmetry test is applied across temperatures to ensure current symmetry. Experime</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi19')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi19"
+              onclick="toggleAnalysis('chi19', {&quot;url&quot;: &quot;https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/&quot;, &quot;title_en&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;title_zh&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi19"
+              onclick="bookmarkArticle('chi19', {&quot;url&quot;: &quot;https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/&quot;, &quot;title_en&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;title_zh&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi19">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi19"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi19')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi19', {&quot;url&quot;: &quot;https://semiengineering.com/ann-framework-for-thermal-aware-modeling-of-gaafets-nycu/&quot;, &quot;title_en&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;title_zh&quot;: &quot;ANN Framework for Thermal-Aware Modeling of GAAFETs (NYCU)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi19"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi19">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi19"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi19"
+              onclick="copyPrompt('chi19')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi20" data-url="https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/" target="_blank">Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A new technical paper, &amp;#8220;Reduced-crosstalk antennas for grating-lobe-free and wide-field-of-view integrated optical phased arrays,&amp;#8221; was published by researchers at MIT. Abstract &amp;#8220;Integrated optical phased arrays (OPAs) have emerged as a promising technology for many applications due to their ability to dynamically control free-space optical beams in a compact and non-mechanical manner. However, these integrated OPAs typically have a restricted field of view (FOV), limited by grating lobes caused by large antenna pitches that are typically necessary to reduce crosstalk between the antennas in the integrated OPA. In this work, we develop and experimentally demonstrate for the first time, to the best of our knowledge, a set of integrated grating-based antennas with significan</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi20')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi20"
+              onclick="toggleAnalysis('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/&quot;, &quot;title_en&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;title_zh&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi20"
+              onclick="bookmarkArticle('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/&quot;, &quot;title_en&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;title_zh&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi20">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi20"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi20')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/silicon-photonics-integrated-grating-based-antennas-for-optical-phased-arrays-mit/&quot;, &quot;title_en&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;title_zh&quot;: &quot;Silicon Photonics: Integrated Grating-Based Antennas for Optical Phased Arrays (MIT)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi20"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi20">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi20"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi20"
+              onclick="copyPrompt('chi20')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi21" data-url="https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/" target="_blank">HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A new technical paper, &amp;#8220;CMOS-compatible ferroelectric tunnel junctions integrate stochastic sampling and deterministic computing for image generation,&amp;#8221; was published by researchers at Seoul National University, Sungkyunkwan University, Hanyang University, Sogang University, and SK Hynix. Abstract &amp;#8220;Recent progress in generative modeling has intensified the need for compact, energy-efficient hardware platforms. Yet, implementing image generation directly in hardware remains challenging due to the conflicting requirements of stochastic latent space sampling and deterministic decoding. Here, we show a unified hardware framework based on hafnium-oxide ferroelectric tunnel junctions (FTJs) that intrinsically support both functionalities within a single device array. Leveraging </div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi21')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi21"
+              onclick="toggleAnalysis('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/&quot;, &quot;title_en&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;title_zh&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi21"
+              onclick="bookmarkArticle('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/&quot;, &quot;title_en&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;title_zh&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi21">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi21"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi21')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/hw-based-image-generation-using-ftjs-snu-sungkyunkwan-u-sk-hynix-et-al/&quot;, &quot;title_en&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;title_zh&quot;: &quot;HW-Based Image Generation Using FTJs (SNU, Sungkyunkwan U., SK hynix et al.)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi21"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi21">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi21"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi21"
+              onclick="copyPrompt('chi21')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi22" data-url="https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/" target="_blank">Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">A new technical paper, &amp;#8220;Early Functional Safety and PPA evaluation for faster digital design development,&amp;#8221; was published by researchers at Politecnico di Torino and Synopsys. Abstract &amp;#8220;The use of semiconductor devices in safety-critical applications is increasing in both volume and complexity. Applications in markets such as automotive, data centers, and aerospace have dependability requirements that impose additional safety and reliability metrics beyond the traditional Power, Performance, and Area (PPA). Semiconductor devices for safety-critical applications incorporate protection logic to enhance resilience against random failures (i.e., they are hardened). Although automation to optimize PPA and Time-to-Market (TTM) is well established, further effort is required to i</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi22')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi22"
+              onclick="toggleAnalysis('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/&quot;, &quot;title_en&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;title_zh&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi22"
+              onclick="bookmarkArticle('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/&quot;, &quot;title_en&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;title_zh&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi22">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi22"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi22')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/supporting-safety-requirements-from-rtl-exploration-through-implementation-in-semiconductor-devices-politecnico-di-torino-synopsys/&quot;, &quot;title_en&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;title_zh&quot;: &quot;Supporting Safety Requirements from RTL Exploration Through Implementation in Semiconductor Devices (Politecnico di Torino, Synopsys)&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi22"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi22">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi22"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi22"
+              onclick="copyPrompt('chi22')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi23" data-url="https://semiengineering.com/whats-really-needed-for-advanced-test/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/whats-really-needed-for-advanced-test/" target="_blank">What’s Really Needed For Advanced Test?</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">By Greg Prewitt and Marc Jacobs Advanced test has become one of the semiconductor industry&amp;#8217;s most promising frontiers: adaptive binning, feed-forward models, and real-time analytics pulling signals from mountains of measurement data. But there is a problem hiding underneath all that ambition, and it is neither compute nor algorithm; it is data. More specifically, it is the unglamorous, foundational question of whether the data flowing across the fab-to-test chain is clean, complete, and correctly associated in the first place. At the recent PDF Solutions Users Conference , we presented some of the solutions we offer to ensure the availability of accurate data across the test supply chain. In this blog post, we identify where the real bottlenecks lie, what good data infrastructure loo</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/whats-really-needed-for-advanced-test/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi23')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi23"
+              onclick="toggleAnalysis('chi23', {&quot;url&quot;: &quot;https://semiengineering.com/whats-really-needed-for-advanced-test/&quot;, &quot;title_en&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;title_zh&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi23"
+              onclick="bookmarkArticle('chi23', {&quot;url&quot;: &quot;https://semiengineering.com/whats-really-needed-for-advanced-test/&quot;, &quot;title_en&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;title_zh&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi23">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi23"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi23')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi23', {&quot;url&quot;: &quot;https://semiengineering.com/whats-really-needed-for-advanced-test/&quot;, &quot;title_en&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;title_zh&quot;: &quot;What\u2019s Really Needed For Advanced Test?&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi23"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi23">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi23"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi23"
+              onclick="copyPrompt('chi23')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi24" data-url="https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/" target="_blank">The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Every day, consumers rely on an invisible network of specialty semiconductor devices without realizing it. The smartphone in your pocket is a good place to start. It knows when you rotate the screen thanks to MEMS sensors, and its camera delivers crisp images through advanced CMOS image sensors. Meanwhile, fast charging technology, wireless connectivity, facial recognition, and high-frequency communications all depend on specialty power devices, radio frequency (RF) filters, and photonic technologies working seamlessly behind the scenes. However, success in every specialty device category hinges on advanced process control solutions capable of ensuring what matters most is tightly understood and controlled. This may be shape, thickness, uniformity, defects, or material properties. And it a</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi24')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi24"
+              onclick="toggleAnalysis('chi24', {&quot;url&quot;: &quot;https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/&quot;, &quot;title_en&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;title_zh&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi24"
+              onclick="bookmarkArticle('chi24', {&quot;url&quot;: &quot;https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/&quot;, &quot;title_en&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;title_zh&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi24">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi24"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi24')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi24', {&quot;url&quot;: &quot;https://semiengineering.com/the-specialty-device-surge-part-3-solving-the-process-control-challenges-of-mems-photonics-co-packaged-optics-and-more/&quot;, &quot;title_en&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;title_zh&quot;: &quot;The Specialty Device Surge Part 3: Solving The Process Control Challenges Of MEMS, Photonics, Co-Packaged Optics, And More&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi24"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi24">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi24"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi24"
+              onclick="copyPrompt('chi24')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi25" data-url="https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/" target="_blank">Complete End-To-End Closed-Loop Product Yield Ramp And Learning</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">By Guy Cortez and Maheshwaran Jothi Yield ramp has always been a concern in semiconductor manufacturing: systems companies need confidence that devices meet quality targets before shipment, and chipmakers need to reach yield entitlement quickly to control cost and supply. While this has never been easy, advanced nodes are raising the bar again. First, designs are larger and more heterogeneous, with tighter margins for timing, power, and signal integrity. Second, test content and test data volumes are increasing rapidly (more patterns, more compression, more logs), while engineering bandwidth is not scaling at the same rate. The result is that learning cycles can become the limiter during early NPI and ramp. At the same time, root-cause workflows often span multiple teams and environments—t</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi25')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi25"
+              onclick="toggleAnalysis('chi25', {&quot;url&quot;: &quot;https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/&quot;, &quot;title_en&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;title_zh&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi25"
+              onclick="bookmarkArticle('chi25', {&quot;url&quot;: &quot;https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/&quot;, &quot;title_en&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;title_zh&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi25">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi25"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi25')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi25', {&quot;url&quot;: &quot;https://semiengineering.com/complete-end-to-end-closed-loop-product-yield-ramp-and-learning/&quot;, &quot;title_en&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;title_zh&quot;: &quot;Complete End-To-End Closed-Loop Product Yield Ramp And Learning&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi25"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi25">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi25"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi25"
+              onclick="copyPrompt('chi25')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi26" data-url="https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/" target="_blank">Test Distribution Evolves To Meet AI Challenges</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The proliferation of artificial intelligence (AI) is driving rapid acceleration of the semiconductor market, which analysts now predict will reach $1 trillion this year. Many semiconductor devices will be the GPUs that populate the data centers that run AI workloads. Driven by strong, sustained investments from hyperscaler operators, high-performance computing (HPC)/AI data centers are expected to account for a large portion of the market. This market is driven by the growing demand for computational capability, with training computing requirements for generative AI models having increased fourfold each year since 2018 in terms of floating-point operations per second (FLOPS). In addition, semiconductors will also find increasing use in consumer-facing AI-related products such as AI-enabled</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi26')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi26"
+              onclick="toggleAnalysis('chi26', {&quot;url&quot;: &quot;https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;title_zh&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi26"
+              onclick="bookmarkArticle('chi26', {&quot;url&quot;: &quot;https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;title_zh&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi26">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi26"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi26')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi26', {&quot;url&quot;: &quot;https://semiengineering.com/test-distribution-evolves-to-meet-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;title_zh&quot;: &quot;Test Distribution Evolves To Meet AI Challenges&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi26"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi26">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi26"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi26"
+              onclick="copyPrompt('chi26')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi27" data-url="https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/" target="_blank">Ensuring AI Reliability: Mitigating Silent Data Corruption Risks</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">Silent Data Corruption (SDC) is an industry challenge affecting data centers worldwide with increasing frequency. This phenomenon stems from untraceable hardware failures that make detection notoriously difficult. SDCs don’t leave any record in system logs or trigger exception mechanisms. The corrupted data they produce can propagate unnoticed, causing cascading failures that often demand extensive resources to root cause. A recent Open Compute Project (OCP) whitepaper , authored by experts from NVIDIA, Google, Meta, Microsoft, and others, underscores the critical impact of SDC on large-scale AI/ML systems. OCP says SDC is on the rise, compromising AI workload integrity in data centers SDC has emerged as a critical reliability threat to scaling AI training and inference, as it corrupts com</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi27')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi27"
+              onclick="toggleAnalysis('chi27', {&quot;url&quot;: &quot;https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/&quot;, &quot;title_en&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;title_zh&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi27"
+              onclick="bookmarkArticle('chi27', {&quot;url&quot;: &quot;https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/&quot;, &quot;title_en&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;title_zh&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi27">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi27"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi27')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi27', {&quot;url&quot;: &quot;https://semiengineering.com/ensuring-ai-reliability-mitigating-silent-data-corruption-risks/&quot;, &quot;title_en&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;title_zh&quot;: &quot;Ensuring AI Reliability: Mitigating Silent Data Corruption Risks&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi27"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi27">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi27"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi27"
+              onclick="copyPrompt('chi27')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
