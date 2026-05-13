@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>☁️ CSP / Cloud — 2026-05-13</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>☁️ CSP / Cloud</h1>
+<div class="page-meta">2026-05-13 &nbsp;·&nbsp; 11 篇 &nbsp;·&nbsp; 更新：2026-05-14 00:23 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-csp0" data-url="https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Azure Blog</span>
+      <span class="date-tag">Tue, 12 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/" target="_blank">Advancing enterprise AI: New SAP on Azure announcements from SAP Sapphire 2026</a></div>
+    <div class="title-zh">推進企業 AI：SAP Sapphire 2026 的 SAP on Azure 新公告</div>
+    
+<div class="summary-block">
+  <div class="summary-en">In this article AI is reshaping how enterprises operate, make decisions, and innovate at scale Frontier innovation for ERP systems Your agentic intelligence Putting enterprise AI into production Advancing a new era of AI collaboration Powering AI with a unified data foundation Microsoft and SAP expand partnership to deliver trusted sovereign cloud solutions Expanding platform availability and ecosystem innovation Cloud Acceleration Factory expansion: Driving AI innovation for SAP Expanding the Global RISE with SAP Acceleration Program on Microsoft Azure Customer innovation in action A global partner ecosystem driving scale Powering the future of SAP with Microsoft Cloud Discover what SAP and Microsoft Cloud have to offer AI is reshaping how enterprises operate, make decisions, and innovate</div>
+  <div class="summary-zh">AI 正在重塑企業的運營、決策和創新方式。Microsoft 和 SAP 展示了如何透過統一的數據基礎和 agentic intelligence 將企業 AI 投入生產。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp0"
+              onclick="toggleAnalysis('csp0', {&quot;url&quot;: &quot;https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/&quot;, &quot;title_en&quot;: &quot;Advancing enterprise AI: New SAP on Azure announcements from SAP Sapphire 2026&quot;, &quot;title_zh&quot;: &quot;\u63a8\u9032\u4f01\u696d AI\uff1aSAP Sapphire 2026 \u7684 SAP on Azure \u65b0\u516c\u544a&quot;, &quot;source&quot;: &quot;Azure Blog&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp0"
+              onclick="bookmarkArticle('csp0', {&quot;url&quot;: &quot;https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/&quot;, &quot;title_en&quot;: &quot;Advancing enterprise AI: New SAP on Azure announcements from SAP Sapphire 2026&quot;, &quot;title_zh&quot;: &quot;\u63a8\u9032\u4f01\u696d AI\uff1aSAP Sapphire 2026 \u7684 SAP on Azure \u65b0\u516c\u544a&quot;, &quot;source&quot;: &quot;Azure Blog&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp0', {&quot;url&quot;: &quot;https://azure.microsoft.com/en-us/blog/advancing-enterprise-ai-new-sap-on-azure-announcements-from-sap-sapphire-2026/&quot;, &quot;title_en&quot;: &quot;Advancing enterprise AI: New SAP on Azure announcements from SAP Sapphire 2026&quot;, &quot;title_zh&quot;: &quot;\u63a8\u9032\u4f01\u696d AI\uff1aSAP Sapphire 2026 \u7684 SAP on Azure \u65b0\u516c\u544a&quot;, &quot;source&quot;: &quot;Azure Blog&quot;, &quot;date&quot;: &quot;Tue, 12 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp0"
+              onclick="copyPrompt('csp0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp1" data-url="https://thenewstack.io/red-hat-agentic-skills-repository/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/red-hat-agentic-skills-repository/" target="_blank">Red Hat’s skill packs give AI agents something a bigger model never could: 20 years of institutional memory</a></div>
+    <div class="title-zh">Red Hat 的技能包給 AI 代理帶來了更大模型永遠無法提供的東西：20 年的機構記憶</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Red Hat believes giving users access to agent skills will be AI&amp;#8217;s next inflection point.&amp;nbsp; At the Red Hat Summit this week in Atlanta, Red Hat announced its new dedicated AI skills repository . Why the focus on skills? In his keynote, Matt Hicks , Red Hat&amp;#8217;s President and CEO, explains that &amp;#8220;We have deployed generative AI to every organization in the company. Each organization is looking for ways to either drive more efficiency for themselves or create more value for its customers. &amp;#8220;For example, you might have heard of or used Ask Red Hat, our interactive chatbot. It now runs on our Customer Support Portal. This chatbot has been trained on over two decades of Red Hat support information, knowledge base, and work capabilities.&amp;#8221;&amp;nbsp;&amp;nbsp; &amp;#8220;This chatbo</div>
+  <div class="summary-zh">Red Hat 在 Summit 上宣佈了新的專屬 AI 技能儲存庫，認為讓用戶存取代理技能將是 AI 的下一個拐點。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/red-hat-agentic-skills-repository/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp1"
+              onclick="toggleAnalysis('csp1', {&quot;url&quot;: &quot;https://thenewstack.io/red-hat-agentic-skills-repository/&quot;, &quot;title_en&quot;: &quot;Red Hat\u2019s skill packs give AI agents something a bigger model never could: 20 years of institutional memory&quot;, &quot;title_zh&quot;: &quot;Red Hat \u7684\u6280\u80fd\u5305\u7d66 AI \u4ee3\u7406\u5e36\u4f86\u4e86\u66f4\u5927\u6a21\u578b\u6c38\u9060\u7121\u6cd5\u63d0\u4f9b\u7684\u6771\u897f\uff1a20 \u5e74\u7684\u6a5f\u69cb\u8a18\u61b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp1"
+              onclick="bookmarkArticle('csp1', {&quot;url&quot;: &quot;https://thenewstack.io/red-hat-agentic-skills-repository/&quot;, &quot;title_en&quot;: &quot;Red Hat\u2019s skill packs give AI agents something a bigger model never could: 20 years of institutional memory&quot;, &quot;title_zh&quot;: &quot;Red Hat \u7684\u6280\u80fd\u5305\u7d66 AI \u4ee3\u7406\u5e36\u4f86\u4e86\u66f4\u5927\u6a21\u578b\u6c38\u9060\u7121\u6cd5\u63d0\u4f9b\u7684\u6771\u897f\uff1a20 \u5e74\u7684\u6a5f\u69cb\u8a18\u61b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp1', {&quot;url&quot;: &quot;https://thenewstack.io/red-hat-agentic-skills-repository/&quot;, &quot;title_en&quot;: &quot;Red Hat\u2019s skill packs give AI agents something a bigger model never could: 20 years of institutional memory&quot;, &quot;title_zh&quot;: &quot;Red Hat \u7684\u6280\u80fd\u5305\u7d66 AI \u4ee3\u7406\u5e36\u4f86\u4e86\u66f4\u5927\u6a21\u578b\u6c38\u9060\u7121\u6cd5\u63d0\u4f9b\u7684\u6771\u897f\uff1a20 \u5e74\u7684\u6a5f\u69cb\u8a18\u61b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp1"
+              onclick="copyPrompt('csp1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp2" data-url="https://thenewstack.io/claude-code-agent-view/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/claude-code-agent-view/" target="_blank">Anthropic’s Claude Code agent view is a better dashboard. So why aren’t developers convinced?</a></div>
+    <div class="title-zh">Anthropic 的 Claude Code 代理檢視是更好的儀表板。那麼為什麼開發人員不信服呢？</div>
+    
+<div class="summary-block">
+  <div class="summary-en">This week, Anthropic announced agent view in Claude Code, a CLI dashboard that lets developers manage multiple Claude Code sessions from a single screen.&amp;nbsp; Where running parallel agents used to require managing multiple terminal tabs and a tmux grid (not to mention the taxing mental load of keeping track of it all), Anthropic&amp;rsquo;s new product purports to give developers a one-stop shop for Claude Code session management.&amp;nbsp; With the agent view, developers can launch new agents, send them to the background, and easily jump between different sessions to reply inline or attach a full conversation. Status indicators show which sessions are running, which are waiting for input, and which have produced a pull request (PR).&amp;nbsp; But while a concise interface is a nice-to-have, it still</div>
+  <div class="summary-zh">Anthropic 本週宣佈了 Claude Code 的 agent view，這是一個 CLI 儀表板，讓開發人員能從單一螢幕管理多個 Claude Code 工作階段。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/claude-code-agent-view/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp2"
+              onclick="toggleAnalysis('csp2', {&quot;url&quot;: &quot;https://thenewstack.io/claude-code-agent-view/&quot;, &quot;title_en&quot;: &quot;Anthropic\u2019s Claude Code agent view is a better dashboard. So why aren\u2019t developers convinced?&quot;, &quot;title_zh&quot;: &quot;Anthropic \u7684 Claude Code \u4ee3\u7406\u6aa2\u8996\u662f\u66f4\u597d\u7684\u5100\u8868\u677f\u3002\u90a3\u9ebc\u70ba\u4ec0\u9ebc\u958b\u767c\u4eba\u54e1\u4e0d\u4fe1\u670d\u5462\uff1f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp2"
+              onclick="bookmarkArticle('csp2', {&quot;url&quot;: &quot;https://thenewstack.io/claude-code-agent-view/&quot;, &quot;title_en&quot;: &quot;Anthropic\u2019s Claude Code agent view is a better dashboard. So why aren\u2019t developers convinced?&quot;, &quot;title_zh&quot;: &quot;Anthropic \u7684 Claude Code \u4ee3\u7406\u6aa2\u8996\u662f\u66f4\u597d\u7684\u5100\u8868\u677f\u3002\u90a3\u9ebc\u70ba\u4ec0\u9ebc\u958b\u767c\u4eba\u54e1\u4e0d\u4fe1\u670d\u5462\uff1f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp2', {&quot;url&quot;: &quot;https://thenewstack.io/claude-code-agent-view/&quot;, &quot;title_en&quot;: &quot;Anthropic\u2019s Claude Code agent view is a better dashboard. So why aren\u2019t developers convinced?&quot;, &quot;title_zh&quot;: &quot;Anthropic \u7684 Claude Code \u4ee3\u7406\u6aa2\u8996\u662f\u66f4\u597d\u7684\u5100\u8868\u677f\u3002\u90a3\u9ebc\u70ba\u4ec0\u9ebc\u958b\u767c\u4eba\u54e1\u4e0d\u4fe1\u670d\u5462\uff1f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp2"
+              onclick="copyPrompt('csp2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp3" data-url="https://thenewstack.io/openai-daybreak-anthropic-glasswing/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/openai-daybreak-anthropic-glasswing/" target="_blank">OpenAI’s Daybreak and Anthropic’s Glasswing have nearly identical benchmarks — and 3 of the same partners</a></div>
+    <div class="title-zh">OpenAI 的 Daybreak 和 Anthropic 的 Glasswing 基準測試幾乎相同——還有 3 個相同的合作夥伴</div>
+    
+<div class="summary-block">
+  <div class="summary-en">This week, OpenAI launched Daybreak, its cybersecurity initiative built around GPT-5.5 , a tiered access framework, and Codex Security as the agent harness. The Daybreak page followed an earlier OpenAI announcement that describes how Trusted Access for Cyber would sca le GPT-5.5 and GPT-5.5-Cyber for verified defenders. This week’s news lands six weeks after Anthropic introduced Project Glasswing , an industry consortium powered by Claude Mythos Preview that promised a similar outcome. Find previously unknown vulnerabilities at machine speed, validate exploitability in authorized environments, and help defenders patch before attackers can act. Convergence between the two labs has been evident for weeks: Mozilla disclosed in April that Firefox 150 shipped with fixes for 271 vulnerabilities </div>
+  <div class="summary-zh">OpenAI 推出了圍繞 GPT-5.5 的網路安全計畫 Daybreak，包括分層存取框架和 Codex Security 作為代理框架。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/openai-daybreak-anthropic-glasswing/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp3"
+              onclick="toggleAnalysis('csp3', {&quot;url&quot;: &quot;https://thenewstack.io/openai-daybreak-anthropic-glasswing/&quot;, &quot;title_en&quot;: &quot;OpenAI\u2019s Daybreak and Anthropic\u2019s Glasswing have nearly identical benchmarks \u2014 and 3 of the same partners&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7684 Daybreak \u548c Anthropic \u7684 Glasswing \u57fa\u6e96\u6e2c\u8a66\u5e7e\u4e4e\u76f8\u540c\u2014\u2014\u9084\u6709 3 \u500b\u76f8\u540c\u7684\u5408\u4f5c\u5925\u4f34&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp3"
+              onclick="bookmarkArticle('csp3', {&quot;url&quot;: &quot;https://thenewstack.io/openai-daybreak-anthropic-glasswing/&quot;, &quot;title_en&quot;: &quot;OpenAI\u2019s Daybreak and Anthropic\u2019s Glasswing have nearly identical benchmarks \u2014 and 3 of the same partners&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7684 Daybreak \u548c Anthropic \u7684 Glasswing \u57fa\u6e96\u6e2c\u8a66\u5e7e\u4e4e\u76f8\u540c\u2014\u2014\u9084\u6709 3 \u500b\u76f8\u540c\u7684\u5408\u4f5c\u5925\u4f34&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp3', {&quot;url&quot;: &quot;https://thenewstack.io/openai-daybreak-anthropic-glasswing/&quot;, &quot;title_en&quot;: &quot;OpenAI\u2019s Daybreak and Anthropic\u2019s Glasswing have nearly identical benchmarks \u2014 and 3 of the same partners&quot;, &quot;title_zh&quot;: &quot;OpenAI \u7684 Daybreak \u548c Anthropic \u7684 Glasswing \u57fa\u6e96\u6e2c\u8a66\u5e7e\u4e4e\u76f8\u540c\u2014\u2014\u9084\u6709 3 \u500b\u76f8\u540c\u7684\u5408\u4f5c\u5925\u4f34&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp3"
+              onclick="copyPrompt('csp3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp4" data-url="https://thenewstack.io/gpt55-instant-vs-gpt52-tested/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/gpt55-instant-vs-gpt52-tested/" target="_blank">I tested OpenAI’s three claims about GPT-5.5 Instant, and only one fully held up</a></div>
+    <div class="title-zh">我測試了 OpenAI 關於 GPT-5.5 Instant 的三個聲明，只有一個完全成立</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Last week, OpenAI replaced GPT-5.3 Instant as ChatGPT&amp;#8217;s default model with GPT-5.5 Instant, rolling it out to all users for free . When rolling out GPT-5.5, OpenAI made three specific claims: smarter, more accurate answers; 30% more concise responses; and deeper personalization drawing on past conversations, uploaded files, and connected Gmail. While I didn&amp;rsquo;t connect my Gmail to ChatGPT, I tested GPT-5.5 against GPT-5.2 for everything else. I chose to test&amp;nbsp; 5.2 over 5.3 or other models because I wanted to see real change over time. Every new release is presented as a major leap, but is it? Is there a noticeable difference between models that are six months apart? In this case, yes. In my testing, OpenAI&amp;rsquo;s marketing messages held up, but not all of them. Here&amp;rsquo;s </div>
+  <div class="summary-zh">OpenAI 將 ChatGPT 的預設模型從 GPT-5.3 Instant 替換為 GPT-5.5 Instant，並向所有用戶免費推出，聲稱更聰明、更準確且更簡潔。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/gpt55-instant-vs-gpt52-tested/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp4"
+              onclick="toggleAnalysis('csp4', {&quot;url&quot;: &quot;https://thenewstack.io/gpt55-instant-vs-gpt52-tested/&quot;, &quot;title_en&quot;: &quot;I tested OpenAI\u2019s three claims about GPT-5.5 Instant, and only one fully held up&quot;, &quot;title_zh&quot;: &quot;\u6211\u6e2c\u8a66\u4e86 OpenAI \u95dc\u65bc GPT-5.5 Instant \u7684\u4e09\u500b\u8072\u660e\uff0c\u53ea\u6709\u4e00\u500b\u5b8c\u5168\u6210\u7acb&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp4"
+              onclick="bookmarkArticle('csp4', {&quot;url&quot;: &quot;https://thenewstack.io/gpt55-instant-vs-gpt52-tested/&quot;, &quot;title_en&quot;: &quot;I tested OpenAI\u2019s three claims about GPT-5.5 Instant, and only one fully held up&quot;, &quot;title_zh&quot;: &quot;\u6211\u6e2c\u8a66\u4e86 OpenAI \u95dc\u65bc GPT-5.5 Instant \u7684\u4e09\u500b\u8072\u660e\uff0c\u53ea\u6709\u4e00\u500b\u5b8c\u5168\u6210\u7acb&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp4', {&quot;url&quot;: &quot;https://thenewstack.io/gpt55-instant-vs-gpt52-tested/&quot;, &quot;title_en&quot;: &quot;I tested OpenAI\u2019s three claims about GPT-5.5 Instant, and only one fully held up&quot;, &quot;title_zh&quot;: &quot;\u6211\u6e2c\u8a66\u4e86 OpenAI \u95dc\u65bc GPT-5.5 Instant \u7684\u4e09\u500b\u8072\u660e\uff0c\u53ea\u6709\u4e00\u500b\u5b8c\u5168\u6210\u7acb&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp4"
+              onclick="copyPrompt('csp4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp5" data-url="https://thenewstack.io/temporal-durable-execution-ai-workflows/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/temporal-durable-execution-ai-workflows/" target="_blank">Temporal hits 3,000 paying customers with its crash-proof workflow engine</a></div>
+    <div class="title-zh">Temporal 達成 3,000 名付費客戶，採用其防崩潰的工作流引擎</div>
+    
+<div class="summary-block">
+  <div class="summary-en">If you work the high wire at a circus , you&amp;#8217;d better have a net down below if you want to continue in that line of business. Likewise, if you have an IT system that&amp;#8217;s producing night and day for you and your clients, you should have complete protection if a slip-up or security breach happens &amp;ndash; whether it affects one customer or 5 million. Seattle-based Temporal has been getting a good measure of attention lately for how its software protects IT systems, whether small or scale-out &amp;mdash; particularly when they&amp;#8217;re processing large AI-related workloads. Temporal, which hosted its Replay 2026 developer conference last week here in San Francisco, makes its own version of Durable Execution , an open-source-based software development framework that renders code fault-tole</div>
+  <div class="summary-zh">Temporal 的工作流引擎為 IT 系統提供完整保護，防止故障或安全漏洞。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/temporal-durable-execution-ai-workflows/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp5"
+              onclick="toggleAnalysis('csp5', {&quot;url&quot;: &quot;https://thenewstack.io/temporal-durable-execution-ai-workflows/&quot;, &quot;title_en&quot;: &quot;Temporal hits 3,000 paying customers with its crash-proof workflow engine&quot;, &quot;title_zh&quot;: &quot;Temporal \u9054\u6210 3,000 \u540d\u4ed8\u8cbb\u5ba2\u6236\uff0c\u63a1\u7528\u5176\u9632\u5d29\u6f70\u7684\u5de5\u4f5c\u6d41\u5f15\u64ce&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp5"
+              onclick="bookmarkArticle('csp5', {&quot;url&quot;: &quot;https://thenewstack.io/temporal-durable-execution-ai-workflows/&quot;, &quot;title_en&quot;: &quot;Temporal hits 3,000 paying customers with its crash-proof workflow engine&quot;, &quot;title_zh&quot;: &quot;Temporal \u9054\u6210 3,000 \u540d\u4ed8\u8cbb\u5ba2\u6236\uff0c\u63a1\u7528\u5176\u9632\u5d29\u6f70\u7684\u5de5\u4f5c\u6d41\u5f15\u64ce&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp5', {&quot;url&quot;: &quot;https://thenewstack.io/temporal-durable-execution-ai-workflows/&quot;, &quot;title_en&quot;: &quot;Temporal hits 3,000 paying customers with its crash-proof workflow engine&quot;, &quot;title_zh&quot;: &quot;Temporal \u9054\u6210 3,000 \u540d\u4ed8\u8cbb\u5ba2\u6236\uff0c\u63a1\u7528\u5176\u9632\u5d29\u6f70\u7684\u5de5\u4f5c\u6d41\u5f15\u64ce&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp5"
+              onclick="copyPrompt('csp5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp6" data-url="https://thenewstack.io/engineering-team-skills-library/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/engineering-team-skills-library/" target="_blank">How to build a skills library for your engineering team</a></div>
+    <div class="title-zh">如何為你的工程團隊構建技能庫</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A few months ago, we realized that every engineer on our team was running a different version of their AI coding assistant. Not the models, they were all using the latest ones. But the skills their agents were using were all over the place. And skills make all the difference. Some engineers configured their own skills . Others copied from older versions. And some just took some skills they found online. And we had no visibility into any of it because skills are local config files. So to solve it, we built a library. Now every engineer runs one command, and their agent starts from the same foundation. They get the required company standards pulled automatically, and they can also load optional skills based on what they&amp;#8217;re building. Here&amp;#8217;s how we built it: Step 1: We put all our </div>
+  <div class="summary-zh">建立統一的 AI 編碼助手技能庫對工程團隊的效率至關重要，因為技能會帶來顯著的差異。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/engineering-team-skills-library/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp6"
+              onclick="toggleAnalysis('csp6', {&quot;url&quot;: &quot;https://thenewstack.io/engineering-team-skills-library/&quot;, &quot;title_en&quot;: &quot;How to build a skills library for your engineering team&quot;, &quot;title_zh&quot;: &quot;\u5982\u4f55\u70ba\u4f60\u7684\u5de5\u7a0b\u5718\u968a\u69cb\u5efa\u6280\u80fd\u5eab&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp6"
+              onclick="bookmarkArticle('csp6', {&quot;url&quot;: &quot;https://thenewstack.io/engineering-team-skills-library/&quot;, &quot;title_en&quot;: &quot;How to build a skills library for your engineering team&quot;, &quot;title_zh&quot;: &quot;\u5982\u4f55\u70ba\u4f60\u7684\u5de5\u7a0b\u5718\u968a\u69cb\u5efa\u6280\u80fd\u5eab&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp6', {&quot;url&quot;: &quot;https://thenewstack.io/engineering-team-skills-library/&quot;, &quot;title_en&quot;: &quot;How to build a skills library for your engineering team&quot;, &quot;title_zh&quot;: &quot;\u5982\u4f55\u70ba\u4f60\u7684\u5de5\u7a0b\u5718\u968a\u69cb\u5efa\u6280\u80fd\u5eab&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp6"
+              onclick="copyPrompt('csp6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp7" data-url="https://thenewstack.io/kubernetes-yaml-management-scale/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/kubernetes-yaml-management-scale/" target="_blank">Cloud native application challenges: installing the walking skeleton</a></div>
+    <div class="title-zh">雲原生應用挑戰：安裝行走骨架</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Editor&amp;rsquo;s note: This article is an excerpt from Chapter 1 of the Manning book, Platform Engineering on Kubernetes . This excerpt focuses on managing YAML-defined Kubernetes resources &amp;mdash; deployments, services, Ingress, and ConfigMaps/secrets &amp;mdash; at scale. To learn the latest Kubernetes best practices and the open source solutions, straight from the Kubernetes community, download the book in its entirety . In the previous section [which can be read by downloading the entire book ], I shared a hands-on approach to experimenting with cloud native applications by deploying a sample microservices app on a local Kubernetes cluster using Kubernetes in Docker. Now, it&amp;rsquo;s time to deploy our walking skeleton.&amp;nbsp; To run containerized applications on top of Kubernetes, you will ne</div>
+  <div class="summary-zh">本文摘錄自 Manning 書籍《Platform Engineering on Kubernetes》，重點討論大規模管理 Kubernetes 資源。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/kubernetes-yaml-management-scale/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp7"
+              onclick="toggleAnalysis('csp7', {&quot;url&quot;: &quot;https://thenewstack.io/kubernetes-yaml-management-scale/&quot;, &quot;title_en&quot;: &quot;Cloud native application challenges: installing the walking skeleton&quot;, &quot;title_zh&quot;: &quot;\u96f2\u539f\u751f\u61c9\u7528\u6311\u6230\uff1a\u5b89\u88dd\u884c\u8d70\u9aa8\u67b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp7"
+              onclick="bookmarkArticle('csp7', {&quot;url&quot;: &quot;https://thenewstack.io/kubernetes-yaml-management-scale/&quot;, &quot;title_en&quot;: &quot;Cloud native application challenges: installing the walking skeleton&quot;, &quot;title_zh&quot;: &quot;\u96f2\u539f\u751f\u61c9\u7528\u6311\u6230\uff1a\u5b89\u88dd\u884c\u8d70\u9aa8\u67b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp7', {&quot;url&quot;: &quot;https://thenewstack.io/kubernetes-yaml-management-scale/&quot;, &quot;title_en&quot;: &quot;Cloud native application challenges: installing the walking skeleton&quot;, &quot;title_zh&quot;: &quot;\u96f2\u539f\u751f\u61c9\u7528\u6311\u6230\uff1a\u5b89\u88dd\u884c\u8d70\u9aa8\u67b6&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp7"
+              onclick="copyPrompt('csp7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp8" data-url="https://thenewstack.io/cimento-human-risk-ai/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/cimento-human-risk-ai/" target="_blank">Cimento emerges from stealth to secure the one thing no firewall can protect</a></div>
+    <div class="title-zh">Cimento 從隱形模式浮出水面，保護防火牆無法保護的東西</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The security industry has spent decades and billions of dollars building tools to protect systems. The founders of Cimento , which came out of stealth mode on Wednesday, think the industry has been looking in the wrong place. &amp;#8220;Humans are one of the continuous weakest links,&amp;#8221; Zain Rizavi , co-founder and CEO of Cimento, tells The New Stack . &amp;#8220;The cost of AI attacks is going down asymptotically. And the existing tools are not prepared for it.&amp;#8221; Rizavi knows something about building at internet scale. Before founding Cimento, he was on the special projects team at Cloudflare , where the team&amp;#8217;s job was to look beyond the company to determine what the network infrastructure giant should build. What he took from that experience &amp;mdash; and applied to Cimento &amp;mdash; </div>
+  <div class="summary-zh">Cimento 認為安全產業的重點放錯了地方，因為人是持續最薄弱的環節。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/cimento-human-risk-ai/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp8"
+              onclick="toggleAnalysis('csp8', {&quot;url&quot;: &quot;https://thenewstack.io/cimento-human-risk-ai/&quot;, &quot;title_en&quot;: &quot;Cimento emerges from stealth to secure the one thing no firewall can protect&quot;, &quot;title_zh&quot;: &quot;Cimento \u5f9e\u96b1\u5f62\u6a21\u5f0f\u6d6e\u51fa\u6c34\u9762\uff0c\u4fdd\u8b77\u9632\u706b\u7246\u7121\u6cd5\u4fdd\u8b77\u7684\u6771\u897f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp8"
+              onclick="bookmarkArticle('csp8', {&quot;url&quot;: &quot;https://thenewstack.io/cimento-human-risk-ai/&quot;, &quot;title_en&quot;: &quot;Cimento emerges from stealth to secure the one thing no firewall can protect&quot;, &quot;title_zh&quot;: &quot;Cimento \u5f9e\u96b1\u5f62\u6a21\u5f0f\u6d6e\u51fa\u6c34\u9762\uff0c\u4fdd\u8b77\u9632\u706b\u7246\u7121\u6cd5\u4fdd\u8b77\u7684\u6771\u897f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp8', {&quot;url&quot;: &quot;https://thenewstack.io/cimento-human-risk-ai/&quot;, &quot;title_en&quot;: &quot;Cimento emerges from stealth to secure the one thing no firewall can protect&quot;, &quot;title_zh&quot;: &quot;Cimento \u5f9e\u96b1\u5f62\u6a21\u5f0f\u6d6e\u51fa\u6c34\u9762\uff0c\u4fdd\u8b77\u9632\u706b\u7246\u7121\u6cd5\u4fdd\u8b77\u7684\u6771\u897f&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp8"
+              onclick="copyPrompt('csp8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp9" data-url="https://thenewstack.io/agent-harness-distributed-feedback-problem/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/agent-harness-distributed-feedback-problem/" target="_blank">Why agent harnesses fail inside cloud-native systems</a></div>
+    <div class="title-zh">為什麼代理框架在雲原生系統內失敗</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Coding agents perform better with a harness that gives them the tools, guidance, and feedback signals to know what to do, how to do it, and how to know if it works. In cloud-native systems, providing the feedback component is less straightforward. I&amp;#8217;ve been sitting with Addy Osmani&amp;#8217;s recent post on agent harness engineering for a few days. The argument is one I find myself agreeing with: a coding agent is the model plus everything wrapped around it (prompts, tools, context policies, sandboxes, subagents, hooks, feedback loops), and that scaffolding does more for the agent&amp;#8217;s behavior than another model upgrade does. Addy points to data from Viv Trivedy showing that the same model, dropped into a different harness, moved from rank 30 to rank 5 on Terminal Bench 2.0. Once yo</div>
+  <div class="summary-zh">編碼代理需要完整的框架來提供工具、指導和反饋信號，但在雲原生系統中提供反饋較不直接。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/agent-harness-distributed-feedback-problem/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp9"
+              onclick="toggleAnalysis('csp9', {&quot;url&quot;: &quot;https://thenewstack.io/agent-harness-distributed-feedback-problem/&quot;, &quot;title_en&quot;: &quot;Why agent harnesses fail inside cloud-native systems&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4ee3\u7406\u6846\u67b6\u5728\u96f2\u539f\u751f\u7cfb\u7d71\u5167\u5931\u6557&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp9"
+              onclick="bookmarkArticle('csp9', {&quot;url&quot;: &quot;https://thenewstack.io/agent-harness-distributed-feedback-problem/&quot;, &quot;title_en&quot;: &quot;Why agent harnesses fail inside cloud-native systems&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4ee3\u7406\u6846\u67b6\u5728\u96f2\u539f\u751f\u7cfb\u7d71\u5167\u5931\u6557&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp9', {&quot;url&quot;: &quot;https://thenewstack.io/agent-harness-distributed-feedback-problem/&quot;, &quot;title_en&quot;: &quot;Why agent harnesses fail inside cloud-native systems&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4ee3\u7406\u6846\u67b6\u5728\u96f2\u539f\u751f\u7cfb\u7d71\u5167\u5931\u6557&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp9"
+              onclick="copyPrompt('csp9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-csp10" data-url="https://thenewstack.io/enterprise-ai-model-customization/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The New Stack</span>
+      <span class="date-tag">Wed, 13 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://thenewstack.io/enterprise-ai-model-customization/" target="_blank">Why enterprise AI needs customization</a></div>
+    <div class="title-zh">為什麼企業 AI 需要客製化</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Most organizations are approaching AI adoption the same way they once bought enterprise software: pick a vendor, standardize on a model, and push it across the organization. The assumption is that one model will solve every problem. But a model that excels at code generation might struggle with security analysis, while a frontier model that&amp;#8217;s perfect for prototyping may not meet your data residency requirements. &amp;#8220;A model that excels at code generation might struggle with security analysis, while a frontier model that&amp;#8217;s perfect for prototyping may not meet your data residency requirements.&amp;#8221; Resolving this mismatch requires flexibility in how you deploy AI models. Some teams need large-scale models for advanced reasoning, while others need specialized models for domai</div>
+  <div class="summary-zh">大多數組織採用單一 AI 模型的方式已過時，因為不同問題需要不同的專用模型才能達到最佳效能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://thenewstack.io/enterprise-ai-model-customization/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('csp10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-csp10"
+              onclick="toggleAnalysis('csp10', {&quot;url&quot;: &quot;https://thenewstack.io/enterprise-ai-model-customization/&quot;, &quot;title_en&quot;: &quot;Why enterprise AI needs customization&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4f01\u696d AI \u9700\u8981\u5ba2\u88fd\u5316&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-csp10"
+              onclick="bookmarkArticle('csp10', {&quot;url&quot;: &quot;https://thenewstack.io/enterprise-ai-model-customization/&quot;, &quot;title_en&quot;: &quot;Why enterprise AI needs customization&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4f01\u696d AI \u9700\u8981\u5ba2\u88fd\u5316&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-csp10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-csp10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('csp10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('csp10', {&quot;url&quot;: &quot;https://thenewstack.io/enterprise-ai-model-customization/&quot;, &quot;title_en&quot;: &quot;Why enterprise AI needs customization&quot;, &quot;title_zh&quot;: &quot;\u70ba\u4ec0\u9ebc\u4f01\u696d AI \u9700\u8981\u5ba2\u88fd\u5316&quot;, &quot;source&quot;: &quot;The New Stack&quot;, &quot;date&quot;: &quot;Wed, 13 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-csp10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-csp10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-csp10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-csp10"
+              onclick="copyPrompt('csp10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
