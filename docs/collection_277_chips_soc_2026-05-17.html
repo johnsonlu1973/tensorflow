@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-05-17</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-05-17 &nbsp;·&nbsp; 11 篇 &nbsp;·&nbsp; 更新：2026-05-17 22:58 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord" target="_blank">LinkedIn recruitment spam becomes Olde English prose after user hides AI prompt injection in bio — bots also also manipulated to address user as ‘My Lord’</a></div>
+    <div class="title-zh">LinkedIn招聘垃圾訊息變成古英文後，使用者在個人檔案中隱藏AI提示詞注入——機器人也被操縱稱呼使用者為「My Lord」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">One LinkedIn user has fought back against recruiter spam in a very unusual way.</div>
+  <div class="summary-zh">一名LinkedIn使用者以非常不尋常的方式對抗招聘人員的垃圾訊息。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord&quot;, &quot;title_en&quot;: &quot;LinkedIn recruitment spam becomes Olde English prose after user hides AI prompt injection in bio \u2014 bots also also manipulated to address user as \u2018My Lord\u2019&quot;, &quot;title_zh&quot;: &quot;LinkedIn\u62db\u8058\u5783\u573e\u8a0a\u606f\u8b8a\u6210\u53e4\u82f1\u6587\u5f8c\uff0c\u4f7f\u7528\u8005\u5728\u500b\u4eba\u6a94\u6848\u4e2d\u96b1\u85cfAI\u63d0\u793a\u8a5e\u6ce8\u5165\u2014\u2014\u6a5f\u5668\u4eba\u4e5f\u88ab\u64cd\u7e31\u7a31\u547c\u4f7f\u7528\u8005\u70ba\u300cMy Lord\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord&quot;, &quot;title_en&quot;: &quot;LinkedIn recruitment spam becomes Olde English prose after user hides AI prompt injection in bio \u2014 bots also also manipulated to address user as \u2018My Lord\u2019&quot;, &quot;title_zh&quot;: &quot;LinkedIn\u62db\u8058\u5783\u573e\u8a0a\u606f\u8b8a\u6210\u53e4\u82f1\u6587\u5f8c\uff0c\u4f7f\u7528\u8005\u5728\u500b\u4eba\u6a94\u6848\u4e2d\u96b1\u85cfAI\u63d0\u793a\u8a5e\u6ce8\u5165\u2014\u2014\u6a5f\u5668\u4eba\u4e5f\u88ab\u64cd\u7e31\u7a31\u547c\u4f7f\u7528\u8005\u70ba\u300cMy Lord\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/linkedin-recruitment-spam-becomes-olde-english-prose-after-user-hides-ai-prompt-injection-in-bio-bots-also-also-manipulated-to-address-user-as-my-lord&quot;, &quot;title_en&quot;: &quot;LinkedIn recruitment spam becomes Olde English prose after user hides AI prompt injection in bio \u2014 bots also also manipulated to address user as \u2018My Lord\u2019&quot;, &quot;title_zh&quot;: &quot;LinkedIn\u62db\u8058\u5783\u573e\u8a0a\u606f\u8b8a\u6210\u53e4\u82f1\u6587\u5f8c\uff0c\u4f7f\u7528\u8005\u5728\u500b\u4eba\u6a94\u6848\u4e2d\u96b1\u85cfAI\u63d0\u793a\u8a5e\u6ce8\u5165\u2014\u2014\u6a5f\u5668\u4eba\u4e5f\u88ab\u64cd\u7e31\u7a31\u547c\u4f7f\u7528\u8005\u70ba\u300cMy Lord\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air" target="_blank">Russia’s Mikron is selling framed test wafers with up to 120,000 processors as souvenirs — 12 designs, priced around $170 each, sold alongside $2 vials of cleanroom air</a></div>
+    <div class="title-zh">俄羅斯Mikron販售裝框測試晶圓作為紀念品，最多包含120,000個處理器——12種設計，每件售價約170美元，並附帶2美元的無塵室空氣小瓶</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Russia’s Mikron is earning a bit of cash on the side by selling picture-framed test wafers as souvenirs with 12 designs to choose from, priced around $170.</div>
+  <div class="summary-zh">俄羅斯Mikron正在銷售裝框的測試晶圓紀念品作為額外收入來源，提供12種設計選擇，售價約170美元。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air&quot;, &quot;title_en&quot;: &quot;Russia\u2019s Mikron is selling framed test wafers with up to 120,000 processors as souvenirs \u2014 12 designs, priced around $170 each, sold alongside $2 vials of cleanroom air&quot;, &quot;title_zh&quot;: &quot;\u4fc4\u7f85\u65afMikron\u8ca9\u552e\u88dd\u6846\u6e2c\u8a66\u6676\u5713\u4f5c\u70ba\u7d00\u5ff5\u54c1\uff0c\u6700\u591a\u5305\u542b120,000\u500b\u8655\u7406\u5668\u2014\u201412\u7a2e\u8a2d\u8a08\uff0c\u6bcf\u4ef6\u552e\u50f9\u7d04170\u7f8e\u5143\uff0c\u4e26\u9644\u5e362\u7f8e\u5143\u7684\u7121\u5875\u5ba4\u7a7a\u6c23\u5c0f\u74f6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air&quot;, &quot;title_en&quot;: &quot;Russia\u2019s Mikron is selling framed test wafers with up to 120,000 processors as souvenirs \u2014 12 designs, priced around $170 each, sold alongside $2 vials of cleanroom air&quot;, &quot;title_zh&quot;: &quot;\u4fc4\u7f85\u65afMikron\u8ca9\u552e\u88dd\u6846\u6e2c\u8a66\u6676\u5713\u4f5c\u70ba\u7d00\u5ff5\u54c1\uff0c\u6700\u591a\u5305\u542b120,000\u500b\u8655\u7406\u5668\u2014\u201412\u7a2e\u8a2d\u8a08\uff0c\u6bcf\u4ef6\u552e\u50f9\u7d04170\u7f8e\u5143\uff0c\u4e26\u9644\u5e362\u7f8e\u5143\u7684\u7121\u5875\u5ba4\u7a7a\u6c23\u5c0f\u74f6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/russias-mikron-is-selling-framed-test-wafers-with-up-to-120-000-processors-as-souvenirs-12-designs-priced-around-usd170-each-sold-alongside-usd2-vials-of-cleanroom-air&quot;, &quot;title_en&quot;: &quot;Russia\u2019s Mikron is selling framed test wafers with up to 120,000 processors as souvenirs \u2014 12 designs, priced around $170 each, sold alongside $2 vials of cleanroom air&quot;, &quot;title_zh&quot;: &quot;\u4fc4\u7f85\u65afMikron\u8ca9\u552e\u88dd\u6846\u6e2c\u8a66\u6676\u5713\u4f5c\u70ba\u7d00\u5ff5\u54c1\uff0c\u6700\u591a\u5305\u542b120,000\u500b\u8655\u7406\u5668\u2014\u201412\u7a2e\u8a2d\u8a08\uff0c\u6bcf\u4ef6\u552e\u50f9\u7d04170\u7f8e\u5143\uff0c\u4e26\u9644\u5e362\u7f8e\u5143\u7684\u7121\u5875\u5ba4\u7a7a\u6c23\u5c0f\u74f6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week" target="_blank">Jay Forrester filed the first practical computer RAM patent 75 years ago this week — his Magnetic Core Memory patent would be granted five years later</a></div>
+    <div class="title-zh">Jay Forrester在75年前這一週申請了第一項實用電腦RAM專利——他的磁芯記憶體專利在五年後獲得批准</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Granted as U.S. Patent 2,736,880 in February 1956, Forrester's invention evolved from MIT's Project Whirlwind.</div>
+  <div class="summary-zh">該發明於1956年2月獲得美國專利2,736,880，源自MIT的Project Whirlwind項目。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week&quot;, &quot;title_en&quot;: &quot;Jay Forrester filed the first practical computer RAM patent 75 years ago this week \u2014 his Magnetic Core Memory patent would be granted five years later&quot;, &quot;title_zh&quot;: &quot;Jay Forrester\u572875\u5e74\u524d\u9019\u4e00\u9031\u7533\u8acb\u4e86\u7b2c\u4e00\u9805\u5be6\u7528\u96fb\u8166RAM\u5c08\u5229\u2014\u2014\u4ed6\u7684\u78c1\u82af\u8a18\u61b6\u9ad4\u5c08\u5229\u5728\u4e94\u5e74\u5f8c\u7372\u5f97\u6279\u51c6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week&quot;, &quot;title_en&quot;: &quot;Jay Forrester filed the first practical computer RAM patent 75 years ago this week \u2014 his Magnetic Core Memory patent would be granted five years later&quot;, &quot;title_zh&quot;: &quot;Jay Forrester\u572875\u5e74\u524d\u9019\u4e00\u9031\u7533\u8acb\u4e86\u7b2c\u4e00\u9805\u5be6\u7528\u96fb\u8166RAM\u5c08\u5229\u2014\u2014\u4ed6\u7684\u78c1\u82af\u8a18\u61b6\u9ad4\u5c08\u5229\u5728\u4e94\u5e74\u5f8c\u7372\u5f97\u6279\u51c6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jay-forrester-filed-the-first-practical-ram-patent-75-years-ago-this-week&quot;, &quot;title_en&quot;: &quot;Jay Forrester filed the first practical computer RAM patent 75 years ago this week \u2014 his Magnetic Core Memory patent would be granted five years later&quot;, &quot;title_zh&quot;: &quot;Jay Forrester\u572875\u5e74\u524d\u9019\u4e00\u9031\u7533\u8acb\u4e86\u7b2c\u4e00\u9805\u5be6\u7528\u96fb\u8166RAM\u5c08\u5229\u2014\u2014\u4ed6\u7684\u78c1\u82af\u8a18\u61b6\u9ad4\u5c08\u5229\u5728\u4e94\u5e74\u5f8c\u7372\u5f97\u6279\u51c6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times" target="_blank">Forza Horizon 6 boots up in just 4 seconds instead of 90 with new Advanced Shader Delivery tech and AMD GPUs — Microsoft claims 95% reduction in gaming load times</a></div>
+    <div class="title-zh">Forza Horizon 6開機時間從90秒縮短至4秒，採用新型Advanced Shader Delivery技術與AMD GPU——Microsoft聲稱遊戲載入時間減少95%</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Microsoft is bringing Advanced Shader Delivery to Windows 11 PCs at large, after introducing the tech on Xbox ROG Ally handhelds last year. The company says you can expect up to 95% faster load times in Forza Horizon 6, for instance, going from 90 seconds to just 4 seconds on initial launch thanks to precompiled shaders.</div>
+  <div class="summary-zh">Microsoft在去年Xbox ROG Ally掌機上推出該技術後，現已將Advanced Shader Delivery引入Windows 11 PC，例如在Forza Horizon 6中可期待速度快95倍，從90秒縮至4秒。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times&quot;, &quot;title_en&quot;: &quot;Forza Horizon 6 boots up in just 4 seconds instead of 90 with new Advanced Shader Delivery tech and AMD GPUs \u2014 Microsoft claims 95% reduction in gaming load times&quot;, &quot;title_zh&quot;: &quot;Forza Horizon 6\u958b\u6a5f\u6642\u9593\u5f9e90\u79d2\u7e2e\u77ed\u81f34\u79d2\uff0c\u63a1\u7528\u65b0\u578bAdvanced Shader Delivery\u6280\u8853\u8207AMD GPU\u2014\u2014Microsoft\u8072\u7a31\u904a\u6232\u8f09\u5165\u6642\u9593\u6e1b\u5c1195%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times&quot;, &quot;title_en&quot;: &quot;Forza Horizon 6 boots up in just 4 seconds instead of 90 with new Advanced Shader Delivery tech and AMD GPUs \u2014 Microsoft claims 95% reduction in gaming load times&quot;, &quot;title_zh&quot;: &quot;Forza Horizon 6\u958b\u6a5f\u6642\u9593\u5f9e90\u79d2\u7e2e\u77ed\u81f34\u79d2\uff0c\u63a1\u7528\u65b0\u578bAdvanced Shader Delivery\u6280\u8853\u8207AMD GPU\u2014\u2014Microsoft\u8072\u7a31\u904a\u6232\u8f09\u5165\u6642\u9593\u6e1b\u5c1195%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpu-drivers/forza-horizon-6-boots-up-in-just-4-seconds-instead-of-90-with-new-advanced-shader-delivery-tech-and-amd-gpus-microsoft-claims-95-percent-reduction-in-gaming-load-times&quot;, &quot;title_en&quot;: &quot;Forza Horizon 6 boots up in just 4 seconds instead of 90 with new Advanced Shader Delivery tech and AMD GPUs \u2014 Microsoft claims 95% reduction in gaming load times&quot;, &quot;title_zh&quot;: &quot;Forza Horizon 6\u958b\u6a5f\u6642\u9593\u5f9e90\u79d2\u7e2e\u77ed\u81f34\u79d2\uff0c\u63a1\u7528\u65b0\u578bAdvanced Shader Delivery\u6280\u8853\u8207AMD GPU\u2014\u2014Microsoft\u8072\u7a31\u904a\u6232\u8f09\u5165\u6642\u9593\u6e1b\u5c1195%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals" target="_blank">US FTC reportedly launches antitrust probe into Arm following its launch of its own AGI CPU — regulators investigate if chip designer is restricting architecture access to rivals</a></div>
+    <div class="title-zh">美國FTC據報對Arm啟動反壟斷調查，調查其推出自有AGI CPU後的行為——監管機構調查晶片設計師是否限制競爭對手對架構的存取</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The U.S. FTC is looking into Arm Holdings to see if it's abusing its market position as a dominant chip designer to gives its new chip manufacturing business an advantage over competitors who build semiconductors based on Arm designs.</div>
+  <div class="summary-zh">美國FTC正調查Arm Holdings是否濫用其作為主導晶片設計商的市場地位，以便為其新晶片製造業務相對基於Arm設計的半導體製造商提供優勢。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals&quot;, &quot;title_en&quot;: &quot;US FTC reportedly launches antitrust probe into Arm following its launch of its own AGI CPU \u2014 regulators investigate if chip designer is restricting architecture access to rivals&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570bFTC\u64da\u5831\u5c0dArm\u555f\u52d5\u53cd\u58df\u65b7\u8abf\u67e5\uff0c\u8abf\u67e5\u5176\u63a8\u51fa\u81ea\u6709AGI CPU\u5f8c\u7684\u884c\u70ba\u2014\u2014\u76e3\u7ba1\u6a5f\u69cb\u8abf\u67e5\u6676\u7247\u8a2d\u8a08\u5e2b\u662f\u5426\u9650\u5236\u7af6\u722d\u5c0d\u624b\u5c0d\u67b6\u69cb\u7684\u5b58\u53d6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals&quot;, &quot;title_en&quot;: &quot;US FTC reportedly launches antitrust probe into Arm following its launch of its own AGI CPU \u2014 regulators investigate if chip designer is restricting architecture access to rivals&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570bFTC\u64da\u5831\u5c0dArm\u555f\u52d5\u53cd\u58df\u65b7\u8abf\u67e5\uff0c\u8abf\u67e5\u5176\u63a8\u51fa\u81ea\u6709AGI CPU\u5f8c\u7684\u884c\u70ba\u2014\u2014\u76e3\u7ba1\u6a5f\u69cb\u8abf\u67e5\u6676\u7247\u8a2d\u8a08\u5e2b\u662f\u5426\u9650\u5236\u7af6\u722d\u5c0d\u624b\u5c0d\u67b6\u69cb\u7684\u5b58\u53d6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/us-ftc-reportedly-launches-antitrust-probe-into-arm-following-its-launch-of-its-own-agi-cpu-regulators-investigate-if-chip-designer-is-restricting-architecture-access-to-rivals&quot;, &quot;title_en&quot;: &quot;US FTC reportedly launches antitrust probe into Arm following its launch of its own AGI CPU \u2014 regulators investigate if chip designer is restricting architecture access to rivals&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570bFTC\u64da\u5831\u5c0dArm\u555f\u52d5\u53cd\u58df\u65b7\u8abf\u67e5\uff0c\u8abf\u67e5\u5176\u63a8\u51fa\u81ea\u6709AGI CPU\u5f8c\u7684\u884c\u70ba\u2014\u2014\u76e3\u7ba1\u6a5f\u69cb\u8abf\u67e5\u6676\u7247\u8a2d\u8a08\u5e2b\u662f\u5426\u9650\u5236\u7af6\u722d\u5c0d\u624b\u5c0d\u67b6\u69cb\u7684\u5b58\u53d6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box" target="_blank">Josef Prusa says Bambu Lab allegedly violates AGPL license with an un-auditable network 'black box' — warns Chinese 3D printing software poses massive security risks</a></div>
+    <div class="title-zh">Josef Prusa稱Bambu Lab涉嫌違反AGPL許可證，使用不可審計的網路「黑箱」——警告中國3D列印軟體構成重大安全風險</div>
+    
+<div class="summary-block">
+  <div class="summary-en">While the internet is up in arms over Bambu Lab threatening legal action against an indy OrcaSlicer developer, Josef Prusa once again warns of sheep in wolves' clothing. Prusa, the founder and CEO of Prusa Research and proponent of open source, has often noted that his company is the last Western manufacturer of desktop 3D printers still standing after China began subsidizing manufacturers within its borders.</div>
+  <div class="summary-zh">在網際網路為Bambu Lab對獨立OrcaSlicer開發者採取法律行動而激怒之際，Josef Prusa再次警告披著羊皮的狼。開源倡導者Prusa多次指出，其公司是最後一家西方製造商。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box&quot;, &quot;title_en&quot;: &quot;Josef Prusa says Bambu Lab allegedly violates AGPL license with an un-auditable network 'black box' \u2014 warns Chinese 3D printing software poses massive security risks&quot;, &quot;title_zh&quot;: &quot;Josef Prusa\u7a31Bambu Lab\u6d89\u5acc\u9055\u53cdAGPL\u8a31\u53ef\u8b49\uff0c\u4f7f\u7528\u4e0d\u53ef\u5be9\u8a08\u7684\u7db2\u8def\u300c\u9ed1\u7bb1\u300d\u2014\u2014\u8b66\u544a\u4e2d\u570b3D\u5217\u5370\u8edf\u9ad4\u69cb\u6210\u91cd\u5927\u5b89\u5168\u98a8\u96aa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box&quot;, &quot;title_en&quot;: &quot;Josef Prusa says Bambu Lab allegedly violates AGPL license with an un-auditable network 'black box' \u2014 warns Chinese 3D printing software poses massive security risks&quot;, &quot;title_zh&quot;: &quot;Josef Prusa\u7a31Bambu Lab\u6d89\u5acc\u9055\u53cdAGPL\u8a31\u53ef\u8b49\uff0c\u4f7f\u7528\u4e0d\u53ef\u5be9\u8a08\u7684\u7db2\u8def\u300c\u9ed1\u7bb1\u300d\u2014\u2014\u8b66\u544a\u4e2d\u570b3D\u5217\u5370\u8edf\u9ad4\u69cb\u6210\u91cd\u5927\u5b89\u5168\u98a8\u96aa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/josef-prusa-warns-chinese-3d-printing-software-poses-massive-security-risks-bambu-lab-allegedly-violates-agpl-license-with-an-un-auditable-network-black-box&quot;, &quot;title_en&quot;: &quot;Josef Prusa says Bambu Lab allegedly violates AGPL license with an un-auditable network 'black box' \u2014 warns Chinese 3D printing software poses massive security risks&quot;, &quot;title_zh&quot;: &quot;Josef Prusa\u7a31Bambu Lab\u6d89\u5acc\u9055\u53cdAGPL\u8a31\u53ef\u8b49\uff0c\u4f7f\u7528\u4e0d\u53ef\u5be9\u8a08\u7684\u7db2\u8def\u300c\u9ed1\u7bb1\u300d\u2014\u2014\u8b66\u544a\u4e2d\u570b3D\u5217\u5370\u8edf\u9ad4\u69cb\u6210\u91cd\u5927\u5b89\u5168\u98a8\u96aa&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores" target="_blank">China bypasses US GPU bans with 1.54-exaflops 'LineShine' supercomputer — CPU-only monster packs 2.4 million Huawei-designed Armv9 cores</a></div>
+    <div class="title-zh">中國繞過美國GPU禁令，推出1.54艾浮點「LineShine」超級電腦——純CPU怪獸配備240萬華為設計的Armv9核心</div>
+    
+<div class="summary-block">
+  <div class="summary-en">China's National Supercomputing Center in Shenzhen takes a page from Japan's Fugaku supercomputer and Fujitsu's A64FX processor, build LineShine supercomputer based entirely on Armv9-based LineShine LX2 CPUs.</div>
+  <div class="summary-zh">中國深圳國家超級計算中心效仿日本Fugaku超級電腦和富士通A64FX處理器，基於Armv9架構LineShine LX2 CPU構建LineShine超級電腦。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores&quot;, &quot;title_en&quot;: &quot;China bypasses US GPU bans with 1.54-exaflops 'LineShine' supercomputer \u2014 CPU-only monster packs 2.4 million Huawei-designed Armv9 cores&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7e5e\u904e\u7f8e\u570bGPU\u7981\u4ee4\uff0c\u63a8\u51fa1.54\u827e\u6d6e\u9ede\u300cLineShine\u300d\u8d85\u7d1a\u96fb\u8166\u2014\u2014\u7d14CPU\u602a\u7378\u914d\u5099240\u842c\u83ef\u70ba\u8a2d\u8a08\u7684Armv9\u6838\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores&quot;, &quot;title_en&quot;: &quot;China bypasses US GPU bans with 1.54-exaflops 'LineShine' supercomputer \u2014 CPU-only monster packs 2.4 million Huawei-designed Armv9 cores&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7e5e\u904e\u7f8e\u570bGPU\u7981\u4ee4\uff0c\u63a8\u51fa1.54\u827e\u6d6e\u9ede\u300cLineShine\u300d\u8d85\u7d1a\u96fb\u8166\u2014\u2014\u7d14CPU\u602a\u7378\u914d\u5099240\u842c\u83ef\u70ba\u8a2d\u8a08\u7684Armv9\u6838\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/china-bypasses-us-gpu-bans-with-1-54-exaflops-lineshine-supercomputer-cpu-only-monster-packs-2-4-million-huawei-designed-armv9-cores&quot;, &quot;title_en&quot;: &quot;China bypasses US GPU bans with 1.54-exaflops 'LineShine' supercomputer \u2014 CPU-only monster packs 2.4 million Huawei-designed Armv9 cores&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u7e5e\u904e\u7f8e\u570bGPU\u7981\u4ee4\uff0c\u63a8\u51fa1.54\u827e\u6d6e\u9ede\u300cLineShine\u300d\u8d85\u7d1a\u96fb\u8166\u2014\u2014\u7d14CPU\u602a\u7378\u914d\u5099240\u842c\u83ef\u70ba\u8a2d\u8a08\u7684Armv9\u6838\u5fc3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month" target="_blank">OpenClaw creator burned through $1.3 million in OpenAI API tokens in a single month — bill covered 603 billion tokens across 7.6 million requests and 100 coding agents</a></div>
+    <div class="title-zh">OpenClaw創建者在單月內花費130萬美元的OpenAI API代幣——帳單涵蓋6030億個代幣，跨越760萬次請求和100個編碼代理</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The bill covered 603 billion tokens across 7.6 million requests, all generated by roughly 100 Codex instances.</div>
+  <div class="summary-zh">帳單涵蓋6030億個代幣，跨越760萬次請求，全由約100個Codex實例產生。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month&quot;, &quot;title_en&quot;: &quot;OpenClaw creator burned through $1.3 million in OpenAI API tokens in a single month \u2014 bill covered 603 billion tokens across 7.6 million requests and 100 coding agents&quot;, &quot;title_zh&quot;: &quot;OpenClaw\u5275\u5efa\u8005\u5728\u55ae\u6708\u5167\u82b1\u8cbb130\u842c\u7f8e\u5143\u7684OpenAI API\u4ee3\u5e63\u2014\u2014\u5e33\u55ae\u6db5\u84cb6030\u5104\u500b\u4ee3\u5e63\uff0c\u8de8\u8d8a760\u842c\u6b21\u8acb\u6c42\u548c100\u500b\u7de8\u78bc\u4ee3\u7406&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month&quot;, &quot;title_en&quot;: &quot;OpenClaw creator burned through $1.3 million in OpenAI API tokens in a single month \u2014 bill covered 603 billion tokens across 7.6 million requests and 100 coding agents&quot;, &quot;title_zh&quot;: &quot;OpenClaw\u5275\u5efa\u8005\u5728\u55ae\u6708\u5167\u82b1\u8cbb130\u842c\u7f8e\u5143\u7684OpenAI API\u4ee3\u5e63\u2014\u2014\u5e33\u55ae\u6db5\u84cb6030\u5104\u500b\u4ee3\u5e63\uff0c\u8de8\u8d8a760\u842c\u6b21\u8acb\u6c42\u548c100\u500b\u7de8\u78bc\u4ee3\u7406&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month&quot;, &quot;title_en&quot;: &quot;OpenClaw creator burned through $1.3 million in OpenAI API tokens in a single month \u2014 bill covered 603 billion tokens across 7.6 million requests and 100 coding agents&quot;, &quot;title_zh&quot;: &quot;OpenClaw\u5275\u5efa\u8005\u5728\u55ae\u6708\u5167\u82b1\u8cbb130\u842c\u7f8e\u5143\u7684OpenAI API\u4ee3\u5e63\u2014\u2014\u5e33\u55ae\u6db5\u84cb6030\u5104\u500b\u4ee3\u5e63\uff0c\u8de8\u8d8a760\u842c\u6b21\u8acb\u6c42\u548c100\u500b\u7de8\u78bc\u4ee3\u7406&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment" target="_blank">Taiwan declares itself 'sovereign and independent' after Trump questions US defense commitment — comments come after Trump said he opposes Taiwan independence</a></div>
+    <div class="title-zh">Trump質疑美國防衛承諾後，台灣聲明自己「主權獨立」——Trump曾表示反對台灣獨立</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The statement came hours after President Donald Trump told Fox News he opposes Taiwan pursuing formal independence.</div>
+  <div class="summary-zh">該聲明在川普告訴Fox News他反對台灣追求正式獨立後數小時發布。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment&quot;, &quot;title_en&quot;: &quot;Taiwan declares itself 'sovereign and independent' after Trump questions US defense commitment \u2014 comments come after Trump said he opposes Taiwan independence&quot;, &quot;title_zh&quot;: &quot;Trump\u8cea\u7591\u7f8e\u570b\u9632\u885b\u627f\u8afe\u5f8c\uff0c\u53f0\u7063\u8072\u660e\u81ea\u5df1\u300c\u4e3b\u6b0a\u7368\u7acb\u300d\u2014\u2014Trump\u66fe\u8868\u793a\u53cd\u5c0d\u53f0\u7063\u7368\u7acb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment&quot;, &quot;title_en&quot;: &quot;Taiwan declares itself 'sovereign and independent' after Trump questions US defense commitment \u2014 comments come after Trump said he opposes Taiwan independence&quot;, &quot;title_zh&quot;: &quot;Trump\u8cea\u7591\u7f8e\u570b\u9632\u885b\u627f\u8afe\u5f8c\uff0c\u53f0\u7063\u8072\u660e\u81ea\u5df1\u300c\u4e3b\u6b0a\u7368\u7acb\u300d\u2014\u2014Trump\u66fe\u8868\u793a\u53cd\u5c0d\u53f0\u7063\u7368\u7acb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/taiwan-declares-itself-sovreign-and-independent-after-trump-questions-us-defense-commitment&quot;, &quot;title_en&quot;: &quot;Taiwan declares itself 'sovereign and independent' after Trump questions US defense commitment \u2014 comments come after Trump said he opposes Taiwan independence&quot;, &quot;title_zh&quot;: &quot;Trump\u8cea\u7591\u7f8e\u570b\u9632\u885b\u627f\u8afe\u5f8c\uff0c\u53f0\u7063\u8072\u660e\u81ea\u5df1\u300c\u4e3b\u6b0a\u7368\u7acb\u300d\u2014\u2014Trump\u66fe\u8868\u793a\u53cd\u5c0d\u53f0\u7063\u7368\u7acb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies" target="_blank">Jensen Huang slams 'stupid' analogy comparing GPUs to nuclear weapons — Nvidia CEO says government should allow selling GPUs to 'adversarial countries'</a></div>
+    <div class="title-zh">Jensen Huang砲轰將GPU比作核武器的「愚蠢」類比——Nvidia執行長表示政府應允許向「對抗國家」銷售GPU</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Nvidia chief said that you cannot compare AI GPUs to nuclear weapons.</div>
+  <div class="summary-zh">Nvidia首席執行官表示不能將AI GPU與核武器進行比較。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies&quot;, &quot;title_en&quot;: &quot;Jensen Huang slams 'stupid' analogy comparing GPUs to nuclear weapons \u2014 Nvidia CEO says government should allow selling GPUs to 'adversarial countries'&quot;, &quot;title_zh&quot;: &quot;Jensen Huang\u7832\u8f70\u5c07GPU\u6bd4\u4f5c\u6838\u6b66\u5668\u7684\u300c\u611a\u8822\u300d\u985e\u6bd4\u2014\u2014Nvidia\u57f7\u884c\u9577\u8868\u793a\u653f\u5e9c\u61c9\u5141\u8a31\u5411\u300c\u5c0d\u6297\u570b\u5bb6\u300d\u92b7\u552eGPU&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies&quot;, &quot;title_en&quot;: &quot;Jensen Huang slams 'stupid' analogy comparing GPUs to nuclear weapons \u2014 Nvidia CEO says government should allow selling GPUs to 'adversarial countries'&quot;, &quot;title_zh&quot;: &quot;Jensen Huang\u7832\u8f70\u5c07GPU\u6bd4\u4f5c\u6838\u6b66\u5668\u7684\u300c\u611a\u8822\u300d\u985e\u6bd4\u2014\u2014Nvidia\u57f7\u884c\u9577\u8868\u793a\u653f\u5e9c\u61c9\u5141\u8a31\u5411\u300c\u5c0d\u6297\u570b\u5bb6\u300d\u92b7\u552eGPU&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-says-comparing-gpus-to-atomic-bombs-is-stupid-nvidia-ceo-says-government-should-allow-selling-gpus-to-adversarial-companies&quot;, &quot;title_en&quot;: &quot;Jensen Huang slams 'stupid' analogy comparing GPUs to nuclear weapons \u2014 Nvidia CEO says government should allow selling GPUs to 'adversarial countries'&quot;, &quot;title_zh&quot;: &quot;Jensen Huang\u7832\u8f70\u5c07GPU\u6bd4\u4f5c\u6838\u6b66\u5668\u7684\u300c\u611a\u8822\u300d\u985e\u6bd4\u2014\u2014Nvidia\u57f7\u884c\u9577\u8868\u793a\u653f\u5e9c\u61c9\u5141\u8a31\u5411\u300c\u5c0d\u6297\u570b\u5bb6\u300d\u92b7\u552eGPU&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 17 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms" target="_blank">Maker packs an opinionated, googly-eyed AI chatbot into a mobile suitcase, powered by an Nvidia Jetson — entirely local machine entity runs Gemma 4 E4B and can respond in 200ms</a></div>
+    <div class="title-zh">製造商將一個固執己見、眼睛圓凸的AI聊天機器人打包進行動公事包，由Nvidia Jetson驅動——完全本地化機器實體運行Gemma 4 E4B，可在200毫秒內回應</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Sparky is an opinionated googly-eyed AI in a suitcase powered by an Nvidia Jetson Orin NS Super 16GB.</div>
+  <div class="summary-zh">Sparky是一個固執己見的眼睛圓凸AI助手，放在由Nvidia Jetson Orin NS Super 16GB驅動的公事包中。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms&quot;, &quot;title_en&quot;: &quot;Maker packs an opinionated, googly-eyed AI chatbot into a mobile suitcase, powered by an Nvidia Jetson \u2014 entirely local machine entity runs Gemma 4 E4B and can respond in 200ms&quot;, &quot;title_zh&quot;: &quot;\u88fd\u9020\u5546\u5c07\u4e00\u500b\u56fa\u57f7\u5df1\u898b\u3001\u773c\u775b\u5713\u51f8\u7684AI\u804a\u5929\u6a5f\u5668\u4eba\u6253\u5305\u9032\u884c\u52d5\u516c\u4e8b\u5305\uff0c\u7531Nvidia Jetson\u9a45\u52d5\u2014\u2014\u5b8c\u5168\u672c\u5730\u5316\u6a5f\u5668\u5be6\u9ad4\u904b\u884cGemma 4 E4B\uff0c\u53ef\u5728200\u6beb\u79d2\u5167\u56de\u61c9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms&quot;, &quot;title_en&quot;: &quot;Maker packs an opinionated, googly-eyed AI chatbot into a mobile suitcase, powered by an Nvidia Jetson \u2014 entirely local machine entity runs Gemma 4 E4B and can respond in 200ms&quot;, &quot;title_zh&quot;: &quot;\u88fd\u9020\u5546\u5c07\u4e00\u500b\u56fa\u57f7\u5df1\u898b\u3001\u773c\u775b\u5713\u51f8\u7684AI\u804a\u5929\u6a5f\u5668\u4eba\u6253\u5305\u9032\u884c\u52d5\u516c\u4e8b\u5305\uff0c\u7531Nvidia Jetson\u9a45\u52d5\u2014\u2014\u5b8c\u5168\u672c\u5730\u5316\u6a5f\u5668\u5be6\u9ad4\u904b\u884cGemma 4 E4B\uff0c\u53ef\u5728200\u6beb\u79d2\u5167\u56de\u61c9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/maker-packs-an-opinionated-googly-eyed-ai-chatbot-into-a-mobile-suitcase-powered-by-an-nvidia-jetson-entirely-local-machine-entity-runs-gemma-4-e4b-and-can-respond-in-200ms&quot;, &quot;title_en&quot;: &quot;Maker packs an opinionated, googly-eyed AI chatbot into a mobile suitcase, powered by an Nvidia Jetson \u2014 entirely local machine entity runs Gemma 4 E4B and can respond in 200ms&quot;, &quot;title_zh&quot;: &quot;\u88fd\u9020\u5546\u5c07\u4e00\u500b\u56fa\u57f7\u5df1\u898b\u3001\u773c\u775b\u5713\u51f8\u7684AI\u804a\u5929\u6a5f\u5668\u4eba\u6253\u5305\u9032\u884c\u52d5\u516c\u4e8b\u5305\uff0c\u7531Nvidia Jetson\u9a45\u52d5\u2014\u2014\u5b8c\u5168\u672c\u5730\u5316\u6a5f\u5668\u5be6\u9ad4\u904b\u884cGemma 4 E4B\uff0c\u53ef\u5728200\u6beb\u79d2\u5167\u56de\u61c9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 17 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
