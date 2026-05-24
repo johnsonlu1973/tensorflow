@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-05-24</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-05-24 &nbsp;·&nbsp; 11 篇 &nbsp;·&nbsp; 更新：2026-05-24 23:06 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance" target="_blank">After $2.5 billion Supermicro smuggling bust, Nvidia CEO urges company to fix export control compliance — Taiwan also begins to crack down on AI GPU chip smuggling to China</a></div>
+    <div class="title-zh">Supermicro 25億美元走私案後，Nvidia CEO敦促公司修復出口管制合規問題——台灣也開始打擊AI GPU芯片走私至中國</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Huang told reporters at Songshan Airport that Nvidia insists its partners follow U.S. trade rules.</div>
+  <div class="summary-zh">Huang在松山機場告訴記者，Nvidia堅持其合作夥伴遵守美國貿易規則。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance&quot;, &quot;title_en&quot;: &quot;After $2.5 billion Supermicro smuggling bust, Nvidia CEO urges company to fix export control compliance \u2014 Taiwan also begins to crack down on AI GPU chip smuggling to China&quot;, &quot;title_zh&quot;: &quot;Supermicro 25\u5104\u7f8e\u5143\u8d70\u79c1\u6848\u5f8c\uff0cNvidia CEO\u6566\u4fc3\u516c\u53f8\u4fee\u5fa9\u51fa\u53e3\u7ba1\u5236\u5408\u898f\u554f\u984c\u2014\u2014\u53f0\u7063\u4e5f\u958b\u59cb\u6253\u64caAI GPU\u82af\u7247\u8d70\u79c1\u81f3\u4e2d\u570b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance&quot;, &quot;title_en&quot;: &quot;After $2.5 billion Supermicro smuggling bust, Nvidia CEO urges company to fix export control compliance \u2014 Taiwan also begins to crack down on AI GPU chip smuggling to China&quot;, &quot;title_zh&quot;: &quot;Supermicro 25\u5104\u7f8e\u5143\u8d70\u79c1\u6848\u5f8c\uff0cNvidia CEO\u6566\u4fc3\u516c\u53f8\u4fee\u5fa9\u51fa\u53e3\u7ba1\u5236\u5408\u898f\u554f\u984c\u2014\u2014\u53f0\u7063\u4e5f\u958b\u59cb\u6253\u64caAI GPU\u82af\u7247\u8d70\u79c1\u81f3\u4e2d\u570b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/jensen-huang-urges-super-micro-to-tighten-compliance&quot;, &quot;title_en&quot;: &quot;After $2.5 billion Supermicro smuggling bust, Nvidia CEO urges company to fix export control compliance \u2014 Taiwan also begins to crack down on AI GPU chip smuggling to China&quot;, &quot;title_zh&quot;: &quot;Supermicro 25\u5104\u7f8e\u5143\u8d70\u79c1\u6848\u5f8c\uff0cNvidia CEO\u6566\u4fc3\u516c\u53f8\u4fee\u5fa9\u51fa\u53e3\u7ba1\u5236\u5408\u898f\u554f\u984c\u2014\u2014\u53f0\u7063\u4e5f\u958b\u59cb\u6253\u64caAI GPU\u82af\u7247\u8d70\u79c1\u81f3\u4e2d\u570b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block" target="_blank">First ever Cray T3D Supercomputer goes up for auction with $81,000 reserve — Europe’s fastest supercomputer in June 1996 goes on the block</a></div>
+    <div class="title-zh">首台Cray T3D超級計算機拍賣會開槌，保留價81,000美元——1996年6月歐洲最快超級計算機即將拍賣</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The first Cray T3D supercomputer ever produced, serial number 6001, was recently put up for auction, with opening bids from £60,000 (~$81,000) invited.</div>
+  <div class="summary-zh">首台生產的Cray T3D超級計算機（序列號6001）近日被拿出拍賣，起拍價為£60,000（約$81,000）。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block&quot;, &quot;title_en&quot;: &quot;First ever Cray T3D Supercomputer goes up for auction with $81,000 reserve \u2014 Europe\u2019s fastest supercomputer in June 1996 goes on the block&quot;, &quot;title_zh&quot;: &quot;\u9996\u53f0Cray T3D\u8d85\u7d1a\u8a08\u7b97\u6a5f\u62cd\u8ce3\u6703\u958b\u69cc\uff0c\u4fdd\u7559\u50f981,000\u7f8e\u5143\u2014\u20141996\u5e746\u6708\u6b50\u6d32\u6700\u5feb\u8d85\u7d1a\u8a08\u7b97\u6a5f\u5373\u5c07\u62cd\u8ce3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block&quot;, &quot;title_en&quot;: &quot;First ever Cray T3D Supercomputer goes up for auction with $81,000 reserve \u2014 Europe\u2019s fastest supercomputer in June 1996 goes on the block&quot;, &quot;title_zh&quot;: &quot;\u9996\u53f0Cray T3D\u8d85\u7d1a\u8a08\u7b97\u6a5f\u62cd\u8ce3\u6703\u958b\u69cc\uff0c\u4fdd\u7559\u50f981,000\u7f8e\u5143\u2014\u20141996\u5e746\u6708\u6b50\u6d32\u6700\u5feb\u8d85\u7d1a\u8a08\u7b97\u6a5f\u5373\u5c07\u62cd\u8ce3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/supercomputers/first-ever-cray-t3d-supercomputer-goes-up-for-auction-with-usd81-000-reserve-europes-fastest-supercomputer-in-june-1996-goes-on-the-block&quot;, &quot;title_en&quot;: &quot;First ever Cray T3D Supercomputer goes up for auction with $81,000 reserve \u2014 Europe\u2019s fastest supercomputer in June 1996 goes on the block&quot;, &quot;title_zh&quot;: &quot;\u9996\u53f0Cray T3D\u8d85\u7d1a\u8a08\u7b97\u6a5f\u62cd\u8ce3\u6703\u958b\u69cc\uff0c\u4fdd\u7559\u50f981,000\u7f8e\u5143\u2014\u20141996\u5e746\u6708\u6b50\u6d32\u6700\u5feb\u8d85\u7d1a\u8a08\u7b97\u6a5f\u5373\u5c07\u62cd\u8ce3&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api" target="_blank">Steam Machine appears in Vulkan’s conformant product database — upcoming Valve console is certified compliant with the graphics API</a></div>
+    <div class="title-zh">Steam Machine出現在Vulkan合規產品數據庫中——即將推出的Valve遊戲機獲得圖形API合規認證</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Khronos Group, which created the Vulkan API standard and continues to develop and maintain it, added the Steam Machine to its list of conformant products. This does not indicate how far or soon a product will come to the market, but it's a step in the right direction showing that much-awaited console will arrive... someday.</div>
+  <div class="summary-zh">創建和維護Vulkan API標準的Khronos Group將Steam Machine加入其合規產品清單，這表明該產品在朝正確方向發展。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api&quot;, &quot;title_en&quot;: &quot;Steam Machine appears in Vulkan\u2019s conformant product database \u2014 upcoming Valve console is certified compliant with the graphics API&quot;, &quot;title_zh&quot;: &quot;Steam Machine\u51fa\u73fe\u5728Vulkan\u5408\u898f\u7522\u54c1\u6578\u64da\u5eab\u4e2d\u2014\u2014\u5373\u5c07\u63a8\u51fa\u7684Valve\u904a\u6232\u6a5f\u7372\u5f97\u5716\u5f62API\u5408\u898f\u8a8d\u8b49&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api&quot;, &quot;title_en&quot;: &quot;Steam Machine appears in Vulkan\u2019s conformant product database \u2014 upcoming Valve console is certified compliant with the graphics API&quot;, &quot;title_zh&quot;: &quot;Steam Machine\u51fa\u73fe\u5728Vulkan\u5408\u898f\u7522\u54c1\u6578\u64da\u5eab\u4e2d\u2014\u2014\u5373\u5c07\u63a8\u51fa\u7684Valve\u904a\u6232\u6a5f\u7372\u5f97\u5716\u5f62API\u5408\u898f\u8a8d\u8b49&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/console-gaming/steam-machine-appears-in-vulkans-conformant-product-database-upcoming-valve-console-is-certified-compliant-with-the-graphics-api&quot;, &quot;title_en&quot;: &quot;Steam Machine appears in Vulkan\u2019s conformant product database \u2014 upcoming Valve console is certified compliant with the graphics API&quot;, &quot;title_zh&quot;: &quot;Steam Machine\u51fa\u73fe\u5728Vulkan\u5408\u898f\u7522\u54c1\u6578\u64da\u5eab\u4e2d\u2014\u2014\u5373\u5c07\u63a8\u51fa\u7684Valve\u904a\u6232\u6a5f\u7372\u5f97\u5716\u5f62API\u5408\u898f\u8a8d\u8b49&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt" target="_blank">We tested Advanced Shader Delivery on the RX 9070 XT in six games — up to 95% improvement in load times and 33 percent faster 1% Low FPS</a></div>
+    <div class="title-zh">我們在RX 9070 XT上測試了Advanced Shader Delivery，六款遊戲中加載時間提升高達95%，1% Low FPS快33%</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Today, we will take a look at Advanced Shader Delivery (ASD) – a new gaming feature aimed at improving the overall user experience by reducing load times dramatically and improving 1% low FPS. We tested six games, measuring up to a 95% improvement in game loading times and solid improvements in 1% Low FPS in some titles.</div>
+  <div class="summary-zh">Advanced Shader Delivery（ASD）是一項新遊戲功能，旨在通過大幅減少加載時間和改善1% Low FPS來提升用戶體驗。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt&quot;, &quot;title_en&quot;: &quot;We tested Advanced Shader Delivery on the RX 9070 XT in six games \u2014 up to 95% improvement in load times and 33 percent faster 1% Low FPS&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u5728RX 9070 XT\u4e0a\u6e2c\u8a66\u4e86Advanced Shader Delivery\uff0c\u516d\u6b3e\u904a\u6232\u4e2d\u52a0\u8f09\u6642\u9593\u63d0\u5347\u9ad8\u905495%\uff0c1% Low FPS\u5feb33%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt&quot;, &quot;title_en&quot;: &quot;We tested Advanced Shader Delivery on the RX 9070 XT in six games \u2014 up to 95% improvement in load times and 33 percent faster 1% Low FPS&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u5728RX 9070 XT\u4e0a\u6e2c\u8a66\u4e86Advanced Shader Delivery\uff0c\u516d\u6b3e\u904a\u6232\u4e2d\u52a0\u8f09\u6642\u9593\u63d0\u5347\u9ad8\u905495%\uff0c1% Low FPS\u5feb33%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/we-tested-advanced-shader-delivery-on-the-rx-9070-xt&quot;, &quot;title_en&quot;: &quot;We tested Advanced Shader Delivery on the RX 9070 XT in six games \u2014 up to 95% improvement in load times and 33 percent faster 1% Low FPS&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u5728RX 9070 XT\u4e0a\u6e2c\u8a66\u4e86Advanced Shader Delivery\uff0c\u516d\u6b3e\u904a\u6232\u4e2d\u52a0\u8f09\u6642\u9593\u63d0\u5347\u9ad8\u905495%\uff0c1% Low FPS\u5feb33%&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss" target="_blank">Ubisoft reportedly testing generative AI in Far Cry 7, insider says it 'looks like sh*t' — company recently posted a record €1.3 billion loss</a></div>
+    <div class="title-zh">據報Ubisoft正在Far Cry 7中測試生成式AI，內部人士稱效果&quot;很糟糕&quot;——公司近期錄得創紀錄的€13億虧損</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Ubisoft is using an early build of its unannounced Far Cry 7 as a testbed for generative AI tools, according to Tom Henderson of Insider Gaming.</div>
+  <div class="summary-zh">根據Insider Gaming的Tom Henderson透露，Ubisoft正使用其未公開的Far Cry 7早期構建版本來測試生成式AI工具。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss&quot;, &quot;title_en&quot;: &quot;Ubisoft reportedly testing generative AI in Far Cry 7, insider says it 'looks like sh*t' \u2014 company recently posted a record \u20ac1.3 billion loss&quot;, &quot;title_zh&quot;: &quot;\u64da\u5831Ubisoft\u6b63\u5728Far Cry 7\u4e2d\u6e2c\u8a66\u751f\u6210\u5f0fAI\uff0c\u5167\u90e8\u4eba\u58eb\u7a31\u6548\u679c\&quot;\u5f88\u7cdf\u7cd5\&quot;\u2014\u2014\u516c\u53f8\u8fd1\u671f\u9304\u5f97\u5275\u7d00\u9304\u7684\u20ac13\u5104\u8667\u640d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss&quot;, &quot;title_en&quot;: &quot;Ubisoft reportedly testing generative AI in Far Cry 7, insider says it 'looks like sh*t' \u2014 company recently posted a record \u20ac1.3 billion loss&quot;, &quot;title_zh&quot;: &quot;\u64da\u5831Ubisoft\u6b63\u5728Far Cry 7\u4e2d\u6e2c\u8a66\u751f\u6210\u5f0fAI\uff0c\u5167\u90e8\u4eba\u58eb\u7a31\u6548\u679c\&quot;\u5f88\u7cdf\u7cd5\&quot;\u2014\u2014\u516c\u53f8\u8fd1\u671f\u9304\u5f97\u5275\u7d00\u9304\u7684\u20ac13\u5104\u8667\u640d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/ubisoft-reportedly-testing-generative-ai-in-far-cry-7-as-company-posts-record-1-3-billion-loss&quot;, &quot;title_en&quot;: &quot;Ubisoft reportedly testing generative AI in Far Cry 7, insider says it 'looks like sh*t' \u2014 company recently posted a record \u20ac1.3 billion loss&quot;, &quot;title_zh&quot;: &quot;\u64da\u5831Ubisoft\u6b63\u5728Far Cry 7\u4e2d\u6e2c\u8a66\u751f\u6210\u5f0fAI\uff0c\u5167\u90e8\u4eba\u58eb\u7a31\u6548\u679c\&quot;\u5f88\u7cdf\u7cd5\&quot;\u2014\u2014\u516c\u53f8\u8fd1\u671f\u9304\u5f97\u5275\u7d00\u9304\u7684\u20ac13\u5104\u8667\u640d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material" target="_blank">Researcher develops 'spray-on' stealth coating for drones — volcanic rock formulation claims to reduce radar return signals by up to 43dB, compared to 20 to 30dB for typical radar absorbent material</a></div>
+    <div class="title-zh">研究人員開發無人機「噴霧式」隱形塗料——火山岩配方聲稱可將雷達反射信號降低高達43dB，相比傳統雷達吸收材料的20至30dB</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Users can easily spray on this radar absorbent material on any drone to increase their survivability in contested skies.</div>
+  <div class="summary-zh">用戶可輕易將此雷達吸收材料噴塗在任何無人機上，以提高其在對抗空域中的生存能力。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material&quot;, &quot;title_en&quot;: &quot;Researcher develops 'spray-on' stealth coating for drones \u2014 volcanic rock formulation claims to reduce radar return signals by up to 43dB, compared to 20 to 30dB for typical radar absorbent material&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u958b\u767c\u7121\u4eba\u6a5f\u300c\u5674\u9727\u5f0f\u300d\u96b1\u5f62\u5857\u6599\u2014\u2014\u706b\u5c71\u5ca9\u914d\u65b9\u8072\u7a31\u53ef\u5c07\u96f7\u9054\u53cd\u5c04\u4fe1\u865f\u964d\u4f4e\u9ad8\u905443dB\uff0c\u76f8\u6bd4\u50b3\u7d71\u96f7\u9054\u5438\u6536\u6750\u6599\u768420\u81f330dB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material&quot;, &quot;title_en&quot;: &quot;Researcher develops 'spray-on' stealth coating for drones \u2014 volcanic rock formulation claims to reduce radar return signals by up to 43dB, compared to 20 to 30dB for typical radar absorbent material&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u958b\u767c\u7121\u4eba\u6a5f\u300c\u5674\u9727\u5f0f\u300d\u96b1\u5f62\u5857\u6599\u2014\u2014\u706b\u5c71\u5ca9\u914d\u65b9\u8072\u7a31\u53ef\u5c07\u96f7\u9054\u53cd\u5c04\u4fe1\u865f\u964d\u4f4e\u9ad8\u905443dB\uff0c\u76f8\u6bd4\u50b3\u7d71\u96f7\u9054\u5438\u6536\u6750\u6599\u768420\u81f330dB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/researcher-develops-spray-on-stealth-coating-for-drones-volcanic-rock-formulation-claims-to-reduce-radar-return-signals-by-up-to-43db-compared-to-20-to-30db-for-typical-radar-absorbent-material&quot;, &quot;title_en&quot;: &quot;Researcher develops 'spray-on' stealth coating for drones \u2014 volcanic rock formulation claims to reduce radar return signals by up to 43dB, compared to 20 to 30dB for typical radar absorbent material&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u958b\u767c\u7121\u4eba\u6a5f\u300c\u5674\u9727\u5f0f\u300d\u96b1\u5f62\u5857\u6599\u2014\u2014\u706b\u5c71\u5ca9\u914d\u65b9\u8072\u7a31\u53ef\u5c07\u96f7\u9054\u53cd\u5c04\u4fe1\u865f\u964d\u4f4e\u9ad8\u905443dB\uff0c\u76f8\u6bd4\u50b3\u7d71\u96f7\u9054\u5438\u6536\u6750\u6599\u768420\u81f330dB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review" target="_blank">Autonomous ErgoChair Pro Review: Comfortable, but that's it</a></div>
+    <div class="title-zh">Autonomous ErgoChair Pro評測：舒適，但僅此而已</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Autonomous ErgoChair Pro is a solid entry in the ErgoChair line, offering good back support and adjustability. However, it lacks any standout features that separate it from the wide range of office chairs available.</div>
+  <div class="summary-zh">Autonomous ErgoChair Pro是ErgoChair系列的穩定之作，提供良好的背部支撐和可調性，但缺乏使其與其他辦公椅區分開來的突出功能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review&quot;, &quot;title_en&quot;: &quot;Autonomous ErgoChair Pro Review: Comfortable, but that's it&quot;, &quot;title_zh&quot;: &quot;Autonomous ErgoChair Pro\u8a55\u6e2c\uff1a\u8212\u9069\uff0c\u4f46\u50c5\u6b64\u800c\u5df2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review&quot;, &quot;title_en&quot;: &quot;Autonomous ErgoChair Pro Review: Comfortable, but that's it&quot;, &quot;title_zh&quot;: &quot;Autonomous ErgoChair Pro\u8a55\u6e2c\uff1a\u8212\u9069\uff0c\u4f46\u50c5\u6b64\u800c\u5df2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/gaming-chairs/autonomous-ergochair-pro-review&quot;, &quot;title_en&quot;: &quot;Autonomous ErgoChair Pro Review: Comfortable, but that's it&quot;, &quot;title_zh&quot;: &quot;Autonomous ErgoChair Pro\u8a55\u6e2c\uff1a\u8212\u9069\uff0c\u4f46\u50c5\u6b64\u800c\u5df2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan" target="_blank">Electronics buff hand-draws and etches custom PCBs at home — functional home-etched PCB runs a 3D-printed fume extractor fan</a></div>
+    <div class="title-zh">電子愛好者在家手繪並蝕刻定製PCB——功能性自製蝕刻PCB驅動3D打印煙霧淨化風扇</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A maker bored with the staid designs of modern factory-produced PCBs has perfected their own hand-inking and home-etching process.</div>
+  <div class="summary-zh">一位對現代工廠生產PCB設計感到厭倦的製客已完善了自己的手工描繪和家庭蝕刻工藝。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan&quot;, &quot;title_en&quot;: &quot;Electronics buff hand-draws and etches custom PCBs at home \u2014 functional home-etched PCB runs a 3D-printed fume extractor fan&quot;, &quot;title_zh&quot;: &quot;\u96fb\u5b50\u611b\u597d\u8005\u5728\u5bb6\u624b\u7e6a\u4e26\u8755\u523b\u5b9a\u88fdPCB\u2014\u2014\u529f\u80fd\u6027\u81ea\u88fd\u8755\u523bPCB\u9a45\u52d53D\u6253\u5370\u7159\u9727\u6de8\u5316\u98a8\u6247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan&quot;, &quot;title_en&quot;: &quot;Electronics buff hand-draws and etches custom PCBs at home \u2014 functional home-etched PCB runs a 3D-printed fume extractor fan&quot;, &quot;title_zh&quot;: &quot;\u96fb\u5b50\u611b\u597d\u8005\u5728\u5bb6\u624b\u7e6a\u4e26\u8755\u523b\u5b9a\u88fdPCB\u2014\u2014\u529f\u80fd\u6027\u81ea\u88fd\u8755\u523bPCB\u9a45\u52d53D\u6253\u5370\u7159\u9727\u6de8\u5316\u98a8\u6247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/maker-stem/electronics-buff-hand-draws-and-etches-custom-pcbs-at-home-functional-home-etched-pcb-runs-a-3d-printed-fume-extractor-fan&quot;, &quot;title_en&quot;: &quot;Electronics buff hand-draws and etches custom PCBs at home \u2014 functional home-etched PCB runs a 3D-printed fume extractor fan&quot;, &quot;title_zh&quot;: &quot;\u96fb\u5b50\u611b\u597d\u8005\u5728\u5bb6\u624b\u7e6a\u4e26\u8755\u523b\u5b9a\u88fdPCB\u2014\u2014\u529f\u80fd\u6027\u81ea\u88fd\u8755\u523bPCB\u9a45\u52d53D\u6253\u5370\u7159\u9727\u6de8\u5316\u98a8\u6247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors" target="_blank">New video of melted Bambu Lab A1 sparks debate about whether the 3D printer is still a fire hazard — critics push for recall while redditors suspect external factors</a></div>
+    <div class="title-zh">Bambu Lab A1熔化新視頻引發3D打印機是否仍存在火災隱患的爭議——批評者要求召回，而Reddit用戶懷疑外部因素</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Bambu Lab is once more in hot water after user Moreiras3D posted a video of a melted A1 3D printer to Instagram. The footage shows an A1 with its side completely melted down to the metal chassis, but some of the key details behind the incident remain unknown.</div>
+  <div class="summary-zh">用戶Moreiras3D在Instagram上發布了熔化的A1 3D打印機視頻後，Bambu Lab再次陷入困境。視頻顯示A1的側面完全熔化至金屬底盤，但事件的關鍵細節仍不清楚。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors&quot;, &quot;title_en&quot;: &quot;New video of melted Bambu Lab A1 sparks debate about whether the 3D printer is still a fire hazard \u2014 critics push for recall while redditors suspect external factors&quot;, &quot;title_zh&quot;: &quot;Bambu Lab A1\u7194\u5316\u65b0\u8996\u983b\u5f15\u767c3D\u6253\u5370\u6a5f\u662f\u5426\u4ecd\u5b58\u5728\u706b\u707d\u96b1\u60a3\u7684\u722d\u8b70\u2014\u2014\u6279\u8a55\u8005\u8981\u6c42\u53ec\u56de\uff0c\u800cReddit\u7528\u6236\u61f7\u7591\u5916\u90e8\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors&quot;, &quot;title_en&quot;: &quot;New video of melted Bambu Lab A1 sparks debate about whether the 3D printer is still a fire hazard \u2014 critics push for recall while redditors suspect external factors&quot;, &quot;title_zh&quot;: &quot;Bambu Lab A1\u7194\u5316\u65b0\u8996\u983b\u5f15\u767c3D\u6253\u5370\u6a5f\u662f\u5426\u4ecd\u5b58\u5728\u706b\u707d\u96b1\u60a3\u7684\u722d\u8b70\u2014\u2014\u6279\u8a55\u8005\u8981\u6c42\u53ec\u56de\uff0c\u800cReddit\u7528\u6236\u61f7\u7591\u5916\u90e8\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/new-video-of-melted-bambu-lab-a1-sparks-debate-about-whether-the-a1-3d-printer-is-still-a-fire-hazard-critics-push-for-recall-while-redditors-suspect-external-factors&quot;, &quot;title_en&quot;: &quot;New video of melted Bambu Lab A1 sparks debate about whether the 3D printer is still a fire hazard \u2014 critics push for recall while redditors suspect external factors&quot;, &quot;title_zh&quot;: &quot;Bambu Lab A1\u7194\u5316\u65b0\u8996\u983b\u5f15\u767c3D\u6253\u5370\u6a5f\u662f\u5426\u4ecd\u5b58\u5728\u706b\u707d\u96b1\u60a3\u7684\u722d\u8b70\u2014\u2014\u6279\u8a55\u8005\u8981\u6c42\u53ec\u56de\uff0c\u800cReddit\u7528\u6236\u61f7\u7591\u5916\u90e8\u56e0\u7d20&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech" target="_blank">Cyberpunk 2077 cosplay jacket features a $1,200 flexible OLED collar that you can game on with a Steam Controller — dual Raspberry Pi 4s power the wearable tech</a></div>
+    <div class="title-zh">Cyberpunk 2077角色扮演夾克配備$1,200柔性OLED領口，可用Steam Controller遊玩——雙Raspberry Pi 4驅動可穿戴技術</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A robotics and animatronic cosplay enthusiast has made a real-life Cyberpunk 2077 NUSA Infiltrator jacket with a built-in collar display.</div>
+  <div class="summary-zh">一位機器人與動畫角色扮演愛好者製作了一件真實的Cyberpunk 2077 NUSA Infiltrator夾克，內置領口顯示屏。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech&quot;, &quot;title_en&quot;: &quot;Cyberpunk 2077 cosplay jacket features a $1,200 flexible OLED collar that you can game on with a Steam Controller \u2014 dual Raspberry Pi 4s power the wearable tech&quot;, &quot;title_zh&quot;: &quot;Cyberpunk 2077\u89d2\u8272\u626e\u6f14\u593e\u514b\u914d\u5099$1,200\u67d4\u6027OLED\u9818\u53e3\uff0c\u53ef\u7528Steam Controller\u904a\u73a9\u2014\u2014\u96d9Raspberry Pi 4\u9a45\u52d5\u53ef\u7a7f\u6234\u6280\u8853&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech&quot;, &quot;title_en&quot;: &quot;Cyberpunk 2077 cosplay jacket features a $1,200 flexible OLED collar that you can game on with a Steam Controller \u2014 dual Raspberry Pi 4s power the wearable tech&quot;, &quot;title_zh&quot;: &quot;Cyberpunk 2077\u89d2\u8272\u626e\u6f14\u593e\u514b\u914d\u5099$1,200\u67d4\u6027OLED\u9818\u53e3\uff0c\u53ef\u7528Steam Controller\u904a\u73a9\u2014\u2014\u96d9Raspberry Pi 4\u9a45\u52d5\u53ef\u7a7f\u6234\u6280\u8853&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/peripherals/wearable-tech/cyberpunk-2077-cosplay-jacket-features-a-usd1-200-flexible-oled-collar-that-you-can-actually-play-games-on-with-a-steam-controller-dual-raspberry-pi-4s-power-the-wearable-tech&quot;, &quot;title_en&quot;: &quot;Cyberpunk 2077 cosplay jacket features a $1,200 flexible OLED collar that you can game on with a Steam Controller \u2014 dual Raspberry Pi 4s power the wearable tech&quot;, &quot;title_zh&quot;: &quot;Cyberpunk 2077\u89d2\u8272\u626e\u6f14\u593e\u514b\u914d\u5099$1,200\u67d4\u6027OLED\u9818\u53e3\uff0c\u53ef\u7528Steam Controller\u904a\u73a9\u2014\u2014\u96d9Raspberry Pi 4\u9a45\u52d5\u53ef\u7a7f\u6234\u6280\u8853&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program" target="_blank">Commercial satellite supplying intel to Ukraine is cornered by four Russian spacecraft — US Space Force can only watch as Russia threatens 'quasi-civilian' targets</a></div>
+    <div class="title-zh">為烏克蘭供應情報的商業衛星遭四顆俄羅斯航天器包圍——美國太空軍只能旁觀俄羅斯威脅「準民用」目標</div>
+    
+<div class="summary-block">
+  <div class="summary-en">These Russian satellites are getting uncomfortably close to a U.S.- and European-operated radar satellite, particularly in Ukraine, used for reconnaissance missions. While their intentions are unclear, these maneuvers consume a lot of fuel and are not typically undertaken by other satellites.</div>
+  <div class="summary-zh">這些俄羅斯衛星與用於烏克蘭偵察任務的美國和歐洲運營雷達衛星距離過近，其意圖不明確，但此類機動燃料消耗大，其他衛星通常不會進行。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program&quot;, &quot;title_en&quot;: &quot;Commercial satellite supplying intel to Ukraine is cornered by four Russian spacecraft \u2014 US Space Force can only watch as Russia threatens 'quasi-civilian' targets&quot;, &quot;title_zh&quot;: &quot;\u70ba\u70cf\u514b\u862d\u4f9b\u61c9\u60c5\u5831\u7684\u5546\u696d\u885b\u661f\u906d\u56db\u9846\u4fc4\u7f85\u65af\u822a\u5929\u5668\u5305\u570d\u2014\u2014\u7f8e\u570b\u592a\u7a7a\u8ecd\u53ea\u80fd\u65c1\u89c0\u4fc4\u7f85\u65af\u5a01\u8105\u300c\u6e96\u6c11\u7528\u300d\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program&quot;, &quot;title_en&quot;: &quot;Commercial satellite supplying intel to Ukraine is cornered by four Russian spacecraft \u2014 US Space Force can only watch as Russia threatens 'quasi-civilian' targets&quot;, &quot;title_zh&quot;: &quot;\u70ba\u70cf\u514b\u862d\u4f9b\u61c9\u60c5\u5831\u7684\u5546\u696d\u885b\u661f\u906d\u56db\u9846\u4fc4\u7f85\u65af\u822a\u5929\u5668\u5305\u570d\u2014\u2014\u7f8e\u570b\u592a\u7a7a\u8ecd\u53ea\u80fd\u65c1\u89c0\u4fc4\u7f85\u65af\u5a01\u8105\u300c\u6e96\u6c11\u7528\u300d\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/russia-moves-four-satellites-to-close-gap-with-commercial-radar-satellite-delivering-intelligence-to-ukraine-while-fifth-satellite-makes-similar-move-us-officials-believe-some-of-them-to-be-part-of-an-anti-satellite-weapons-program&quot;, &quot;title_en&quot;: &quot;Commercial satellite supplying intel to Ukraine is cornered by four Russian spacecraft \u2014 US Space Force can only watch as Russia threatens 'quasi-civilian' targets&quot;, &quot;title_zh&quot;: &quot;\u70ba\u70cf\u514b\u862d\u4f9b\u61c9\u60c5\u5831\u7684\u5546\u696d\u885b\u661f\u906d\u56db\u9846\u4fc4\u7f85\u65af\u822a\u5929\u5668\u5305\u570d\u2014\u2014\u7f8e\u570b\u592a\u7a7a\u8ecd\u53ea\u80fd\u65c1\u89c0\u4fc4\u7f85\u65af\u5a01\u8105\u300c\u6e96\u6c11\u7528\u300d\u76ee\u6a19&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
