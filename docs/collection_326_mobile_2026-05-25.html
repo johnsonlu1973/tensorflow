@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Mobile — 2026-05-25</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>📱 Mobile</h1>
+<div class="page-meta">2026-05-25 &nbsp;·&nbsp; 10 篇 &nbsp;·&nbsp; 更新：2026-05-25 13:21 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-mob0" data-url="https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Mac</span>
+      <span class="date-tag">Mon, 25 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/" target="_blank">Anker’s 25W MagSafe 3-in-1 packs active cooling in a travel-sized design [Hands-on]</a></div>
+    <div class="title-zh">Anker 的 25W MagSafe 3-in-1 在旅行尺寸設計中融入主動冷卻 [實測]</div>
+    
+<div class="summary-block">
+  <div class="summary-en">If you’re rocking an iPhone 16 or newer, you might be interested in a Qi2.2 charger to take full advantage of the 25W MagSafe charging speeds that your phone can support. Anker’s new 25W Prime MagSafe 3-in-1 is one of many great options, and it comes in an excellent portable design. more…</div>
+  <div class="summary-zh">如果你使用 iPhone 16 或更新款，Anker 新推出的 25W Prime MagSafe 3-in-1 是一款優秀的 Qi2.2 充電器，具有便攜設計，能充分發揮手機支持的 25W MagSafe 充電速度。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob0"
+              onclick="toggleAnalysis('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/&quot;, &quot;title_en&quot;: &quot;Anker\u2019s 25W MagSafe 3-in-1 packs active cooling in a travel-sized design [Hands-on]&quot;, &quot;title_zh&quot;: &quot;Anker \u7684 25W MagSafe 3-in-1 \u5728\u65c5\u884c\u5c3a\u5bf8\u8a2d\u8a08\u4e2d\u878d\u5165\u4e3b\u52d5\u51b7\u537b [\u5be6\u6e2c]&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob0"
+              onclick="bookmarkArticle('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/&quot;, &quot;title_en&quot;: &quot;Anker\u2019s 25W MagSafe 3-in-1 packs active cooling in a travel-sized design [Hands-on]&quot;, &quot;title_zh&quot;: &quot;Anker \u7684 25W MagSafe 3-in-1 \u5728\u65c5\u884c\u5c3a\u5bf8\u8a2d\u8a08\u4e2d\u878d\u5165\u4e3b\u52d5\u51b7\u537b [\u5be6\u6e2c]&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob0', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/anker-magsafe-travel-sized-3-in-1-charger-qi2/&quot;, &quot;title_en&quot;: &quot;Anker\u2019s 25W MagSafe 3-in-1 packs active cooling in a travel-sized design [Hands-on]&quot;, &quot;title_zh&quot;: &quot;Anker \u7684 25W MagSafe 3-in-1 \u5728\u65c5\u884c\u5c3a\u5bf8\u8a2d\u8a08\u4e2d\u878d\u5165\u4e3b\u52d5\u51b7\u537b [\u5be6\u6e2c]&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob0"
+              onclick="copyPrompt('mob0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob1" data-url="https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Mac</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/" target="_blank">Report: watchOS 27 to improve heart-rate tracking; AI health coach may not debut at launch</a></div>
+    <div class="title-zh">報告：watchOS 27 將改進心率追蹤；AI 健康教練可能無法在發佈時推出</div>
+    
+<div class="summary-block">
+  <div class="summary-en">For the better part of a year, we’ve been hearing about Project Mulberry : Apple’s AI-powered health coach. Back in February, it was reported that these efforts had been scaled back. According to Bloomberg’s Mark Gurman , the features should still be on track for iOS 27, though they may not release until later in the cycle. On the other hand, Apple is apparently going to greatly improve Apple Watch heart-rate tracking with watchOS 27, which could tie in nicely with Apple’s eventual health coach. more…</div>
+  <div class="summary-zh">Apple 的 AI 驅動健康教練 Project Mulberry 的功能預計仍會在 iOS 27 推出，但可能不會在首次發佈時推出。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob1"
+              onclick="toggleAnalysis('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/&quot;, &quot;title_en&quot;: &quot;Report: watchOS 27 to improve heart-rate tracking; AI health coach may not debut at launch&quot;, &quot;title_zh&quot;: &quot;\u5831\u544a\uff1awatchOS 27 \u5c07\u6539\u9032\u5fc3\u7387\u8ffd\u8e64\uff1bAI \u5065\u5eb7\u6559\u7df4\u53ef\u80fd\u7121\u6cd5\u5728\u767c\u4f48\u6642\u63a8\u51fa&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob1"
+              onclick="bookmarkArticle('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/&quot;, &quot;title_en&quot;: &quot;Report: watchOS 27 to improve heart-rate tracking; AI health coach may not debut at launch&quot;, &quot;title_zh&quot;: &quot;\u5831\u544a\uff1awatchOS 27 \u5c07\u6539\u9032\u5fc3\u7387\u8ffd\u8e64\uff1bAI \u5065\u5eb7\u6559\u7df4\u53ef\u80fd\u7121\u6cd5\u5728\u767c\u4f48\u6642\u63a8\u51fa&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob1', {&quot;url&quot;: &quot;https://9to5mac.com/2026/05/24/apple-improving-heart-rate-tracking-in-watchos-27-mulberry-health-coach-delays/&quot;, &quot;title_en&quot;: &quot;Report: watchOS 27 to improve heart-rate tracking; AI health coach may not debut at launch&quot;, &quot;title_zh&quot;: &quot;\u5831\u544a\uff1awatchOS 27 \u5c07\u6539\u9032\u5fc3\u7387\u8ffd\u8e64\uff1bAI \u5065\u5eb7\u6559\u7df4\u53ef\u80fd\u7121\u6cd5\u5728\u767c\u4f48\u6642\u63a8\u51fa&quot;, &quot;source&quot;: &quot;9to5Mac&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob1"
+              onclick="copyPrompt('mob1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob2" data-url="https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Mon, 25 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/" target="_blank">No, that probably wasn’t Pixel 11’s ‘Glow’ at I/O – ‘Pixel Ultra meeting’ anyone?</a></div>
+    <div class="title-zh">不，那可能不是 Pixel 11 的「Glow」功能在 I/O 上的展示 – 「Pixel Ultra 會議」有人感興趣嗎？</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Amid leaks and rumors of “Pixel Glow” on the Pixel 11, many are pointing to a specific shot at Google I/O as the first “official” look at the feature. That’s almost surely not at all true, but it did bring to mind a fun leak wink at a previous Google event. more…</div>
+  <div class="summary-zh">許多人指向 Google I/O 上的特定片段作為「Pixel Glow」功能的首次官方展示，但這幾乎肯定並非如此。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob2"
+              onclick="toggleAnalysis('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/&quot;, &quot;title_en&quot;: &quot;No, that probably wasn\u2019t Pixel 11\u2019s \u2018Glow\u2019 at I/O \u2013 \u2018Pixel Ultra meeting\u2019 anyone?&quot;, &quot;title_zh&quot;: &quot;\u4e0d\uff0c\u90a3\u53ef\u80fd\u4e0d\u662f Pixel 11 \u7684\u300cGlow\u300d\u529f\u80fd\u5728 I/O \u4e0a\u7684\u5c55\u793a \u2013 \u300cPixel Ultra \u6703\u8b70\u300d\u6709\u4eba\u611f\u8208\u8da3\u55ce\uff1f&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob2"
+              onclick="bookmarkArticle('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/&quot;, &quot;title_en&quot;: &quot;No, that probably wasn\u2019t Pixel 11\u2019s \u2018Glow\u2019 at I/O \u2013 \u2018Pixel Ultra meeting\u2019 anyone?&quot;, &quot;title_zh&quot;: &quot;\u4e0d\uff0c\u90a3\u53ef\u80fd\u4e0d\u662f Pixel 11 \u7684\u300cGlow\u300d\u529f\u80fd\u5728 I/O \u4e0a\u7684\u5c55\u793a \u2013 \u300cPixel Ultra \u6703\u8b70\u300d\u6709\u4eba\u611f\u8208\u8da3\u55ce\uff1f&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob2', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/pixel-11-glow-io-wink/&quot;, &quot;title_en&quot;: &quot;No, that probably wasn\u2019t Pixel 11\u2019s \u2018Glow\u2019 at I/O \u2013 \u2018Pixel Ultra meeting\u2019 anyone?&quot;, &quot;title_zh&quot;: &quot;\u4e0d\uff0c\u90a3\u53ef\u80fd\u4e0d\u662f Pixel 11 \u7684\u300cGlow\u300d\u529f\u80fd\u5728 I/O \u4e0a\u7684\u5c55\u793a \u2013 \u300cPixel Ultra \u6703\u8b70\u300d\u6709\u4eba\u611f\u8208\u8da3\u55ce\uff1f&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob2"
+              onclick="copyPrompt('mob2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob3" data-url="https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/" target="_blank">Google showcased Gemini’s focus on practical AI, but I still have mixed feelings</a></div>
+    <div class="title-zh">Google 展示了 Gemini 的實用 AI 焦點，但我仍有複雜的感受</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AI continues to give me mixed feelings about the future, and that’s top of mind following another Gemini-heavy Google I/O this past week. On the one hand, Google continues to show some of the most practical and useful ideas for AI, but until I can trust it, I struggle to actually get excited about it. more…</div>
+  <div class="summary-zh">Google 在最近的 I/O 大會上展示了一些最實用和有用的 AI 想法，但在完全信任它之前，我對真正感到興奮仍存疑慮。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob3"
+              onclick="toggleAnalysis('mob3', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/&quot;, &quot;title_en&quot;: &quot;Google showcased Gemini\u2019s focus on practical AI, but I still have mixed feelings&quot;, &quot;title_zh&quot;: &quot;Google \u5c55\u793a\u4e86 Gemini \u7684\u5be6\u7528 AI \u7126\u9ede\uff0c\u4f46\u6211\u4ecd\u6709\u8907\u96dc\u7684\u611f\u53d7&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob3"
+              onclick="bookmarkArticle('mob3', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/&quot;, &quot;title_en&quot;: &quot;Google showcased Gemini\u2019s focus on practical AI, but I still have mixed feelings&quot;, &quot;title_zh&quot;: &quot;Google \u5c55\u793a\u4e86 Gemini \u7684\u5be6\u7528 AI \u7126\u9ede\uff0c\u4f46\u6211\u4ecd\u6709\u8907\u96dc\u7684\u611f\u53d7&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob3', {&quot;url&quot;: &quot;https://9to5google.com/2026/05/24/google-io-2026-gemini-practical-ai-opinion/&quot;, &quot;title_en&quot;: &quot;Google showcased Gemini\u2019s focus on practical AI, but I still have mixed feelings&quot;, &quot;title_zh&quot;: &quot;Google \u5c55\u793a\u4e86 Gemini \u7684\u5be6\u7528 AI \u7126\u9ede\uff0c\u4f46\u6211\u4ecd\u6709\u8907\u96dc\u7684\u611f\u53d7&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob3"
+              onclick="copyPrompt('mob3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob4" data-url="https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Android Authority</span>
+      <span class="date-tag">Mon, 25 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/" target="_blank">Early Google Fitbit Air deliveries hit a snag with missing Android app update</a></div>
+    <div class="title-zh">早期 Google Fitbit Air 交付因缺少 Android 應用更新而受阻</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Credit: Kaitlyn Cimino / Android Authority TL;DR Some customers have started receiving the Google Fitbit Air ahead of its expected May 26 delivery window. Early Android buyers are running into pairing issues because the required Google Health 5.0 update hasn’t fully rolled out yet. Google has confirmed the app pairing issue and has also said that support for syncing Google Health data to Apple Health is coming soon. The Google Fitbit Air was originally expected to reach early buyers around May 26, but in a pleasant surprise, some customers have already started receiving the new screenless fitness tracker ahead of schedule. While the expedited shipping is great news, it looks like some Android users who have received the wearable can’t actually use it.</div>
+  <div class="summary-zh">部分客戶已提前收到 Google Fitbit Air，但由於必需的 Google Health 5.0 更新尚未全面推出，導致配對問題。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob4"
+              onclick="toggleAnalysis('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/&quot;, &quot;title_en&quot;: &quot;Early Google Fitbit Air deliveries hit a snag with missing Android app update&quot;, &quot;title_zh&quot;: &quot;\u65e9\u671f Google Fitbit Air \u4ea4\u4ed8\u56e0\u7f3a\u5c11 Android \u61c9\u7528\u66f4\u65b0\u800c\u53d7\u963b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob4"
+              onclick="bookmarkArticle('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/&quot;, &quot;title_en&quot;: &quot;Early Google Fitbit Air deliveries hit a snag with missing Android app update&quot;, &quot;title_zh&quot;: &quot;\u65e9\u671f Google Fitbit Air \u4ea4\u4ed8\u56e0\u7f3a\u5c11 Android \u61c9\u7528\u66f4\u65b0\u800c\u53d7\u963b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob4', {&quot;url&quot;: &quot;https://www.androidauthority.com/google-fitbit-air-early-delivery-app-update-3670542/&quot;, &quot;title_en&quot;: &quot;Early Google Fitbit Air deliveries hit a snag with missing Android app update&quot;, &quot;title_zh&quot;: &quot;\u65e9\u671f Google Fitbit Air \u4ea4\u4ed8\u56e0\u7f3a\u5c11 Android \u61c9\u7528\u66f4\u65b0\u800c\u53d7\u963b&quot;, &quot;source&quot;: &quot;Android Authority&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob4"
+              onclick="copyPrompt('mob4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob5" data-url="https://www.gsmarena.com/earfun_clip_2_review-news-72970.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Mon, 25 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/earfun_clip_2_review-news-72970.php" target="_blank">EarFun Clip 2 review</a></div>
+    <div class="title-zh">EarFun Clip 2 評測</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Clip 2 are the newest pair of wireless earbuds from EarFun. These are based on the new clip-style earbuds, which are starting to become all the rage these days. We tested the company’s previous EarFun Clip product, which had a few key issues that prevented us from recommending it. However, the new Clip 2 promises to improve upon them, and I can’t wait to put them on and take them for a spin. Will these become a worthwhile option in this burgeoning segment? Let’s find out. Design and comfort The EarFun Clip 2 might look identical to the first-generation model at a glance, but...</div>
+  <div class="summary-zh">Clip 2 是 EarFun 最新的夾式無線耳塞，基於近來流行的夾式耳塞設計。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/earfun_clip_2_review-news-72970.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob5"
+              onclick="toggleAnalysis('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/earfun_clip_2_review-news-72970.php&quot;, &quot;title_en&quot;: &quot;EarFun Clip 2 review&quot;, &quot;title_zh&quot;: &quot;EarFun Clip 2 \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob5"
+              onclick="bookmarkArticle('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/earfun_clip_2_review-news-72970.php&quot;, &quot;title_en&quot;: &quot;EarFun Clip 2 review&quot;, &quot;title_zh&quot;: &quot;EarFun Clip 2 \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob5', {&quot;url&quot;: &quot;https://www.gsmarena.com/earfun_clip_2_review-news-72970.php&quot;, &quot;title_en&quot;: &quot;EarFun Clip 2 review&quot;, &quot;title_zh&quot;: &quot;EarFun Clip 2 \u8a55\u6e2c&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob5"
+              onclick="copyPrompt('mob5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob6" data-url="https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Mon, 25 Ma</span>
+      <span class="lang-tag">中文</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php" target="_blank">Honor 600 vs. 600 Pro</a></div>
+    
+    
+<div class="summary-block">
+  <div class="summary-en">The age-old question - the Pro or the non-Pro? This time it's either the Honor 600 or the Honor 600 Pro. The latter brings a handful of useful features and hardware upgrades over the regular Honor 600, but also adds another €300 to the bill. Sure, you get a more powerful chipset and a telephoto camera, but the vanilla 600 gets you a long way at a much lower cost. It has the same flagship-grade display, same battery capacity, same main camera and supports 80W fast wired charging like the Honor 600 Pro. Still, a comprehensive comparison requires a deeper dive, so let's go look at the data...</div>
+  <div class="summary-zh">Honor 600 Pro 相比標準版 Honor 600 提供了多項有用的功能和硬體升級，但價格也高出 €300。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob6"
+              onclick="toggleAnalysis('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php&quot;, &quot;title_en&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;title_zh&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob6"
+              onclick="bookmarkArticle('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php&quot;, &quot;title_en&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;title_zh&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob6', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_600_vs_600_pro_review_battery_camera_price_compared-news-72880.php&quot;, &quot;title_en&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;title_zh&quot;: &quot;Honor 600 vs. 600 Pro&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 25 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob6"
+              onclick="copyPrompt('mob6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob7" data-url="https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php" target="_blank">Top 10 trending phones of week 21</a></div>
+    <div class="title-zh">第 21 週十大熱門手機</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The launch hype of the Sony Xperia 1 VIII died down a bit this week, which allowed the Samsung Galaxy A57 to reclaim the lead in our trending chart. The Galaxy S26 Ultra got back up to second, while the new Sony flagship got the bronze medal. [#InlinePriceWidget, 14660, 1#] The newly announced Xiaomi 17 Max kept the fourth position it claimed even before it was official. Behind it is the Galaxy A17 - one of the cheapest Samsung phones currently is clearly being considered by a great number of shoppers worldwide. Apple iPhone 17 Pro Max sits in sixth, ahead of the Honor 600 Pro and...</div>
+  <div class="summary-zh">Sony Xperia 1 VIII 的發佈熱度有所下降，讓 Samsung Galaxy A57 重奪趨勢排行榜榜首，Galaxy S26 Ultra 排名第二。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob7"
+              onclick="toggleAnalysis('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 21&quot;, &quot;title_zh&quot;: &quot;\u7b2c 21 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob7"
+              onclick="bookmarkArticle('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 21&quot;, &quot;title_zh&quot;: &quot;\u7b2c 21 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob7', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_21-news-72971.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 21&quot;, &quot;title_zh&quot;: &quot;\u7b2c 21 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob7"
+              onclick="copyPrompt('mob7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob8" data-url="https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sun, 24 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php" target="_blank">Our Realme 16T battery life and charging test is ready</a></div>
+    <div class="title-zh">我們的 Realme 16T 電池續航和充電測試已準備就緒</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Realme 16T combines a massive 8,000mAh battery with a reasonably-specced base for an affordable price - starts at INR29,999 (around €270, converted). Realme says you can expect up to three days of endurance, and that the power pack would last for 7 years, which would give frugal-minded buyers some nice peace of mind. The Realme 16T We finished our battery life and charging tests on the Realme 16T, so let's see how it did. The Realme 16T scored close to 23 hours in our Active Use Score, which breaks down with solid call, web, and video runtimes, and a...</div>
+  <div class="summary-zh">Realme 16T 搭配 8,000mAh 大容量電池與合理規格的基礎配置，起價 INR29,999（約 €270），支持長達三天的續航。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob8"
+              onclick="toggleAnalysis('mob8', {&quot;url&quot;: &quot;https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php&quot;, &quot;title_en&quot;: &quot;Our Realme 16T battery life and charging test is ready&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u7684 Realme 16T \u96fb\u6c60\u7e8c\u822a\u548c\u5145\u96fb\u6e2c\u8a66\u5df2\u6e96\u5099\u5c31\u7dd2&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob8"
+              onclick="bookmarkArticle('mob8', {&quot;url&quot;: &quot;https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php&quot;, &quot;title_en&quot;: &quot;Our Realme 16T battery life and charging test is ready&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u7684 Realme 16T \u96fb\u6c60\u7e8c\u822a\u548c\u5145\u96fb\u6e2c\u8a66\u5df2\u6e96\u5099\u5c31\u7dd2&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob8', {&quot;url&quot;: &quot;https://www.gsmarena.com/our_realme_16t_battery_life_and_charging_test_is_done-news-72959.php&quot;, &quot;title_en&quot;: &quot;Our Realme 16T battery life and charging test is ready&quot;, &quot;title_zh&quot;: &quot;\u6211\u5011\u7684 Realme 16T \u96fb\u6c60\u7e8c\u822a\u548c\u5145\u96fb\u6e2c\u8a66\u5df2\u6e96\u5099\u5c31\u7dd2&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 24 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob8"
+              onclick="copyPrompt('mob8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob9" data-url="https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Daring Fireball</span>
+      <span class="date-tag">2026-05-24</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry" target="_blank">Why Steve Kerr Stayed With the Warriors</a></div>
+    <div class="title-zh">Steve Kerr 為何留在 Warriors</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob9"
+              onclick="toggleAnalysis('mob9', {&quot;url&quot;: &quot;https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry&quot;, &quot;title_en&quot;: &quot;Why Steve Kerr Stayed With the Warriors&quot;, &quot;title_zh&quot;: &quot;Steve Kerr \u70ba\u4f55\u7559\u5728 Warriors&quot;, &quot;source&quot;: &quot;Daring Fireball&quot;, &quot;date&quot;: &quot;2026-05-24&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob9"
+              onclick="bookmarkArticle('mob9', {&quot;url&quot;: &quot;https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry&quot;, &quot;title_en&quot;: &quot;Why Steve Kerr Stayed With the Warriors&quot;, &quot;title_zh&quot;: &quot;Steve Kerr \u70ba\u4f55\u7559\u5728 Warriors&quot;, &quot;source&quot;: &quot;Daring Fireball&quot;, &quot;date&quot;: &quot;2026-05-24&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob9', {&quot;url&quot;: &quot;https://www.espn.com/nba/story/_/id/48686303/steve-kerr-decision-return-coach-golden-state-warriors-steph-curry&quot;, &quot;title_en&quot;: &quot;Why Steve Kerr Stayed With the Warriors&quot;, &quot;title_zh&quot;: &quot;Steve Kerr \u70ba\u4f55\u7559\u5728 Warriors&quot;, &quot;source&quot;: &quot;Daring Fireball&quot;, &quot;date&quot;: &quot;2026-05-24&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob9"
+              onclick="copyPrompt('mob9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
