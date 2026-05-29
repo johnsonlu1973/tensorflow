@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-05-29</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-05-29 &nbsp;·&nbsp; 24 篇 &nbsp;·&nbsp; 更新：2026-05-30 01:36 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers" target="_blank">TikTok owner ByteDance is reportedly developing its own custom AI CPUs — company looks to ease China's dependence on US chipmakers</a></div>
+    <div class="title-zh">TikTok 母公司字節跳動據報正在開發自主定製 AI CPU——尋求減輕中國對美國芯片製造商的依賴</div>
+    
+<div class="summary-block">
+  <div class="summary-en">TikTok owner Bytedance reportedly developing its own custom CPUs in a bid to reduce costs and dependence from US chipmakers</div>
+  <div class="summary-zh">TikTok 母公司字節跳動據報正在開發自主定製 CPU，以降低成本並減少對美國芯片製造商的依賴。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers&quot;, &quot;title_en&quot;: &quot;TikTok owner ByteDance is reportedly developing its own custom AI CPUs \u2014 company looks to ease China's dependence on US chipmakers&quot;, &quot;title_zh&quot;: &quot;TikTok \u6bcd\u516c\u53f8\u5b57\u7bc0\u8df3\u52d5\u64da\u5831\u6b63\u5728\u958b\u767c\u81ea\u4e3b\u5b9a\u88fd AI CPU\u2014\u2014\u5c0b\u6c42\u6e1b\u8f15\u4e2d\u570b\u5c0d\u7f8e\u570b\u82af\u7247\u88fd\u9020\u5546\u7684\u4f9d\u8cf4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers&quot;, &quot;title_en&quot;: &quot;TikTok owner ByteDance is reportedly developing its own custom AI CPUs \u2014 company looks to ease China's dependence on US chipmakers&quot;, &quot;title_zh&quot;: &quot;TikTok \u6bcd\u516c\u53f8\u5b57\u7bc0\u8df3\u52d5\u64da\u5831\u6b63\u5728\u958b\u767c\u81ea\u4e3b\u5b9a\u88fd AI CPU\u2014\u2014\u5c0b\u6c42\u6e1b\u8f15\u4e2d\u570b\u5c0d\u7f8e\u570b\u82af\u7247\u88fd\u9020\u5546\u7684\u4f9d\u8cf4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/semiconductors/tiktok-owner-bytedance-is-reportedly-developing-its-own-custom-ai-cpus-company-looks-to-ease-chinas-dependence-on-us-chipmakers&quot;, &quot;title_en&quot;: &quot;TikTok owner ByteDance is reportedly developing its own custom AI CPUs \u2014 company looks to ease China's dependence on US chipmakers&quot;, &quot;title_zh&quot;: &quot;TikTok \u6bcd\u516c\u53f8\u5b57\u7bc0\u8df3\u52d5\u64da\u5831\u6b63\u5728\u958b\u767c\u81ea\u4e3b\u5b9a\u88fd AI CPU\u2014\u2014\u5c0b\u6c42\u6e1b\u8f15\u4e2d\u570b\u5c0d\u7f8e\u570b\u82af\u7247\u88fd\u9020\u5546\u7684\u4f9d\u8cf4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb" target="_blank">Cooler Master is bringing active cooling to DDR5 RAM, promising up to 15-degree temperature drops — 'MasterDIMM' combines G.SKILL memory with a built-in fan, kits run up to 128GB</a></div>
+    <div class="title-zh">酷冷至尊為 DDR5 記憶體引入主動冷卻，承諾溫度下降高達 15 度——'MasterDIMM' 結合 G.SKILL 記憶體和內置風扇，套裝容量高達 128GB</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Cooler Master and G.Skill are launching &quot;MasterDIMM&quot; — a new line of DDR5 memory sticks that comes enveloped in a stylishly-thick black and gold heatsink that features a blower fan. Two RGB stripes run along the top to add even more flare to a product that can't be anything other than overpriced.</div>
+  <div class="summary-zh">酷冷至尊與 G.Skill 推出「MasterDIMM」——新款 DDR5 記憶體條，配備時尚厚重的黑金散熱片和鼓風扇，頂部有雙 RGB 條紋裝飾。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb&quot;, &quot;title_en&quot;: &quot;Cooler Master is bringing active cooling to DDR5 RAM, promising up to 15-degree temperature drops \u2014 'MasterDIMM' combines G.SKILL memory with a built-in fan, kits run up to 128GB&quot;, &quot;title_zh&quot;: &quot;\u9177\u51b7\u81f3\u5c0a\u70ba DDR5 \u8a18\u61b6\u9ad4\u5f15\u5165\u4e3b\u52d5\u51b7\u537b\uff0c\u627f\u8afe\u6eab\u5ea6\u4e0b\u964d\u9ad8\u9054 15 \u5ea6\u2014\u2014'MasterDIMM' \u7d50\u5408 G.SKILL \u8a18\u61b6\u9ad4\u548c\u5167\u7f6e\u98a8\u6247\uff0c\u5957\u88dd\u5bb9\u91cf\u9ad8\u9054 128GB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb&quot;, &quot;title_en&quot;: &quot;Cooler Master is bringing active cooling to DDR5 RAM, promising up to 15-degree temperature drops \u2014 'MasterDIMM' combines G.SKILL memory with a built-in fan, kits run up to 128GB&quot;, &quot;title_zh&quot;: &quot;\u9177\u51b7\u81f3\u5c0a\u70ba DDR5 \u8a18\u61b6\u9ad4\u5f15\u5165\u4e3b\u52d5\u51b7\u537b\uff0c\u627f\u8afe\u6eab\u5ea6\u4e0b\u964d\u9ad8\u9054 15 \u5ea6\u2014\u2014'MasterDIMM' \u7d50\u5408 G.SKILL \u8a18\u61b6\u9ad4\u548c\u5167\u7f6e\u98a8\u6247\uff0c\u5957\u88dd\u5bb9\u91cf\u9ad8\u9054 128GB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/cooler-master-is-bringing-active-cooling-to-ddr5-ram-promising-up-to-15-degree-temperature-drops-masterdimm-combines-g-skill-memory-with-a-built-in-fan-kits-run-up-to-128gb&quot;, &quot;title_en&quot;: &quot;Cooler Master is bringing active cooling to DDR5 RAM, promising up to 15-degree temperature drops \u2014 'MasterDIMM' combines G.SKILL memory with a built-in fan, kits run up to 128GB&quot;, &quot;title_zh&quot;: &quot;\u9177\u51b7\u81f3\u5c0a\u70ba DDR5 \u8a18\u61b6\u9ad4\u5f15\u5165\u4e3b\u52d5\u51b7\u537b\uff0c\u627f\u8afe\u6eab\u5ea6\u4e0b\u964d\u9ad8\u9054 15 \u5ea6\u2014\u2014'MasterDIMM' \u7d50\u5408 G.SKILL \u8a18\u61b6\u9ad4\u548c\u5167\u7f6e\u98a8\u6247\uff0c\u5957\u88dd\u5bb9\u91cf\u9ad8\u9054 128GB&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case" target="_blank">Hands-on with Corsair's 3200D RS ARGB Mid-tower PC Case: Budget chassis includes three fans and doesn’t empty your wallet</a></div>
+    <div class="title-zh">親身體驗 Corsair 的 3200D RS ARGB 中塔機箱：預算機箱包含三個風扇且價格親民</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Corsair’s 3200D mid-tower chassis delivers strong airflow, support for large GPUs and radiators, plus three RS120 ARGB fans, all in a clean-looking windowed chassis priced under $80.</div>
+  <div class="summary-zh">Corsair 3200D 中塔機箱提供強勁氣流、對大型 GPU 和散熱器的支持，以及三個 RS120 ARGB 風扇，價格不到 80 美元。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case&quot;, &quot;title_en&quot;: &quot;Hands-on with Corsair's 3200D RS ARGB Mid-tower PC Case: Budget chassis includes three fans and doesn\u2019t empty your wallet&quot;, &quot;title_zh&quot;: &quot;\u89aa\u8eab\u9ad4\u9a57 Corsair \u7684 3200D RS ARGB \u4e2d\u5854\u6a5f\u7bb1\uff1a\u9810\u7b97\u6a5f\u7bb1\u5305\u542b\u4e09\u500b\u98a8\u6247\u4e14\u50f9\u683c\u89aa\u6c11&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case&quot;, &quot;title_en&quot;: &quot;Hands-on with Corsair's 3200D RS ARGB Mid-tower PC Case: Budget chassis includes three fans and doesn\u2019t empty your wallet&quot;, &quot;title_zh&quot;: &quot;\u89aa\u8eab\u9ad4\u9a57 Corsair \u7684 3200D RS ARGB \u4e2d\u5854\u6a5f\u7bb1\uff1a\u9810\u7b97\u6a5f\u7bb1\u5305\u542b\u4e09\u500b\u98a8\u6247\u4e14\u50f9\u683c\u89aa\u6c11&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/pc-cases/hands-on-corsair-3200d-rs-argb-mid-tower-pc-case&quot;, &quot;title_en&quot;: &quot;Hands-on with Corsair's 3200D RS ARGB Mid-tower PC Case: Budget chassis includes three fans and doesn\u2019t empty your wallet&quot;, &quot;title_zh&quot;: &quot;\u89aa\u8eab\u9ad4\u9a57 Corsair \u7684 3200D RS ARGB \u4e2d\u5854\u6a5f\u7bb1\uff1a\u9810\u7b97\u6a5f\u7bb1\u5305\u542b\u4e09\u500b\u98a8\u6247\u4e14\u50f9\u683c\u89aa\u6c11&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts" target="_blank">Epic Games’ Tim Sweeney slams Valve over Steam Deck price hikes — mocks founder Gabe Newell over rising costs of megayachts</a></div>
+    <div class="title-zh">Epic Games 執行長 Tim Sweeney 抨擊 Valve 調漲 Steam Deck 價格——嘲笑創辦人 Gabe Newell 的豪華遊艇花費</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Epic Games chief took potshots at Valve CEO Gabe Newell's expensive megayacht collection after sharing the Steam Deck's massive price hikes on X. The post compared the $240 to $300 increase on the Valve hardware to the $50 to $100 jumps on the Switch 2 and PlayStation 5 family.</div>
+  <div class="summary-zh">Epic Games 執行長在分享 Steam Deck 大幅漲價後，在 X 平台上嘲笑 Valve 執行長 Gabe Newell 昂貴的遊艇收藏，將漲幅與 Switch 2 和 PlayStation 5 進行比較。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts&quot;, &quot;title_en&quot;: &quot;Epic Games\u2019 Tim Sweeney slams Valve over Steam Deck price hikes \u2014 mocks founder Gabe Newell over rising costs of megayachts&quot;, &quot;title_zh&quot;: &quot;Epic Games \u57f7\u884c\u9577 Tim Sweeney \u62a8\u64ca Valve \u8abf\u6f32 Steam Deck \u50f9\u683c\u2014\u2014\u5632\u7b11\u5275\u8fa6\u4eba Gabe Newell \u7684\u8c6a\u83ef\u904a\u8247\u82b1\u8cbb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts&quot;, &quot;title_en&quot;: &quot;Epic Games\u2019 Tim Sweeney slams Valve over Steam Deck price hikes \u2014 mocks founder Gabe Newell over rising costs of megayachts&quot;, &quot;title_zh&quot;: &quot;Epic Games \u57f7\u884c\u9577 Tim Sweeney \u62a8\u64ca Valve \u8abf\u6f32 Steam Deck \u50f9\u683c\u2014\u2014\u5632\u7b11\u5275\u8fa6\u4eba Gabe Newell \u7684\u8c6a\u83ef\u904a\u8247\u82b1\u8cbb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/pc-gaming/epic-games-tim-sweeney-slams-valve-over-steam-deck-price-hikes-mocks-founder-gabe-newell-over-rising-costs-of-megayachts&quot;, &quot;title_en&quot;: &quot;Epic Games\u2019 Tim Sweeney slams Valve over Steam Deck price hikes \u2014 mocks founder Gabe Newell over rising costs of megayachts&quot;, &quot;title_zh&quot;: &quot;Epic Games \u57f7\u884c\u9577 Tim Sweeney \u62a8\u64ca Valve \u8abf\u6f32 Steam Deck \u50f9\u683c\u2014\u2014\u5632\u7b11\u5275\u8fa6\u4eba Gabe Newell \u7684\u8c6a\u83ef\u904a\u8247\u82b1\u8cbb&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads" target="_blank">Amazon unveils 'Resilient Network Graphs' data center network that cuts hardware by 69% and boosts throughput by 33% — now the default for most AWS workloads</a></div>
+    <div class="title-zh">Amazon 推出「Resilient Network Graphs」資料中心網路，硬體減少 69%，吞吐量提升 33%——現已成為大多數 AWS 工作負載的預設配置</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AWS has revealed RNG, a new random-graph-based data center network that delivers 33% higher throughput, cuts network power consumption by 40%, uses 69% fewer devices, and is already the default architecture for most AWS workloads.</div>
+  <div class="summary-zh">AWS 推出 RNG（基於隨機圖的資料中心網路），可實現 33% 更高的吞吐量、降低 40% 的網路功耗和減少 69% 的設備使用量，已成為大多數 AWS 工作負載的預設架構。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads&quot;, &quot;title_en&quot;: &quot;Amazon unveils 'Resilient Network Graphs' data center network that cuts hardware by 69% and boosts throughput by 33% \u2014 now the default for most AWS workloads&quot;, &quot;title_zh&quot;: &quot;Amazon \u63a8\u51fa\u300cResilient Network Graphs\u300d\u8cc7\u6599\u4e2d\u5fc3\u7db2\u8def\uff0c\u786c\u9ad4\u6e1b\u5c11 69%\uff0c\u541e\u5410\u91cf\u63d0\u5347 33%\u2014\u2014\u73fe\u5df2\u6210\u70ba\u5927\u591a\u6578 AWS \u5de5\u4f5c\u8ca0\u8f09\u7684\u9810\u8a2d\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads&quot;, &quot;title_en&quot;: &quot;Amazon unveils 'Resilient Network Graphs' data center network that cuts hardware by 69% and boosts throughput by 33% \u2014 now the default for most AWS workloads&quot;, &quot;title_zh&quot;: &quot;Amazon \u63a8\u51fa\u300cResilient Network Graphs\u300d\u8cc7\u6599\u4e2d\u5fc3\u7db2\u8def\uff0c\u786c\u9ad4\u6e1b\u5c11 69%\uff0c\u541e\u5410\u91cf\u63d0\u5347 33%\u2014\u2014\u73fe\u5df2\u6210\u70ba\u5927\u591a\u6578 AWS \u5de5\u4f5c\u8ca0\u8f09\u7684\u9810\u8a2d\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/amazon-unveils-resilient-network-graphs-data-center-network-that-cuts-hardware-by-69-percent-and-boosts-throughput-by-33-percent-now-the-default-for-most-aws-workloads&quot;, &quot;title_en&quot;: &quot;Amazon unveils 'Resilient Network Graphs' data center network that cuts hardware by 69% and boosts throughput by 33% \u2014 now the default for most AWS workloads&quot;, &quot;title_zh&quot;: &quot;Amazon \u63a8\u51fa\u300cResilient Network Graphs\u300d\u8cc7\u6599\u4e2d\u5fc3\u7db2\u8def\uff0c\u786c\u9ad4\u6e1b\u5c11 69%\uff0c\u541e\u5410\u91cf\u63d0\u5347 33%\u2014\u2014\u73fe\u5df2\u6210\u70ba\u5927\u591a\u6578 AWS \u5de5\u4f5c\u8ca0\u8f09\u7684\u9810\u8a2d\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed" target="_blank">Bambu Lab teases new A2L 3D printer — June 1 launch hints at a massive, budget-friendly bed slinger</a></div>
+    <div class="title-zh">Bambu Lab 預告新款 A2L 3D 列印機——6 月 1 日發布提示大型平價款機型</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Without much to go on, fans speculate what the newest Bambu Lab 3D printer could be.</div>
+  <div class="summary-zh">粉絲推測 Bambu Lab 最新 3D 列印機的功能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed&quot;, &quot;title_en&quot;: &quot;Bambu Lab teases new A2L 3D printer \u2014 June 1 launch hints at a massive, budget-friendly bed slinger&quot;, &quot;title_zh&quot;: &quot;Bambu Lab \u9810\u544a\u65b0\u6b3e A2L 3D \u5217\u5370\u6a5f\u2014\u20146 \u6708 1 \u65e5\u767c\u5e03\u63d0\u793a\u5927\u578b\u5e73\u50f9\u6b3e\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed&quot;, &quot;title_en&quot;: &quot;Bambu Lab teases new A2L 3D printer \u2014 June 1 launch hints at a massive, budget-friendly bed slinger&quot;, &quot;title_zh&quot;: &quot;Bambu Lab \u9810\u544a\u65b0\u6b3e A2L 3D \u5217\u5370\u6a5f\u2014\u20146 \u6708 1 \u65e5\u767c\u5e03\u63d0\u793a\u5927\u578b\u5e73\u50f9\u6b3e\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/3d-printing/bambu-lab-teases-new-a2l-3d-printer-june-1-launch-confirmed&quot;, &quot;title_en&quot;: &quot;Bambu Lab teases new A2L 3D printer \u2014 June 1 launch hints at a massive, budget-friendly bed slinger&quot;, &quot;title_zh&quot;: &quot;Bambu Lab \u9810\u544a\u65b0\u6b3e A2L 3D \u5217\u5370\u6a5f\u2014\u20146 \u6708 1 \u65e5\u767c\u5e03\u63d0\u793a\u5927\u578b\u5e73\u50f9\u6b3e\u6a5f\u578b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display" target="_blank">Acer cranks its latest Predator gaming monitor up to 1,000 Hz — Model joins lineup with QD-OLED panels and an immersive 3D display</a></div>
+    <div class="title-zh">Acer 將最新 Predator 電競監視器性能提升至 1,000 Hz——該機型加入 QD-OLED 面板和沉浸式 3D 顯示</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Acer is bringing five new gaming monitors to Computex.</div>
+  <div class="summary-zh">Acer 在 Computex 推出五款新電競監視器。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display&quot;, &quot;title_en&quot;: &quot;Acer cranks its latest Predator gaming monitor up to 1,000 Hz \u2014 Model joins lineup with QD-OLED panels and an immersive 3D display&quot;, &quot;title_zh&quot;: &quot;Acer \u5c07\u6700\u65b0 Predator \u96fb\u7af6\u76e3\u8996\u5668\u6027\u80fd\u63d0\u5347\u81f3 1,000 Hz\u2014\u2014\u8a72\u6a5f\u578b\u52a0\u5165 QD-OLED \u9762\u677f\u548c\u6c89\u6d78\u5f0f 3D \u986f\u793a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display&quot;, &quot;title_en&quot;: &quot;Acer cranks its latest Predator gaming monitor up to 1,000 Hz \u2014 Model joins lineup with QD-OLED panels and an immersive 3D display&quot;, &quot;title_zh&quot;: &quot;Acer \u5c07\u6700\u65b0 Predator \u96fb\u7af6\u76e3\u8996\u5668\u6027\u80fd\u63d0\u5347\u81f3 1,000 Hz\u2014\u2014\u8a72\u6a5f\u578b\u52a0\u5165 QD-OLED \u9762\u677f\u548c\u6c89\u6d78\u5f0f 3D \u986f\u793a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/acer-cranks-its-latest-predator-gaming-monitor-up-to-1-000-hz-model-joins-lineup-with-qd-oled-panels-and-an-immersive-3d-display&quot;, &quot;title_en&quot;: &quot;Acer cranks its latest Predator gaming monitor up to 1,000 Hz \u2014 Model joins lineup with QD-OLED panels and an immersive 3D display&quot;, &quot;title_zh&quot;: &quot;Acer \u5c07\u6700\u65b0 Predator \u96fb\u7af6\u76e3\u8996\u5668\u6027\u80fd\u63d0\u5347\u81f3 1,000 Hz\u2014\u2014\u8a72\u6a5f\u578b\u52a0\u5165 QD-OLED \u9762\u677f\u548c\u6c89\u6d78\u5f0f 3D \u986f\u793a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld" target="_blank">Acer unveils its first Ryzen 9 9955X3D gaming laptop — refreshed Nitro 16 joins new Predator Helios 18 AI and streaming-only Nitro Blaze Link handheld</a></div>
+    <div class="title-zh">Acer 發表首款搭載 Ryzen 9 9955X3D 的電競筆電——全新 Nitro 16 搭配新款 Predator Helios 18 AI 和流媒體限定 Nitro Blaze Link 掌機</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Acer has two new gaming laptops for Computex, including its first laptop with the Ryzen 9 9955HX3D CPU, and a device that sports triple PCIe 5.0 storage.</div>
+  <div class="summary-zh">Acer 在 Computex 推出兩款新電競筆電，其中包括首款搭載 Ryzen 9 9955HX3D CPU 的筆電和配備三個 PCIe 5.0 儲存槽的裝置。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld&quot;, &quot;title_en&quot;: &quot;Acer unveils its first Ryzen 9 9955X3D gaming laptop \u2014 refreshed Nitro 16 joins new Predator Helios 18 AI and streaming-only Nitro Blaze Link handheld&quot;, &quot;title_zh&quot;: &quot;Acer \u767c\u8868\u9996\u6b3e\u642d\u8f09 Ryzen 9 9955X3D \u7684\u96fb\u7af6\u7b46\u96fb\u2014\u2014\u5168\u65b0 Nitro 16 \u642d\u914d\u65b0\u6b3e Predator Helios 18 AI \u548c\u6d41\u5a92\u9ad4\u9650\u5b9a Nitro Blaze Link \u638c\u6a5f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld&quot;, &quot;title_en&quot;: &quot;Acer unveils its first Ryzen 9 9955X3D gaming laptop \u2014 refreshed Nitro 16 joins new Predator Helios 18 AI and streaming-only Nitro Blaze Link handheld&quot;, &quot;title_zh&quot;: &quot;Acer \u767c\u8868\u9996\u6b3e\u642d\u8f09 Ryzen 9 9955X3D \u7684\u96fb\u7af6\u7b46\u96fb\u2014\u2014\u5168\u65b0 Nitro 16 \u642d\u914d\u65b0\u6b3e Predator Helios 18 AI \u548c\u6d41\u5a92\u9ad4\u9650\u5b9a Nitro Blaze Link \u638c\u6a5f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/acer-unveils-first-ryzen-9-9955x3d-gaming-laptop-refreshed-nitro-16-joins-new-predator-helios-18-ai-and-streaming-only-nitro-blaze-link-handheld&quot;, &quot;title_en&quot;: &quot;Acer unveils its first Ryzen 9 9955X3D gaming laptop \u2014 refreshed Nitro 16 joins new Predator Helios 18 AI and streaming-only Nitro Blaze Link handheld&quot;, &quot;title_zh&quot;: &quot;Acer \u767c\u8868\u9996\u6b3e\u642d\u8f09 Ryzen 9 9955X3D \u7684\u96fb\u7af6\u7b46\u96fb\u2014\u2014\u5168\u65b0 Nitro 16 \u642d\u914d\u65b0\u6b3e Predator Helios 18 AI \u548c\u6d41\u5a92\u9ad4\u9650\u5b9a Nitro Blaze Link \u638c\u6a5f&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections" target="_blank">Pocket a huge $252 saving on a two-year PIA VPN subscription and score two months for free — 88% discount on no-logs provider with servers in 90 different countries and support for unlimited connections</a></div>
+    <div class="title-zh">PIA VPN 兩年訂閱可省下 252 美元，另贈送兩個月免費——提供 90 多國伺服器、無日誌記錄和無限連線支持的 88% 折扣優惠</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Grab this PIA 2-year VPN deal for only $34.58 and save a massive $252.22 compared to a standard monthly sub, unlocking access to privacy-protecting connections online for the equivalent of just $1.33 a month, with two months extra free.</div>
+  <div class="summary-zh">獲得 PIA 兩年 VPN 優惠方案僅需 34.58 美元，相比標準月費訂閱可節省 252.22 美元，月費僅需 1.33 美元，另附贈兩個月免費使用。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections&quot;, &quot;title_en&quot;: &quot;Pocket a huge $252 saving on a two-year PIA VPN subscription and score two months for free \u2014 88% discount on no-logs provider with servers in 90 different countries and support for unlimited connections&quot;, &quot;title_zh&quot;: &quot;PIA VPN \u5169\u5e74\u8a02\u95b1\u53ef\u7701\u4e0b 252 \u7f8e\u5143\uff0c\u53e6\u8d08\u9001\u5169\u500b\u6708\u514d\u8cbb\u2014\u2014\u63d0\u4f9b 90 \u591a\u570b\u4f3a\u670d\u5668\u3001\u7121\u65e5\u8a8c\u8a18\u9304\u548c\u7121\u9650\u9023\u7dda\u652f\u6301\u7684 88% \u6298\u6263\u512a\u60e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections&quot;, &quot;title_en&quot;: &quot;Pocket a huge $252 saving on a two-year PIA VPN subscription and score two months for free \u2014 88% discount on no-logs provider with servers in 90 different countries and support for unlimited connections&quot;, &quot;title_zh&quot;: &quot;PIA VPN \u5169\u5e74\u8a02\u95b1\u53ef\u7701\u4e0b 252 \u7f8e\u5143\uff0c\u53e6\u8d08\u9001\u5169\u500b\u6708\u514d\u8cbb\u2014\u2014\u63d0\u4f9b 90 \u591a\u570b\u4f3a\u670d\u5668\u3001\u7121\u65e5\u8a8c\u8a18\u9304\u548c\u7121\u9650\u9023\u7dda\u652f\u6301\u7684 88% \u6298\u6263\u512a\u60e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/vpn/pocket-a-huge-usd252-saving-on-a-two-year-pia-vpn-subscription-and-score-two-months-for-free-88-percent-discount-on-no-logs-provider-with-servers-in-90-different-countries-and-support-for-unlimited-connections&quot;, &quot;title_en&quot;: &quot;Pocket a huge $252 saving on a two-year PIA VPN subscription and score two months for free \u2014 88% discount on no-logs provider with servers in 90 different countries and support for unlimited connections&quot;, &quot;title_zh&quot;: &quot;PIA VPN \u5169\u5e74\u8a02\u95b1\u53ef\u7701\u4e0b 252 \u7f8e\u5143\uff0c\u53e6\u8d08\u9001\u5169\u500b\u6708\u514d\u8cbb\u2014\u2014\u63d0\u4f9b 90 \u591a\u570b\u4f3a\u670d\u5668\u3001\u7121\u65e5\u8a8c\u8a18\u9304\u548c\u7121\u9650\u9023\u7dda\u652f\u6301\u7684 88% \u6298\u6263\u512a\u60e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd" target="_blank">Save $575 on this OLED Asus gaming laptop with RTX 5070, now just $1,575 — ROG Zephyrus G16 comes with 240 Hz refresh rate, Intel Core Ultra 9, 16GB of RAM, and a 1TB SSD</a></div>
+    <div class="title-zh">搭載 RTX 5070 的 OLED Asus 電競筆電省下 575 美元，現僅 1,575 美元——ROG Zephyrus G16 配備 240 Hz 重新整理率、Intel Core Ultra 9、16GB RAM 和 1TB SSD</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Save $575 on this Asus ROG Zephyrus G16 laptop.</div>
+  <div class="summary-zh">Asus ROG Zephyrus G16 筆電可省下 575 美元。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd&quot;, &quot;title_en&quot;: &quot;Save $575 on this OLED Asus gaming laptop with RTX 5070, now just $1,575 \u2014 ROG Zephyrus G16 comes with 240 Hz refresh rate, Intel Core Ultra 9, 16GB of RAM, and a 1TB SSD&quot;, &quot;title_zh&quot;: &quot;\u642d\u8f09 RTX 5070 \u7684 OLED Asus \u96fb\u7af6\u7b46\u96fb\u7701\u4e0b 575 \u7f8e\u5143\uff0c\u73fe\u50c5 1,575 \u7f8e\u5143\u2014\u2014ROG Zephyrus G16 \u914d\u5099 240 Hz \u91cd\u65b0\u6574\u7406\u7387\u3001Intel Core Ultra 9\u300116GB RAM \u548c 1TB SSD&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd&quot;, &quot;title_en&quot;: &quot;Save $575 on this OLED Asus gaming laptop with RTX 5070, now just $1,575 \u2014 ROG Zephyrus G16 comes with 240 Hz refresh rate, Intel Core Ultra 9, 16GB of RAM, and a 1TB SSD&quot;, &quot;title_zh&quot;: &quot;\u642d\u8f09 RTX 5070 \u7684 OLED Asus \u96fb\u7af6\u7b46\u96fb\u7701\u4e0b 575 \u7f8e\u5143\uff0c\u73fe\u50c5 1,575 \u7f8e\u5143\u2014\u2014ROG Zephyrus G16 \u914d\u5099 240 Hz \u91cd\u65b0\u6574\u7406\u7387\u3001Intel Core Ultra 9\u300116GB RAM \u548c 1TB SSD&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/gaming-laptops/save-usd575-on-this-oled-asus-gaming-laptop-with-rtx-5070-now-just-usd1-575-rog-zephyrus-g16-comes-with-240-hz-refresh-rate-intel-core-ultra-9-16gb-of-ram-and-a-1tb-ssd&quot;, &quot;title_en&quot;: &quot;Save $575 on this OLED Asus gaming laptop with RTX 5070, now just $1,575 \u2014 ROG Zephyrus G16 comes with 240 Hz refresh rate, Intel Core Ultra 9, 16GB of RAM, and a 1TB SSD&quot;, &quot;title_zh&quot;: &quot;\u642d\u8f09 RTX 5070 \u7684 OLED Asus \u96fb\u7af6\u7b46\u96fb\u7701\u4e0b 575 \u7f8e\u5143\uff0c\u73fe\u50c5 1,575 \u7f8e\u5143\u2014\u2014ROG Zephyrus G16 \u914d\u5099 240 Hz \u91cd\u65b0\u6574\u7406\u7387\u3001Intel Core Ultra 9\u300116GB RAM \u548c 1TB SSD&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications" target="_blank">Linux prepares to axe legacy x32 hybrid mode — hybrid 32-bit/64-bit mode faces complete removal by 2027 due to low adoption</a></div>
+    <div class="title-zh">Linux 準備廢除舊版 x32 混合模式——混合 32 位/64 位模式因採用率低而將於 2027 年前完全移除</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Linux developers are discussing removing x32 ABI from the Linux kernel; a hybrid x32/64-bit mode that was never widely adopted by software developers.</div>
+  <div class="summary-zh">Linux 開發者正在討論從 Linux kernel 中移除 x32 ABI，這是一種從未被廣泛採用的混合 x32/64 位模式。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications&quot;, &quot;title_en&quot;: &quot;Linux prepares to axe legacy x32 hybrid mode \u2014 hybrid 32-bit/64-bit mode faces complete removal by 2027 due to low adoption&quot;, &quot;title_zh&quot;: &quot;Linux \u6e96\u5099\u5ee2\u9664\u820a\u7248 x32 \u6df7\u5408\u6a21\u5f0f\u2014\u2014\u6df7\u5408 32 \u4f4d/64 \u4f4d\u6a21\u5f0f\u56e0\u63a1\u7528\u7387\u4f4e\u800c\u5c07\u65bc 2027 \u5e74\u524d\u5b8c\u5168\u79fb\u9664&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications&quot;, &quot;title_en&quot;: &quot;Linux prepares to axe legacy x32 hybrid mode \u2014 hybrid 32-bit/64-bit mode faces complete removal by 2027 due to low adoption&quot;, &quot;title_zh&quot;: &quot;Linux \u6e96\u5099\u5ee2\u9664\u820a\u7248 x32 \u6df7\u5408\u6a21\u5f0f\u2014\u2014\u6df7\u5408 32 \u4f4d/64 \u4f4d\u6a21\u5f0f\u56e0\u63a1\u7528\u7387\u4f4e\u800c\u5c07\u65bc 2027 \u5e74\u524d\u5b8c\u5168\u79fb\u9664&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/linux/linux-developers-are-looking-to-retire-x32-abi-a-hybrid-32-bit-64-bit-mode-that-was-built-to-speed-up-64-bit-applications&quot;, &quot;title_en&quot;: &quot;Linux prepares to axe legacy x32 hybrid mode \u2014 hybrid 32-bit/64-bit mode faces complete removal by 2027 due to low adoption&quot;, &quot;title_zh&quot;: &quot;Linux \u6e96\u5099\u5ee2\u9664\u820a\u7248 x32 \u6df7\u5408\u6a21\u5f0f\u2014\u2014\u6df7\u5408 32 \u4f4d/64 \u4f4d\u6a21\u5f0f\u56e0\u63a1\u7528\u7387\u4f4e\u800c\u5c07\u65bc 2027 \u5e74\u524d\u5b8c\u5168\u79fb\u9664&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi11" data-url="https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency" target="_blank">New Silicon Motion SM2524XT chip brings 14 GB/s to mainstream SSDs — 6nm DRAMless controller boasts heavy AI PC optimization and slashes KV cache latency</a></div>
+    <div class="title-zh">Silicon Motion SM2524XT 晶片為主流 SSD 帶來 14 GB/s 速率——6nm 無 DRAM 控制器具有深度 AI PC 最佳化和降低 KV 快取延遲</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Silicon Motion announces its SM2524XT mainstream SSD controller that promises 14 GB/s read speed, up to 2.5 million random IOPS, and sustained random performance.</div>
+  <div class="summary-zh">Silicon Motion 推出 SM2524XT 主流 SSD 控制器，可提供 14 GB/s 讀取速度、高達 250 萬次隨機 IOPS 和持續隨機效能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi11"
+              onclick="toggleAnalysis('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency&quot;, &quot;title_en&quot;: &quot;New Silicon Motion SM2524XT chip brings 14 GB/s to mainstream SSDs \u2014 6nm DRAMless controller boasts heavy AI PC optimization and slashes KV cache latency&quot;, &quot;title_zh&quot;: &quot;Silicon Motion SM2524XT \u6676\u7247\u70ba\u4e3b\u6d41 SSD \u5e36\u4f86 14 GB/s \u901f\u7387\u2014\u20146nm \u7121 DRAM \u63a7\u5236\u5668\u5177\u6709\u6df1\u5ea6 AI PC \u6700\u4f73\u5316\u548c\u964d\u4f4e KV \u5feb\u53d6\u5ef6\u9072&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi11"
+              onclick="bookmarkArticle('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency&quot;, &quot;title_en&quot;: &quot;New Silicon Motion SM2524XT chip brings 14 GB/s to mainstream SSDs \u2014 6nm DRAMless controller boasts heavy AI PC optimization and slashes KV cache latency&quot;, &quot;title_zh&quot;: &quot;Silicon Motion SM2524XT \u6676\u7247\u70ba\u4e3b\u6d41 SSD \u5e36\u4f86 14 GB/s \u901f\u7387\u2014\u20146nm \u7121 DRAM \u63a7\u5236\u5668\u5177\u6709\u6df1\u5ea6 AI PC \u6700\u4f73\u5316\u548c\u964d\u4f4e KV \u5feb\u53d6\u5ef6\u9072&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/new-silicon-motion-sm2524xt-chip-brings-14-gb-s-to-mainstream-ssds-6nm-dramless-controller-boasts-heavy-ai-pc-optimization-and-slashes-kv-cache-latency&quot;, &quot;title_en&quot;: &quot;New Silicon Motion SM2524XT chip brings 14 GB/s to mainstream SSDs \u2014 6nm DRAMless controller boasts heavy AI PC optimization and slashes KV cache latency&quot;, &quot;title_zh&quot;: &quot;Silicon Motion SM2524XT \u6676\u7247\u70ba\u4e3b\u6d41 SSD \u5e36\u4f86 14 GB/s \u901f\u7387\u2014\u20146nm \u7121 DRAM \u63a7\u5236\u5668\u5177\u6709\u6df1\u5ea6 AI PC \u6700\u4f73\u5316\u548c\u964d\u4f4e KV \u5feb\u53d6\u5ef6\u9072&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi11"
+              onclick="copyPrompt('chi11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi12" data-url="https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues" target="_blank">Independent cyber audit finds zero malware or backdoors in DJI drones — U.S. firm's hardware analysis challenges FCC ban amid ongoing $1.56 billion legal battle</a></div>
+    <div class="title-zh">獨立網路安全審計未在 DJI 無人機中發現任何惡意軟體或後門——美國公司硬體分析對 FCC 禁令提出質疑，正經歷 15.6 億美元訴訟戰</div>
+    
+<div class="summary-block">
+  <div class="summary-en">DJI has published the results of an independent security assessment by U.S. cybersecurity firm OnDefend.</div>
+  <div class="summary-zh">DJI 已公布美國網路安全公司 OnDefend 進行的獨立安全評估結果。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi12"
+              onclick="toggleAnalysis('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues&quot;, &quot;title_en&quot;: &quot;Independent cyber audit finds zero malware or backdoors in DJI drones \u2014 U.S. firm's hardware analysis challenges FCC ban amid ongoing $1.56 billion legal battle&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u7db2\u8def\u5b89\u5168\u5be9\u8a08\u672a\u5728 DJI \u7121\u4eba\u6a5f\u4e2d\u767c\u73fe\u4efb\u4f55\u60e1\u610f\u8edf\u9ad4\u6216\u5f8c\u9580\u2014\u2014\u7f8e\u570b\u516c\u53f8\u786c\u9ad4\u5206\u6790\u5c0d FCC \u7981\u4ee4\u63d0\u51fa\u8cea\u7591\uff0c\u6b63\u7d93\u6b77 15.6 \u5104\u7f8e\u5143\u8a34\u8a1f\u6230&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi12"
+              onclick="bookmarkArticle('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues&quot;, &quot;title_en&quot;: &quot;Independent cyber audit finds zero malware or backdoors in DJI drones \u2014 U.S. firm's hardware analysis challenges FCC ban amid ongoing $1.56 billion legal battle&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u7db2\u8def\u5b89\u5168\u5be9\u8a08\u672a\u5728 DJI \u7121\u4eba\u6a5f\u4e2d\u767c\u73fe\u4efb\u4f55\u60e1\u610f\u8edf\u9ad4\u6216\u5f8c\u9580\u2014\u2014\u7f8e\u570b\u516c\u53f8\u786c\u9ad4\u5206\u6790\u5c0d FCC \u7981\u4ee4\u63d0\u51fa\u8cea\u7591\uff0c\u6b63\u7d93\u6b77 15.6 \u5104\u7f8e\u5143\u8a34\u8a1f\u6230&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/dji-commissioned-security-audit-finds-no-major-vulnerabilities-in-two-drone-models-as-fcc-lawsuit-continues&quot;, &quot;title_en&quot;: &quot;Independent cyber audit finds zero malware or backdoors in DJI drones \u2014 U.S. firm's hardware analysis challenges FCC ban amid ongoing $1.56 billion legal battle&quot;, &quot;title_zh&quot;: &quot;\u7368\u7acb\u7db2\u8def\u5b89\u5168\u5be9\u8a08\u672a\u5728 DJI \u7121\u4eba\u6a5f\u4e2d\u767c\u73fe\u4efb\u4f55\u60e1\u610f\u8edf\u9ad4\u6216\u5f8c\u9580\u2014\u2014\u7f8e\u570b\u516c\u53f8\u786c\u9ad4\u5206\u6790\u5c0d FCC \u7981\u4ee4\u63d0\u51fa\u8cea\u7591\uff0c\u6b63\u7d93\u6b77 15.6 \u5104\u7f8e\u5143\u8a34\u8a1f\u6230&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi12"
+              onclick="copyPrompt('chi12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi13" data-url="https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up" target="_blank">Ambernic's retro gaming handhelds are quietly losing RAM capacity and being downgraded to older LPDDR3 memory — company says 1GB capacity is still the standard, 512MB models 'an unexpected error'</a></div>
+    <div class="title-zh">Ambernic 復古遊戲掌機悄悄減少 RAM 容量並降級至舊版 LPDDR3 記憶體——公司聲稱 1GB 仍為標準配置，512MB 機型屬「意外錯誤」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Anbernic silently ships some retro gaming handhelds with less memory than initially advertised, without notifying customers.</div>
+  <div class="summary-zh">Ambernic 悄悄向部分復古遊戲掌機配置少於宣傳的記憶體，未通知消費者。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi13')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi13"
+              onclick="toggleAnalysis('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up&quot;, &quot;title_en&quot;: &quot;Ambernic's retro gaming handhelds are quietly losing RAM capacity and being downgraded to older LPDDR3 memory \u2014 company says 1GB capacity is still the standard, 512MB models 'an unexpected error'&quot;, &quot;title_zh&quot;: &quot;Ambernic \u5fa9\u53e4\u904a\u6232\u638c\u6a5f\u6084\u6084\u6e1b\u5c11 RAM \u5bb9\u91cf\u4e26\u964d\u7d1a\u81f3\u820a\u7248 LPDDR3 \u8a18\u61b6\u9ad4\u2014\u2014\u516c\u53f8\u8072\u7a31 1GB \u4ecd\u70ba\u6a19\u6e96\u914d\u7f6e\uff0c512MB \u6a5f\u578b\u5c6c\u300c\u610f\u5916\u932f\u8aa4\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi13"
+              onclick="bookmarkArticle('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up&quot;, &quot;title_en&quot;: &quot;Ambernic's retro gaming handhelds are quietly losing RAM capacity and being downgraded to older LPDDR3 memory \u2014 company says 1GB capacity is still the standard, 512MB models 'an unexpected error'&quot;, &quot;title_zh&quot;: &quot;Ambernic \u5fa9\u53e4\u904a\u6232\u638c\u6a5f\u6084\u6084\u6e1b\u5c11 RAM \u5bb9\u91cf\u4e26\u964d\u7d1a\u81f3\u820a\u7248 LPDDR3 \u8a18\u61b6\u9ad4\u2014\u2014\u516c\u53f8\u8072\u7a31 1GB \u4ecd\u70ba\u6a19\u6e96\u914d\u7f6e\uff0c512MB \u6a5f\u578b\u5c6c\u300c\u610f\u5916\u932f\u8aa4\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi13">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi13"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi13')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/video-games/handheld-gaming/gaming-handhelds-are-quietly-losing-ram-vendors-aggressively-trim-memory-specs-as-supply-dries-up&quot;, &quot;title_en&quot;: &quot;Ambernic's retro gaming handhelds are quietly losing RAM capacity and being downgraded to older LPDDR3 memory \u2014 company says 1GB capacity is still the standard, 512MB models 'an unexpected error'&quot;, &quot;title_zh&quot;: &quot;Ambernic \u5fa9\u53e4\u904a\u6232\u638c\u6a5f\u6084\u6084\u6e1b\u5c11 RAM \u5bb9\u91cf\u4e26\u964d\u7d1a\u81f3\u820a\u7248 LPDDR3 \u8a18\u61b6\u9ad4\u2014\u2014\u516c\u53f8\u8072\u7a31 1GB \u4ecd\u70ba\u6a19\u6e96\u914d\u7f6e\uff0c512MB \u6a5f\u578b\u5c6c\u300c\u610f\u5916\u932f\u8aa4\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi13"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi13">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi13"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi13"
+              onclick="copyPrompt('chi13')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi14" data-url="https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware" target="_blank">IBM ThinkPad T43 enthusiast installs 'almost' every version of Windows on the single-core laptop without using virtual machine — 26 years of Windows running bare metal, from 1996 Windows NT 4.0 to Windows 10 22H2 working on legendary hardware</a></div>
+    <div class="title-zh">IBM ThinkPad T43 愛好者在單核心筆電上安裝「幾乎」所有 Windows 版本而不使用虛擬機——26 年 Windows 從 1996 NT 4.0 到 Windows 10 22H2 在傳奇硬體上運行</div>
+    
+<div class="summary-block">
+  <div class="summary-en">An IBM ThinkPad user boasts that they can install '(almost) all versions of Windows from NT 4 to 10 22H2' with driver support, without resorting to virtual machine (VM) technology.</div>
+  <div class="summary-zh">IBM ThinkPad 使用者表示可以在傳奇硬體上安裝「從 NT 4 到 10 22H2 幾乎所有 Windows 版本」並具有驅動程式支持，無需依賴虛擬機器技術。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi14')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi14"
+              onclick="toggleAnalysis('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware&quot;, &quot;title_en&quot;: &quot;IBM ThinkPad T43 enthusiast installs 'almost' every version of Windows on the single-core laptop without using virtual machine \u2014 26 years of Windows running bare metal, from 1996 Windows NT 4.0 to Windows 10 22H2 working on legendary hardware&quot;, &quot;title_zh&quot;: &quot;IBM ThinkPad T43 \u611b\u597d\u8005\u5728\u55ae\u6838\u5fc3\u7b46\u96fb\u4e0a\u5b89\u88dd\u300c\u5e7e\u4e4e\u300d\u6240\u6709 Windows \u7248\u672c\u800c\u4e0d\u4f7f\u7528\u865b\u64ec\u6a5f\u2014\u201426 \u5e74 Windows \u5f9e 1996 NT 4.0 \u5230 Windows 10 22H2 \u5728\u50b3\u5947\u786c\u9ad4\u4e0a\u904b\u884c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi14"
+              onclick="bookmarkArticle('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware&quot;, &quot;title_en&quot;: &quot;IBM ThinkPad T43 enthusiast installs 'almost' every version of Windows on the single-core laptop without using virtual machine \u2014 26 years of Windows running bare metal, from 1996 Windows NT 4.0 to Windows 10 22H2 working on legendary hardware&quot;, &quot;title_zh&quot;: &quot;IBM ThinkPad T43 \u611b\u597d\u8005\u5728\u55ae\u6838\u5fc3\u7b46\u96fb\u4e0a\u5b89\u88dd\u300c\u5e7e\u4e4e\u300d\u6240\u6709 Windows \u7248\u672c\u800c\u4e0d\u4f7f\u7528\u865b\u64ec\u6a5f\u2014\u201426 \u5e74 Windows \u5f9e 1996 NT 4.0 \u5230 Windows 10 22H2 \u5728\u50b3\u5947\u786c\u9ad4\u4e0a\u904b\u884c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi14">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi14"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi14')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/software/windows/ibm-thinkpad-t43-enthusiast-installs-almost-every-version-of-windows-on-the-device-without-using-virtual-machine-1996-windows-nt-4-0-to-windows-10-22h2-working-on-legendary-hardware&quot;, &quot;title_en&quot;: &quot;IBM ThinkPad T43 enthusiast installs 'almost' every version of Windows on the single-core laptop without using virtual machine \u2014 26 years of Windows running bare metal, from 1996 Windows NT 4.0 to Windows 10 22H2 working on legendary hardware&quot;, &quot;title_zh&quot;: &quot;IBM ThinkPad T43 \u611b\u597d\u8005\u5728\u55ae\u6838\u5fc3\u7b46\u96fb\u4e0a\u5b89\u88dd\u300c\u5e7e\u4e4e\u300d\u6240\u6709 Windows \u7248\u672c\u800c\u4e0d\u4f7f\u7528\u865b\u64ec\u6a5f\u2014\u201426 \u5e74 Windows \u5f9e 1996 NT 4.0 \u5230 Windows 10 22H2 \u5728\u50b3\u5947\u786c\u9ad4\u4e0a\u904b\u884c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi14"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi14">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi14"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi14"
+              onclick="copyPrompt('chi14')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi15" data-url="https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source" target="_blank">Startup unveils underwater drone designed for protecting undersea cables — small drone dives to 1,640 feet, comes with four-hour battery endurance or unlimited range when tethered to surface power source</a></div>
+    <div class="title-zh">新創公司推出專為保護海底電纜而設計的水下無人機——小型無人機可潛至 1,640 英尺深，配備四小時電池續航力或連接水面電源時無限續航</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A British-New Zealand startup revealed an AI-powered undersea drone designed to for patrolling undersea infrastructure. It's powered by an autonomous software stack that allows a single operator to coordinate multiple drones from the air, land, and the surface of the sea with the undersea drone.</div>
+  <div class="summary-zh">一家英紐合資新創公司推出 AI 驅動的水下無人機，用於海底基礎設施巡檢，採用自主軟體堆疊讓單一操作員能從空中、陸地和海面協調多架無人機。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi15')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi15"
+              onclick="toggleAnalysis('chi15', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source&quot;, &quot;title_en&quot;: &quot;Startup unveils underwater drone designed for protecting undersea cables \u2014 small drone dives to 1,640 feet, comes with four-hour battery endurance or unlimited range when tethered to surface power source&quot;, &quot;title_zh&quot;: &quot;\u65b0\u5275\u516c\u53f8\u63a8\u51fa\u5c08\u70ba\u4fdd\u8b77\u6d77\u5e95\u96fb\u7e9c\u800c\u8a2d\u8a08\u7684\u6c34\u4e0b\u7121\u4eba\u6a5f\u2014\u2014\u5c0f\u578b\u7121\u4eba\u6a5f\u53ef\u6f5b\u81f3 1,640 \u82f1\u5c3a\u6df1\uff0c\u914d\u5099\u56db\u5c0f\u6642\u96fb\u6c60\u7e8c\u822a\u529b\u6216\u9023\u63a5\u6c34\u9762\u96fb\u6e90\u6642\u7121\u9650\u7e8c\u822a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi15"
+              onclick="bookmarkArticle('chi15', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source&quot;, &quot;title_en&quot;: &quot;Startup unveils underwater drone designed for protecting undersea cables \u2014 small drone dives to 1,640 feet, comes with four-hour battery endurance or unlimited range when tethered to surface power source&quot;, &quot;title_zh&quot;: &quot;\u65b0\u5275\u516c\u53f8\u63a8\u51fa\u5c08\u70ba\u4fdd\u8b77\u6d77\u5e95\u96fb\u7e9c\u800c\u8a2d\u8a08\u7684\u6c34\u4e0b\u7121\u4eba\u6a5f\u2014\u2014\u5c0f\u578b\u7121\u4eba\u6a5f\u53ef\u6f5b\u81f3 1,640 \u82f1\u5c3a\u6df1\uff0c\u914d\u5099\u56db\u5c0f\u6642\u96fb\u6c60\u7e8c\u822a\u529b\u6216\u9023\u63a5\u6c34\u9762\u96fb\u6e90\u6642\u7121\u9650\u7e8c\u822a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi15">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi15"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi15')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi15', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/startup-unveils-uncrewed-vehicle-designed-for-monitoring-undersea-cables-small-drone-comes-with-four-hour-battery-endurance-or-unlimited-range-when-tethered-to-surface-power-source&quot;, &quot;title_en&quot;: &quot;Startup unveils underwater drone designed for protecting undersea cables \u2014 small drone dives to 1,640 feet, comes with four-hour battery endurance or unlimited range when tethered to surface power source&quot;, &quot;title_zh&quot;: &quot;\u65b0\u5275\u516c\u53f8\u63a8\u51fa\u5c08\u70ba\u4fdd\u8b77\u6d77\u5e95\u96fb\u7e9c\u800c\u8a2d\u8a08\u7684\u6c34\u4e0b\u7121\u4eba\u6a5f\u2014\u2014\u5c0f\u578b\u7121\u4eba\u6a5f\u53ef\u6f5b\u81f3 1,640 \u82f1\u5c3a\u6df1\uff0c\u914d\u5099\u56db\u5c0f\u6642\u96fb\u6c60\u7e8c\u822a\u529b\u6216\u9023\u63a5\u6c34\u9762\u96fb\u6e90\u6642\u7121\u9650\u7e8c\u822a&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi15"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi15">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi15"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi15"
+              onclick="copyPrompt('chi15')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi16" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees" target="_blank">Mystery company accidentally blew $500 million on Claude AI in a single month — failed to put usage limit on licenses for employees</a></div>
+    <div class="title-zh">神秘公司意外在單月內花費 5 億美元購買 Claude AI——未對員工授權設置使用限制</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A new report cites an AI consultant claiming a client accidentally spent $500,000,000 on Claude in a single month.</div>
+  <div class="summary-zh">一份新報告引述 AI 顧問稱客戶意外在單月內花費 5 億美元購買 Claude。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi16')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi16"
+              onclick="toggleAnalysis('chi16', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees&quot;, &quot;title_en&quot;: &quot;Mystery company accidentally blew $500 million on Claude AI in a single month \u2014 failed to put usage limit on licenses for employees&quot;, &quot;title_zh&quot;: &quot;\u795e\u79d8\u516c\u53f8\u610f\u5916\u5728\u55ae\u6708\u5167\u82b1\u8cbb 5 \u5104\u7f8e\u5143\u8cfc\u8cb7 Claude AI\u2014\u2014\u672a\u5c0d\u54e1\u5de5\u6388\u6b0a\u8a2d\u7f6e\u4f7f\u7528\u9650\u5236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi16"
+              onclick="bookmarkArticle('chi16', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees&quot;, &quot;title_en&quot;: &quot;Mystery company accidentally blew $500 million on Claude AI in a single month \u2014 failed to put usage limit on licenses for employees&quot;, &quot;title_zh&quot;: &quot;\u795e\u79d8\u516c\u53f8\u610f\u5916\u5728\u55ae\u6708\u5167\u82b1\u8cbb 5 \u5104\u7f8e\u5143\u8cfc\u8cb7 Claude AI\u2014\u2014\u672a\u5c0d\u54e1\u5de5\u6388\u6b0a\u8a2d\u7f6e\u4f7f\u7528\u9650\u5236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi16">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi16"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi16')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi16', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/mystery-company-accidentally-blew-usd500-million-on-claude-in-a-single-month-failed-to-put-usage-limit-on-licenses-for-employees&quot;, &quot;title_en&quot;: &quot;Mystery company accidentally blew $500 million on Claude AI in a single month \u2014 failed to put usage limit on licenses for employees&quot;, &quot;title_zh&quot;: &quot;\u795e\u79d8\u516c\u53f8\u610f\u5916\u5728\u55ae\u6708\u5167\u82b1\u8cbb 5 \u5104\u7f8e\u5143\u8cfc\u8cb7 Claude AI\u2014\u2014\u672a\u5c0d\u54e1\u5de5\u6388\u6b0a\u8a2d\u7f6e\u4f7f\u7528\u9650\u5236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi16"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi16">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi16"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi16"
+              onclick="copyPrompt('chi16')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi17" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities" target="_blank">Microsoft warns GPU mining malware is being spread to users through SEO poisoning and AI chatbots — cryptojacking campaign targets gamers and high-end PC users with downloads disguised as popular PC utilities</a></div>
+    <div class="title-zh">Microsoft 警告 GPU 挖礦惡意軟體透過 SEO 投毒和 AI 聊天機器人傳播——加密劫持活動以偽裝成熱門 PC 工具程式瞄準玩家和高端 PC 用戶</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Microsoft has uncovered a GPU-focused cryptojacking campaign that used SEO poisoning and, in some cases, AI chatbot software recommendations to spread malware disguised as popular PC utilities like HWMonitor and CrystalDiskInfo</div>
+  <div class="summary-zh">Microsoft 發現一場以 GPU 為目標的加密劫持活動，利用 SEO 投毒和 AI 聊天機器人推薦散布偽裝為 HWMonitor 和 CrystalDiskInfo 等熱門 PC 工具的惡意軟體。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi17')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi17"
+              onclick="toggleAnalysis('chi17', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities&quot;, &quot;title_en&quot;: &quot;Microsoft warns GPU mining malware is being spread to users through SEO poisoning and AI chatbots \u2014 cryptojacking campaign targets gamers and high-end PC users with downloads disguised as popular PC utilities&quot;, &quot;title_zh&quot;: &quot;Microsoft \u8b66\u544a GPU \u6316\u7926\u60e1\u610f\u8edf\u9ad4\u900f\u904e SEO \u6295\u6bd2\u548c AI \u804a\u5929\u6a5f\u5668\u4eba\u50b3\u64ad\u2014\u2014\u52a0\u5bc6\u52ab\u6301\u6d3b\u52d5\u4ee5\u507d\u88dd\u6210\u71b1\u9580 PC \u5de5\u5177\u7a0b\u5f0f\u7784\u6e96\u73a9\u5bb6\u548c\u9ad8\u7aef PC \u7528\u6236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi17"
+              onclick="bookmarkArticle('chi17', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities&quot;, &quot;title_en&quot;: &quot;Microsoft warns GPU mining malware is being spread to users through SEO poisoning and AI chatbots \u2014 cryptojacking campaign targets gamers and high-end PC users with downloads disguised as popular PC utilities&quot;, &quot;title_zh&quot;: &quot;Microsoft \u8b66\u544a GPU \u6316\u7926\u60e1\u610f\u8edf\u9ad4\u900f\u904e SEO \u6295\u6bd2\u548c AI \u804a\u5929\u6a5f\u5668\u4eba\u50b3\u64ad\u2014\u2014\u52a0\u5bc6\u52ab\u6301\u6d3b\u52d5\u4ee5\u507d\u88dd\u6210\u71b1\u9580 PC \u5de5\u5177\u7a0b\u5f0f\u7784\u6e96\u73a9\u5bb6\u548c\u9ad8\u7aef PC \u7528\u6236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi17">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi17"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi17')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi17', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-warns-gpu-mining-malware-is-being-spread-to-users-through-seo-poisoning-and-ai-chatbots-cryptojacking-campaign-targets-gamers-and-high-end-pc-users-with-downloads-disguised-as-popular-pc-utilities&quot;, &quot;title_en&quot;: &quot;Microsoft warns GPU mining malware is being spread to users through SEO poisoning and AI chatbots \u2014 cryptojacking campaign targets gamers and high-end PC users with downloads disguised as popular PC utilities&quot;, &quot;title_zh&quot;: &quot;Microsoft \u8b66\u544a GPU \u6316\u7926\u60e1\u610f\u8edf\u9ad4\u900f\u904e SEO \u6295\u6bd2\u548c AI \u804a\u5929\u6a5f\u5668\u4eba\u50b3\u64ad\u2014\u2014\u52a0\u5bc6\u52ab\u6301\u6d3b\u52d5\u4ee5\u507d\u88dd\u6210\u71b1\u9580 PC \u5de5\u5177\u7a0b\u5f0f\u7784\u6e96\u73a9\u5bb6\u548c\u9ad8\u7aef PC \u7528\u6236&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi17"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi17">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi17"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi17"
+              onclick="copyPrompt('chi17')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi18" data-url="https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/" target="_blank">Gartner Says Supply Chain Confront Geopolitical and AI Challenges</a></div>
+    <div class="title-zh">Gartner 表示供應鏈面臨地緣政治和 AI 挑戰</div>
+    
+<div class="summary-block">
+  <div class="summary-en">BARCELONA, Spain — During last week’s Gartner Supply Chain Symposium/Xpo , Alejandro Santalo, a senior director analyst at Gartner, outlined in an interview with EE Times the primary challenges and</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi18')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi18"
+              onclick="toggleAnalysis('chi18', {&quot;url&quot;: &quot;https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Gartner Says Supply Chain Confront Geopolitical and AI Challenges&quot;, &quot;title_zh&quot;: &quot;Gartner \u8868\u793a\u4f9b\u61c9\u93c8\u9762\u81e8\u5730\u7de3\u653f\u6cbb\u548c AI \u6311\u6230&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi18"
+              onclick="bookmarkArticle('chi18', {&quot;url&quot;: &quot;https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Gartner Says Supply Chain Confront Geopolitical and AI Challenges&quot;, &quot;title_zh&quot;: &quot;Gartner \u8868\u793a\u4f9b\u61c9\u93c8\u9762\u81e8\u5730\u7de3\u653f\u6cbb\u548c AI \u6311\u6230&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi18">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi18"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi18')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi18', {&quot;url&quot;: &quot;https://www.eetimes.com/gartner-says-supply-chain-confront-geopolitical-and-ai-challenges/&quot;, &quot;title_en&quot;: &quot;Gartner Says Supply Chain Confront Geopolitical and AI Challenges&quot;, &quot;title_zh&quot;: &quot;Gartner \u8868\u793a\u4f9b\u61c9\u93c8\u9762\u81e8\u5730\u7de3\u653f\u6cbb\u548c AI \u6311\u6230&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi18"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi18">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi18"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi18"
+              onclick="copyPrompt('chi18')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi19" data-url="https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/" target="_blank">Qilimanjaro Pushes Analog Quantum as AI Compute Demands Surge</a></div>
+    <div class="title-zh">Qilimanjaro 在 AI 運算需求激增之際推進類比量子技術</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Most quantum computing companies are pursuing gate-based digital quantum systems. These machines manipulate qubits through long sequences of quantum logic gates, similar in concept to how conventional</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi19')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi19"
+              onclick="toggleAnalysis('chi19', {&quot;url&quot;: &quot;https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/&quot;, &quot;title_en&quot;: &quot;Qilimanjaro Pushes Analog Quantum as AI Compute Demands Surge&quot;, &quot;title_zh&quot;: &quot;Qilimanjaro \u5728 AI \u904b\u7b97\u9700\u6c42\u6fc0\u589e\u4e4b\u969b\u63a8\u9032\u985e\u6bd4\u91cf\u5b50\u6280\u8853&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi19"
+              onclick="bookmarkArticle('chi19', {&quot;url&quot;: &quot;https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/&quot;, &quot;title_en&quot;: &quot;Qilimanjaro Pushes Analog Quantum as AI Compute Demands Surge&quot;, &quot;title_zh&quot;: &quot;Qilimanjaro \u5728 AI \u904b\u7b97\u9700\u6c42\u6fc0\u589e\u4e4b\u969b\u63a8\u9032\u985e\u6bd4\u91cf\u5b50\u6280\u8853&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi19">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi19"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi19')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi19', {&quot;url&quot;: &quot;https://www.eetimes.com/qilimanjaro-pushes-analog-quantum-as-ai-compute-demands-surge/&quot;, &quot;title_en&quot;: &quot;Qilimanjaro Pushes Analog Quantum as AI Compute Demands Surge&quot;, &quot;title_zh&quot;: &quot;Qilimanjaro \u5728 AI \u904b\u7b97\u9700\u6c42\u6fc0\u589e\u4e4b\u969b\u63a8\u9032\u985e\u6bd4\u91cf\u5b50\u6280\u8853&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi19"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi19">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi19"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi19"
+              onclick="copyPrompt('chi19')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi20" data-url="https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/" target="_blank">Moving Defect Detection And Classification To The Edge</a></div>
+    <div class="title-zh">將缺陷檢測與分類轉移至邊緣運算</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The number of defects detected through inspection is exploding at each new process node. There are now millions of defects being identified on each wafer, but only a fraction of those can cause problems. Prasad Bachiraju, senior director of business development at Onto Innovation, talks about the different types of images being captured using different illumination modes at different touch points, how that data gets classified, and how AI and machine learning at the edge can be used to identify critical errors and separate out the nuisance errors that may be caused by process variation and neighborhood noise. The post Moving Defect Detection And Classification To The Edge appeared first on Semiconductor Engineering .</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi20')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi20"
+              onclick="toggleAnalysis('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/&quot;, &quot;title_en&quot;: &quot;Moving Defect Detection And Classification To The Edge&quot;, &quot;title_zh&quot;: &quot;\u5c07\u7f3a\u9677\u6aa2\u6e2c\u8207\u5206\u985e\u8f49\u79fb\u81f3\u908a\u7de3\u904b\u7b97&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi20"
+              onclick="bookmarkArticle('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/&quot;, &quot;title_en&quot;: &quot;Moving Defect Detection And Classification To The Edge&quot;, &quot;title_zh&quot;: &quot;\u5c07\u7f3a\u9677\u6aa2\u6e2c\u8207\u5206\u985e\u8f49\u79fb\u81f3\u908a\u7de3\u904b\u7b97&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi20">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi20"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi20')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi20', {&quot;url&quot;: &quot;https://semiengineering.com/moving-defect-detection-and-classification-to-the-edge/&quot;, &quot;title_en&quot;: &quot;Moving Defect Detection And Classification To The Edge&quot;, &quot;title_zh&quot;: &quot;\u5c07\u7f3a\u9677\u6aa2\u6e2c\u8207\u5206\u985e\u8f49\u79fb\u81f3\u908a\u7de3\u904b\u7b97&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi20"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi20">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi20"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi20"
+              onclick="copyPrompt('chi20')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi21" data-url="https://semiengineering.com/chip-industry-week-in-review-140/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/chip-industry-week-in-review-140/" target="_blank">Chip Industry Week In Review</a></div>
+    <div class="title-zh">晶片產業週評</div>
+    
+<div class="summary-block">
+  <div class="summary-en">ECTC Panel-level packaging, hybrid bonding, new substrates, and fine-pitch interconnects topped the list of advanced packaging technologies at ECTC this week. Among the announcements: ASE launched an automated 310mm × 310mm panel-level packaging production line. Expected to enter production in the first half of 2027, the line is compatible with FOCoS and FOCoS-Bridge packaging platforms, delivering line/space capabilities of 2/2µm and 8/8µm, respectively. Fig.1: ASE&amp;#8217;s automated panel-level packaging line supports 310mm × 310mm format Imec and EV Group presented 200nm wafer-to-wafer hybrid bonding technology at a 200nm Cu interconnect pad pitch with high overlay accuracy. LG Innotek introduced its 40% larger FC‑BGA substrate samples . Fujifilm and imec uncorked their co-developed tin </div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/chip-industry-week-in-review-140/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi21')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi21"
+              onclick="toggleAnalysis('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/chip-industry-week-in-review-140/&quot;, &quot;title_en&quot;: &quot;Chip Industry Week In Review&quot;, &quot;title_zh&quot;: &quot;\u6676\u7247\u7522\u696d\u9031\u8a55&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi21"
+              onclick="bookmarkArticle('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/chip-industry-week-in-review-140/&quot;, &quot;title_en&quot;: &quot;Chip Industry Week In Review&quot;, &quot;title_zh&quot;: &quot;\u6676\u7247\u7522\u696d\u9031\u8a55&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi21">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi21"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi21')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi21', {&quot;url&quot;: &quot;https://semiengineering.com/chip-industry-week-in-review-140/&quot;, &quot;title_en&quot;: &quot;Chip Industry Week In Review&quot;, &quot;title_zh&quot;: &quot;\u6676\u7247\u7522\u696d\u9031\u8a55&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi21"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi21">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi21"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi21"
+              onclick="copyPrompt('chi21')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi22" data-url="https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/" target="_blank">From Billions Of Violations To Actionable Insights: Calibre Vision AI</a></div>
+    <div class="title-zh">從數十億違規到可行見解：Calibre Vision AI</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As advanced node SoCs increase in size and complexity, early full-chip DRC runs frequently produce hundreds of millions to billions of violations. This overwhelming scale leads to new challenges—not just in running checks, but in comprehending results, setting priorities, and coordinating closure across teams. Introduced in 2025, Calibre Vision AI enabled instance-complete, AI-guided triage at full chip scale. In 2026, the platform evolved into a real-time, collaborative closure environment focused on accelerating DRC convergence at every stage. New capabilities—such as incremental OASIS results loading, enhanced AI-guided Signal grouping, persistent Signal properties and status, global filtering, flexible save and export options, and tighter integration with design implementation tools—al</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi22')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi22"
+              onclick="toggleAnalysis('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/&quot;, &quot;title_en&quot;: &quot;From Billions Of Violations To Actionable Insights: Calibre Vision AI&quot;, &quot;title_zh&quot;: &quot;\u5f9e\u6578\u5341\u5104\u9055\u898f\u5230\u53ef\u884c\u898b\u89e3\uff1aCalibre Vision AI&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi22"
+              onclick="bookmarkArticle('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/&quot;, &quot;title_en&quot;: &quot;From Billions Of Violations To Actionable Insights: Calibre Vision AI&quot;, &quot;title_zh&quot;: &quot;\u5f9e\u6578\u5341\u5104\u9055\u898f\u5230\u53ef\u884c\u898b\u89e3\uff1aCalibre Vision AI&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi22">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi22"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi22')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi22', {&quot;url&quot;: &quot;https://semiengineering.com/from-billions-of-violations-to-actionable-insights-calibre-vision-ai/&quot;, &quot;title_en&quot;: &quot;From Billions Of Violations To Actionable Insights: Calibre Vision AI&quot;, &quot;title_zh&quot;: &quot;\u5f9e\u6578\u5341\u5104\u9055\u898f\u5230\u53ef\u884c\u898b\u89e3\uff1aCalibre Vision AI&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi22"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi22">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi22"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi22"
+              onclick="copyPrompt('chi22')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi23" data-url="https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The Next Platform</span>
+      <span class="date-tag">Fri, 29 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585" target="_blank">Data And Storage At The Center Of The AI Stack</a></div>
+    <div class="title-zh">資料與儲存位於 AI 堆疊中心</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi23')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi23"
+              onclick="toggleAnalysis('chi23', {&quot;url&quot;: &quot;https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585&quot;, &quot;title_en&quot;: &quot;Data And Storage At The Center Of The AI Stack&quot;, &quot;title_zh&quot;: &quot;\u8cc7\u6599\u8207\u5132\u5b58\u4f4d\u65bc AI \u5806\u758a\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi23"
+              onclick="bookmarkArticle('chi23', {&quot;url&quot;: &quot;https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585&quot;, &quot;title_en&quot;: &quot;Data And Storage At The Center Of The AI Stack&quot;, &quot;title_zh&quot;: &quot;\u8cc7\u6599\u8207\u5132\u5b58\u4f4d\u65bc AI \u5806\u758a\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi23">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi23"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi23')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi23', {&quot;url&quot;: &quot;https://www.nextplatform.com/store/2026/05/29/data-and-storage-at-the-center-of-the-ai-stack/5247585&quot;, &quot;title_en&quot;: &quot;Data And Storage At The Center Of The AI Stack&quot;, &quot;title_zh&quot;: &quot;\u8cc7\u6599\u8207\u5132\u5b58\u4f4d\u65bc AI \u5806\u758a\u4e2d\u5fc3&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Fri, 29 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi23"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi23">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi23"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi23"
+              onclick="copyPrompt('chi23')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
