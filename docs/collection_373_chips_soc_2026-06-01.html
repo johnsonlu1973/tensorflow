@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-06-01</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-06-01 &nbsp;·&nbsp; 12 篇 &nbsp;·&nbsp; 更新：2026-06-01 14:04 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman" target="_blank">Nvidia unveils DGX Spark roadmap for laptops and desktop PCs at Computex 2026 —three generations outlined, Rubin with LPDDR6 memory, followed by Rosa Feynman</a></div>
+    <div class="title-zh">Nvidia 在 Computex 2026 發佈 DGX Spark 筆記型電腦和桌上型電腦路線圖——規劃三代產品，Rubin 採用 LPDDR6 記憶體，後續為 Rosa 和 Feynman</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Along with its first-generation RTX Spark platform for desktop and laptop PCs, Nvidia CEO Jensen Huang revealed the company's commitment to future generations of those platforms on its future roadmaps.</div>
+  <div class="summary-zh">Nvidia CEO Jensen Huang 在發佈首代 RTX Spark 平台時，揭示了該公司對未來幾代平台的承諾。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman&quot;, &quot;title_en&quot;: &quot;Nvidia unveils DGX Spark roadmap for laptops and desktop PCs at Computex 2026 \u2014three generations outlined, Rubin with LPDDR6 memory, followed by Rosa Feynman&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u767c\u4f48 DGX Spark \u7b46\u8a18\u578b\u96fb\u8166\u548c\u684c\u4e0a\u578b\u96fb\u8166\u8def\u7dda\u5716\u2014\u2014\u898f\u5283\u4e09\u4ee3\u7522\u54c1\uff0cRubin \u63a1\u7528 LPDDR6 \u8a18\u61b6\u9ad4\uff0c\u5f8c\u7e8c\u70ba Rosa \u548c Feynman&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman&quot;, &quot;title_en&quot;: &quot;Nvidia unveils DGX Spark roadmap for laptops and desktop PCs at Computex 2026 \u2014three generations outlined, Rubin with LPDDR6 memory, followed by Rosa Feynman&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u767c\u4f48 DGX Spark \u7b46\u8a18\u578b\u96fb\u8166\u548c\u684c\u4e0a\u578b\u96fb\u8166\u8def\u7dda\u5716\u2014\u2014\u898f\u5283\u4e09\u4ee3\u7522\u54c1\uff0cRubin \u63a1\u7528 LPDDR6 \u8a18\u61b6\u9ad4\uff0c\u5f8c\u7e8c\u70ba Rosa \u548c Feynman&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidia-unveils-dgx-sparrk-roadmap-for-laptops-and-desktop-pcs-at-computex-2026-three-generations-outlined-rubin-followed-by-rosa-feynman&quot;, &quot;title_en&quot;: &quot;Nvidia unveils DGX Spark roadmap for laptops and desktop PCs at Computex 2026 \u2014three generations outlined, Rubin with LPDDR6 memory, followed by Rosa Feynman&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u767c\u4f48 DGX Spark \u7b46\u8a18\u578b\u96fb\u8166\u548c\u684c\u4e0a\u578b\u96fb\u8166\u8def\u7dda\u5716\u2014\u2014\u898f\u5283\u4e09\u4ee3\u7522\u54c1\uff0cRubin \u63a1\u7528 LPDDR6 \u8a18\u61b6\u9ad4\uff0c\u5f8c\u7e8c\u70ba Rosa \u548c Feynman&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory" target="_blank">Nvidia unveils RTX Spark Superchip for laptops and desktop PCs at Computex 2026 – new platform promises to turn Windows into an agentic AI OS with Arm CPU, Blackwell GPU, and 128GB unified memory</a></div>
+    <div class="title-zh">Nvidia 在 Computex 2026 推出 RTX Spark 超級芯片——新平台承諾將 Windows 轉變為智能體 AI OS，搭載 Arm CPU、Blackwell GPU 和 128GB 統一記憶體</div>
+    
+<div class="summary-block">
+  <div class="summary-en">At Computex 2026, Nvidia CEO Jensen Huang unveiled the RTX Spark Superchip, a new Arm laptop and desktop platform that powers agentic AI on Windows with a 20-core Arm CPU, powerful 6144-CUDA-core Blackwell GPU, and up to 128 GB of local memory.</div>
+  <div class="summary-zh">Nvidia CEO Jensen Huang 在 Computex 2026 發佈 RTX Spark Superchip，這是一款 Arm 筆記型電腦和桌上型電腦平台，具備 20 核 Arm CPU、強大的 6144-CUDA-核心 Blackwell GPU 和高達 128GB 的本地記憶體，為 Windows 帶來智能體 AI 能力。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory&quot;, &quot;title_en&quot;: &quot;Nvidia unveils RTX Spark Superchip for laptops and desktop PCs at Computex 2026 \u2013 new platform promises to turn Windows into an agentic AI OS with Arm CPU, Blackwell GPU, and 128GB unified memory&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u63a8\u51fa RTX Spark \u8d85\u7d1a\u82af\u7247\u2014\u2014\u65b0\u5e73\u53f0\u627f\u8afe\u5c07 Windows \u8f49\u8b8a\u70ba\u667a\u80fd\u9ad4 AI OS\uff0c\u642d\u8f09 Arm CPU\u3001Blackwell GPU \u548c 128GB \u7d71\u4e00\u8a18\u61b6\u9ad4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory&quot;, &quot;title_en&quot;: &quot;Nvidia unveils RTX Spark Superchip for laptops and desktop PCs at Computex 2026 \u2013 new platform promises to turn Windows into an agentic AI OS with Arm CPU, Blackwell GPU, and 128GB unified memory&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u63a8\u51fa RTX Spark \u8d85\u7d1a\u82af\u7247\u2014\u2014\u65b0\u5e73\u53f0\u627f\u8afe\u5c07 Windows \u8f49\u8b8a\u70ba\u667a\u80fd\u9ad4 AI OS\uff0c\u642d\u8f09 Arm CPU\u3001Blackwell GPU \u548c 128GB \u7d71\u4e00\u8a18\u61b6\u9ad4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/nvidia-unveils-rtx-spark-superchip-at-computex-2026-new-platform-promises-to-turn-windows-into-an-agentic-ai-os-with-arm-cpu-blackwell-gpu-and-128gb-unified-memory&quot;, &quot;title_en&quot;: &quot;Nvidia unveils RTX Spark Superchip for laptops and desktop PCs at Computex 2026 \u2013 new platform promises to turn Windows into an agentic AI OS with Arm CPU, Blackwell GPU, and 128GB unified memory&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5728 Computex 2026 \u63a8\u51fa RTX Spark \u8d85\u7d1a\u82af\u7247\u2014\u2014\u65b0\u5e73\u53f0\u627f\u8afe\u5c07 Windows \u8f49\u8b8a\u70ba\u667a\u80fd\u9ad4 AI OS\uff0c\u642d\u8f09 Arm CPU\u3001Blackwell GPU \u548c 128GB \u7d71\u4e00\u8a18\u61b6\u9ad4&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel" target="_blank">Intel Xeon 6+ ‘Clearwater Forest’ puts 18A in the data center with up to 288 cores, 576 MB of L3 cache — new Xeon 6990E+ is 30% faster per thread than 192-core AMD Epyc 9965, says Intel</a></div>
+    <div class="title-zh">Intel Xeon 6+ 'Clearwater Forest' 將 18A 製程帶入資料中心，最高達 288 核、576MB L3 快取——新 Xeon 6990E+ 的單線程性能比 192 核 AMD Epyc 9965 快 30%，Intel 聲稱</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Intel is putting its 18A node into the data center with new Xeon 6+ Clearwater Forest CPUs, which pack up to 288 E-cores for dense compute.</div>
+  <div class="summary-zh">Intel 透過新的 Xeon 6+ Clearwater Forest CPU 將 18A 節點引入資料中心，這些處理器最多配備 288 個 E 核心以實現密集運算。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel&quot;, &quot;title_en&quot;: &quot;Intel Xeon 6+ \u2018Clearwater Forest\u2019 puts 18A in the data center with up to 288 cores, 576 MB of L3 cache \u2014 new Xeon 6990E+ is 30% faster per thread than 192-core AMD Epyc 9965, says Intel&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 6+ 'Clearwater Forest' \u5c07 18A \u88fd\u7a0b\u5e36\u5165\u8cc7\u6599\u4e2d\u5fc3\uff0c\u6700\u9ad8\u9054 288 \u6838\u3001576MB L3 \u5feb\u53d6\u2014\u2014\u65b0 Xeon 6990E+ \u7684\u55ae\u7dda\u7a0b\u6027\u80fd\u6bd4 192 \u6838 AMD Epyc 9965 \u5feb 30%\uff0cIntel \u8072\u7a31&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel&quot;, &quot;title_en&quot;: &quot;Intel Xeon 6+ \u2018Clearwater Forest\u2019 puts 18A in the data center with up to 288 cores, 576 MB of L3 cache \u2014 new Xeon 6990E+ is 30% faster per thread than 192-core AMD Epyc 9965, says Intel&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 6+ 'Clearwater Forest' \u5c07 18A \u88fd\u7a0b\u5e36\u5165\u8cc7\u6599\u4e2d\u5fc3\uff0c\u6700\u9ad8\u9054 288 \u6838\u3001576MB L3 \u5feb\u53d6\u2014\u2014\u65b0 Xeon 6990E+ \u7684\u55ae\u7dda\u7a0b\u6027\u80fd\u6bd4 192 \u6838 AMD Epyc 9965 \u5feb 30%\uff0cIntel \u8072\u7a31&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-6-clearwater-forest-puts-18a-in-the-data-center-with-up-to-288-cores-576-mb-of-l3-cache-new-xeon-6990e-is-30-percent-faster-per-thread-than-192-core-amd-epyc-9965-says-intel&quot;, &quot;title_en&quot;: &quot;Intel Xeon 6+ \u2018Clearwater Forest\u2019 puts 18A in the data center with up to 288 cores, 576 MB of L3 cache \u2014 new Xeon 6990E+ is 30% faster per thread than 192-core AMD Epyc 9965, says Intel&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 6+ 'Clearwater Forest' \u5c07 18A \u88fd\u7a0b\u5e36\u5165\u8cc7\u6599\u4e2d\u5fc3\uff0c\u6700\u9ad8\u9054 288 \u6838\u3001576MB L3 \u5feb\u53d6\u2014\u2014\u65b0 Xeon 6990E+ \u7684\u55ae\u7dda\u7a0b\u6027\u80fd\u6bd4 192 \u6838 AMD Epyc 9965 \u5feb 30%\uff0cIntel \u8072\u7a31&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth" target="_blank">Intel Xeon 7 ‘Diamond Rapids’ CPUs officially launching in 2027 on Intel 18A-P — next-gen P-core Xeon features PCIe 6.0, 50% higher core counts, and twice the memory bandwidth</a></div>
+    <div class="title-zh">Intel Xeon 7 'Diamond Rapids' CPU 將於 2027 年正式在 Intel 18A-P 上推出——下一代 P 核心 Xeon 支援 PCIe 6.0、核心數增加 50% 和記憶體頻寬翻倍</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Intel has officially confirmed its next-gen Xeon 7 Diamond Rapids CPUs are coming in 2027, featuring 50% higher core counts and twice the memory bandwidth of Xeon 6 in a bid to compete against AMD’s upcoming EPYC Venice CPUs.</div>
+  <div class="summary-zh">Intel 正式確認下一代 Xeon 7 Diamond Rapids CPU 將於 2027 年推出，核心數增加 50%，記憶體頻寬翻倍，以對抗 AMD 即將推出的 EPYC Venice CPU。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth&quot;, &quot;title_en&quot;: &quot;Intel Xeon 7 \u2018Diamond Rapids\u2019 CPUs officially launching in 2027 on Intel 18A-P \u2014 next-gen P-core Xeon features PCIe 6.0, 50% higher core counts, and twice the memory bandwidth&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 7 'Diamond Rapids' CPU \u5c07\u65bc 2027 \u5e74\u6b63\u5f0f\u5728 Intel 18A-P \u4e0a\u63a8\u51fa\u2014\u2014\u4e0b\u4e00\u4ee3 P \u6838\u5fc3 Xeon \u652f\u63f4 PCIe 6.0\u3001\u6838\u5fc3\u6578\u589e\u52a0 50% \u548c\u8a18\u61b6\u9ad4\u983b\u5bec\u7ffb\u500d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth&quot;, &quot;title_en&quot;: &quot;Intel Xeon 7 \u2018Diamond Rapids\u2019 CPUs officially launching in 2027 on Intel 18A-P \u2014 next-gen P-core Xeon features PCIe 6.0, 50% higher core counts, and twice the memory bandwidth&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 7 'Diamond Rapids' CPU \u5c07\u65bc 2027 \u5e74\u6b63\u5f0f\u5728 Intel 18A-P \u4e0a\u63a8\u51fa\u2014\u2014\u4e0b\u4e00\u4ee3 P \u6838\u5fc3 Xeon \u652f\u63f4 PCIe 6.0\u3001\u6838\u5fc3\u6578\u589e\u52a0 50% \u548c\u8a18\u61b6\u9ad4\u983b\u5bec\u7ffb\u500d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/intel-xeon-7-diamond-rapids-cpus-officially-launching-in-2027-on-intel-18a-p-next-gen-p-core-xeon-features-pcie-6-0-50-percent-higher-core-counts-and-twice-the-memory-bandwidth&quot;, &quot;title_en&quot;: &quot;Intel Xeon 7 \u2018Diamond Rapids\u2019 CPUs officially launching in 2027 on Intel 18A-P \u2014 next-gen P-core Xeon features PCIe 6.0, 50% higher core counts, and twice the memory bandwidth&quot;, &quot;title_zh&quot;: &quot;Intel Xeon 7 'Diamond Rapids' CPU \u5c07\u65bc 2027 \u5e74\u6b63\u5f0f\u5728 Intel 18A-P \u4e0a\u63a8\u51fa\u2014\u2014\u4e0b\u4e00\u4ee3 P \u6838\u5fc3 Xeon \u652f\u63f4 PCIe 6.0\u3001\u6838\u5fc3\u6578\u589e\u52a0 50% \u548c\u8a18\u61b6\u9ad4\u983b\u5bec\u7ffb\u500d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex" target="_blank">Intel details long-awaited Crescent Island AI GPU at Computex, boasts up to 480 GB of LPDDR5X to combat memory shortages — company shares more details of its Xe3P inference accelerator at Computex</a></div>
+    <div class="title-zh">Intel 在 Computex 詳細介紹期待已久的 Crescent Island AI GPU，吹噓最高 480GB LPDDR5X 記憶體以應對記憶體短缺——公司分享其 Xe3P 推理加速器的更多細節</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Intel revealed more details of its next-gen Data Center GPU, code-named Crescent Island, at Computex 2026. This inference-optimized chip will feature up to 480GB of LPDDR5X memory for efficient handling of massive AI contexts.</div>
+  <div class="summary-zh">Intel 在 Computex 2026 揭示了下一代資料中心 GPU Crescent Island 的更多細節，這款推理優化芯片將配備最高 480GB 的 LPDDR5X 記憶體，以有效處理大規模 AI 上下文。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex&quot;, &quot;title_en&quot;: &quot;Intel details long-awaited Crescent Island AI GPU at Computex, boasts up to 480 GB of LPDDR5X to combat memory shortages \u2014 company shares more details of its Xe3P inference accelerator at Computex&quot;, &quot;title_zh&quot;: &quot;Intel \u5728 Computex \u8a73\u7d30\u4ecb\u7d39\u671f\u5f85\u5df2\u4e45\u7684 Crescent Island AI GPU\uff0c\u5439\u5653\u6700\u9ad8 480GB LPDDR5X \u8a18\u61b6\u9ad4\u4ee5\u61c9\u5c0d\u8a18\u61b6\u9ad4\u77ed\u7f3a\u2014\u2014\u516c\u53f8\u5206\u4eab\u5176 Xe3P \u63a8\u7406\u52a0\u901f\u5668\u7684\u66f4\u591a\u7d30\u7bc0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex&quot;, &quot;title_en&quot;: &quot;Intel details long-awaited Crescent Island AI GPU at Computex, boasts up to 480 GB of LPDDR5X to combat memory shortages \u2014 company shares more details of its Xe3P inference accelerator at Computex&quot;, &quot;title_zh&quot;: &quot;Intel \u5728 Computex \u8a73\u7d30\u4ecb\u7d39\u671f\u5f85\u5df2\u4e45\u7684 Crescent Island AI GPU\uff0c\u5439\u5653\u6700\u9ad8 480GB LPDDR5X \u8a18\u61b6\u9ad4\u4ee5\u61c9\u5c0d\u8a18\u61b6\u9ad4\u77ed\u7f3a\u2014\u2014\u516c\u53f8\u5206\u4eab\u5176 Xe3P \u63a8\u7406\u52a0\u901f\u5668\u7684\u66f4\u591a\u7d30\u7bc0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/intel-details-long-awaited-crescent-island-ai-gpu-at-computex-boasts-up-to-480-gb-of-lpddr5x-to-combat-memory-shortages-company-shares-more-details-of-its-xe3p-inference-accelerator-at-computex&quot;, &quot;title_en&quot;: &quot;Intel details long-awaited Crescent Island AI GPU at Computex, boasts up to 480 GB of LPDDR5X to combat memory shortages \u2014 company shares more details of its Xe3P inference accelerator at Computex&quot;, &quot;title_zh&quot;: &quot;Intel \u5728 Computex \u8a73\u7d30\u4ecb\u7d39\u671f\u5f85\u5df2\u4e45\u7684 Crescent Island AI GPU\uff0c\u5439\u5653\u6700\u9ad8 480GB LPDDR5X \u8a18\u61b6\u9ad4\u4ee5\u61c9\u5c0d\u8a18\u61b6\u9ad4\u77ed\u7f3a\u2014\u2014\u516c\u53f8\u5206\u4eab\u5176 Xe3P \u63a8\u7406\u52a0\u901f\u5668\u7684\u66f4\u591a\u7d30\u7bc0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070" target="_blank">AMD’s formerly China-exclusive Radeon RX 9070 GRE goes global for $549 on June 2 — RDNA 4 GPU will bridge the gap between RX 9060 XT and RX 9070</a></div>
+    <div class="title-zh">AMD 原本中國獨佔的 Radeon RX 9070 GRE 將於 6 月 2 日全球發售，售價 $549——RDNA 4 GPU 將填補 RX 9060 XT 和 RX 9070 之間的空隙</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AMD has officially launched the Radeon RX 9070 GRE for $549, an RDNA 4 graphics card that was previously exclusive to the Chinese market.</div>
+  <div class="summary-zh">AMD 正式推出 Radeon RX 9070 GRE，售價 $549，這是一款 RDNA 4 顯示卡，原本僅在中國市場銷售。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070&quot;, &quot;title_en&quot;: &quot;AMD\u2019s formerly China-exclusive Radeon RX 9070 GRE goes global for $549 on June 2 \u2014 RDNA 4 GPU will bridge the gap between RX 9060 XT and RX 9070&quot;, &quot;title_zh&quot;: &quot;AMD \u539f\u672c\u4e2d\u570b\u7368\u4f54\u7684 Radeon RX 9070 GRE \u5c07\u65bc 6 \u6708 2 \u65e5\u5168\u7403\u767c\u552e\uff0c\u552e\u50f9 $549\u2014\u2014RDNA 4 GPU \u5c07\u586b\u88dc RX 9060 XT \u548c RX 9070 \u4e4b\u9593\u7684\u7a7a\u9699&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070&quot;, &quot;title_en&quot;: &quot;AMD\u2019s formerly China-exclusive Radeon RX 9070 GRE goes global for $549 on June 2 \u2014 RDNA 4 GPU will bridge the gap between RX 9060 XT and RX 9070&quot;, &quot;title_zh&quot;: &quot;AMD \u539f\u672c\u4e2d\u570b\u7368\u4f54\u7684 Radeon RX 9070 GRE \u5c07\u65bc 6 \u6708 2 \u65e5\u5168\u7403\u767c\u552e\uff0c\u552e\u50f9 $549\u2014\u2014RDNA 4 GPU \u5c07\u586b\u88dc RX 9060 XT \u548c RX 9070 \u4e4b\u9593\u7684\u7a7a\u9699&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/amds-formerly-china-exclusive-radeon-rx-9070-gre-goes-global-for-usd549-on-june-2-rdna-4-gpu-will-bridge-the-gap-between-rx-9060-xt-and-rx-9070&quot;, &quot;title_en&quot;: &quot;AMD\u2019s formerly China-exclusive Radeon RX 9070 GRE goes global for $549 on June 2 \u2014 RDNA 4 GPU will bridge the gap between RX 9060 XT and RX 9070&quot;, &quot;title_zh&quot;: &quot;AMD \u539f\u672c\u4e2d\u570b\u7368\u4f54\u7684 Radeon RX 9070 GRE \u5c07\u65bc 6 \u6708 2 \u65e5\u5168\u7403\u767c\u552e\uff0c\u552e\u50f9 $549\u2014\u2014RDNA 4 GPU \u5c07\u586b\u88dc RX 9060 XT \u548c RX 9070 \u4e4b\u9593\u7684\u7a7a\u9699&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch" target="_blank">Watch Nvidia's Computex 2026 keynote here — Jensen Huang takes the stage for Computex and GTC Taipei at 8pm PT / 11pm ET on May 31</a></div>
+    <div class="title-zh">觀看 Nvidia Computex 2026 主題演講——Jensen Huang 將在 5 月 31 日太平洋時間下午 8 點/東部時間晚上 11 點登台進行 Computex 和 GTC Taipei 演講</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nvidia CEO Jensen Huang is set to take the stage at Computex 2026 and GTC Taipei. Here's how to watch the keynote address, where we could hear more about the rumored N1X.</div>
+  <div class="summary-zh">Nvidia CEO Jensen Huang 將登台進行 Computex 2026 和 GTC Taipei 演講，我們可能會聽到更多有關傳聞中 N1X 的訊息。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch&quot;, &quot;title_en&quot;: &quot;Watch Nvidia's Computex 2026 keynote here \u2014 Jensen Huang takes the stage for Computex and GTC Taipei at 8pm PT / 11pm ET on May 31&quot;, &quot;title_zh&quot;: &quot;\u89c0\u770b Nvidia Computex 2026 \u4e3b\u984c\u6f14\u8b1b\u2014\u2014Jensen Huang \u5c07\u5728 5 \u6708 31 \u65e5\u592a\u5e73\u6d0b\u6642\u9593\u4e0b\u5348 8 \u9ede/\u6771\u90e8\u6642\u9593\u665a\u4e0a 11 \u9ede\u767b\u53f0\u9032\u884c Computex \u548c GTC Taipei \u6f14\u8b1b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch&quot;, &quot;title_en&quot;: &quot;Watch Nvidia's Computex 2026 keynote here \u2014 Jensen Huang takes the stage for Computex and GTC Taipei at 8pm PT / 11pm ET on May 31&quot;, &quot;title_zh&quot;: &quot;\u89c0\u770b Nvidia Computex 2026 \u4e3b\u984c\u6f14\u8b1b\u2014\u2014Jensen Huang \u5c07\u5728 5 \u6708 31 \u65e5\u592a\u5e73\u6d0b\u6642\u9593\u4e0b\u5348 8 \u9ede/\u6771\u90e8\u6642\u9593\u665a\u4e0a 11 \u9ede\u767b\u53f0\u9032\u884c Computex \u548c GTC Taipei \u6f14\u8b1b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/nvidia-keynote-computex-2026-gtc-taipei-where-to-watch&quot;, &quot;title_en&quot;: &quot;Watch Nvidia's Computex 2026 keynote here \u2014 Jensen Huang takes the stage for Computex and GTC Taipei at 8pm PT / 11pm ET on May 31&quot;, &quot;title_zh&quot;: &quot;\u89c0\u770b Nvidia Computex 2026 \u4e3b\u984c\u6f14\u8b1b\u2014\u2014Jensen Huang \u5c07\u5728 5 \u6708 31 \u65e5\u592a\u5e73\u6d0b\u6642\u9593\u4e0b\u5348 8 \u9ede/\u6771\u90e8\u6642\u9593\u665a\u4e0a 11 \u9ede\u767b\u53f0\u9032\u884c Computex \u548c GTC Taipei \u6f14\u8b1b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least" target="_blank">AMD confirms AM5 support through 2029 — Zen 4 and 5 platform will likely see two more generations, at least</a></div>
+    <div class="title-zh">AMD 確認 AM5 支援至 2029 年——Zen 4 和 5 平台可能還會再迎來至少兩代產品</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AMD confirmed it will support its current AM5 socket through 2029, extending the timeline by two years and likely lining up at least two more generations on the socket.</div>
+  <div class="summary-zh">AMD 確認將支援其現有 AM5 插槽至 2029 年，將時間線延長兩年，可能還會在該插槽上推出至少兩代產品。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least&quot;, &quot;title_en&quot;: &quot;AMD confirms AM5 support through 2029 \u2014 Zen 4 and 5 platform will likely see two more generations, at least&quot;, &quot;title_zh&quot;: &quot;AMD \u78ba\u8a8d AM5 \u652f\u63f4\u81f3 2029 \u5e74\u2014\u2014Zen 4 \u548c 5 \u5e73\u53f0\u53ef\u80fd\u9084\u6703\u518d\u8fce\u4f86\u81f3\u5c11\u5169\u4ee3\u7522\u54c1&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least&quot;, &quot;title_en&quot;: &quot;AMD confirms AM5 support through 2029 \u2014 Zen 4 and 5 platform will likely see two more generations, at least&quot;, &quot;title_zh&quot;: &quot;AMD \u78ba\u8a8d AM5 \u652f\u63f4\u81f3 2029 \u5e74\u2014\u2014Zen 4 \u548c 5 \u5e73\u53f0\u53ef\u80fd\u9084\u6703\u518d\u8fce\u4f86\u81f3\u5c11\u5169\u4ee3\u7522\u54c1&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-confirms-am5-support-through-2029-zen-4-and-5-platform-will-likely-see-two-more-generations-at-least&quot;, &quot;title_en&quot;: &quot;AMD confirms AM5 support through 2029 \u2014 Zen 4 and 5 platform will likely see two more generations, at least&quot;, &quot;title_zh&quot;: &quot;AMD \u78ba\u8a8d AM5 \u652f\u63f4\u81f3 2029 \u5e74\u2014\u2014Zen 4 \u548c 5 \u5e73\u53f0\u53ef\u80fd\u9084\u6703\u518d\u8fce\u4f86\u81f3\u5c11\u5169\u4ee3\u7522\u54c1&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Mon, 01 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5" target="_blank">AMD brings back Ryzen 7 5800X3D, launches Ryzen 7 7700X3D to combat rising component prices — eight-core X3D CPUs arrive under $350 for AM4 or AM5, DDR4 or DDR5</a></div>
+    <div class="title-zh">AMD 重新推出 Ryzen 7 5800X3D，推出 Ryzen 7 7700X3D 以對抗上漲的零件價格——八核 X3D CPU 在 AM4 或 AM5、DDR4 或 DDR5 上售價不足 $350</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AMD is rereleasing the Ryzen 7 5800X3D and introducing the Ryzen 7 7700X3D, both eight-core chips with 3DV-Cache targeting midrange gamers who’ve been under the thumb of rising component prices.</div>
+  <div class="summary-zh">AMD 重新推出 Ryzen 7 5800X3D 並推出 Ryzen 7 7700X3D，兩款八核芯片均配備 3DV-Cache，針對受到零件價格上漲困擾的中端遊戲玩家。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5&quot;, &quot;title_en&quot;: &quot;AMD brings back Ryzen 7 5800X3D, launches Ryzen 7 7700X3D to combat rising component prices \u2014 eight-core X3D CPUs arrive under $350 for AM4 or AM5, DDR4 or DDR5&quot;, &quot;title_zh&quot;: &quot;AMD \u91cd\u65b0\u63a8\u51fa Ryzen 7 5800X3D\uff0c\u63a8\u51fa Ryzen 7 7700X3D \u4ee5\u5c0d\u6297\u4e0a\u6f32\u7684\u96f6\u4ef6\u50f9\u683c\u2014\u2014\u516b\u6838 X3D CPU \u5728 AM4 \u6216 AM5\u3001DDR4 \u6216 DDR5 \u4e0a\u552e\u50f9\u4e0d\u8db3 $350&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5&quot;, &quot;title_en&quot;: &quot;AMD brings back Ryzen 7 5800X3D, launches Ryzen 7 7700X3D to combat rising component prices \u2014 eight-core X3D CPUs arrive under $350 for AM4 or AM5, DDR4 or DDR5&quot;, &quot;title_zh&quot;: &quot;AMD \u91cd\u65b0\u63a8\u51fa Ryzen 7 5800X3D\uff0c\u63a8\u51fa Ryzen 7 7700X3D \u4ee5\u5c0d\u6297\u4e0a\u6f32\u7684\u96f6\u4ef6\u50f9\u683c\u2014\u2014\u516b\u6838 X3D CPU \u5728 AM4 \u6216 AM5\u3001DDR4 \u6216 DDR5 \u4e0a\u552e\u50f9\u4e0d\u8db3 $350&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-brings-back-ryzen-7-5800x3d-launches-ryzen-7-7700x3d-to-combat-rising-component-prices-eight-core-x3d-cpus-arrive-under-usd350-for-am4-or-am5-ddr4-or-ddr5&quot;, &quot;title_en&quot;: &quot;AMD brings back Ryzen 7 5800X3D, launches Ryzen 7 7700X3D to combat rising component prices \u2014 eight-core X3D CPUs arrive under $350 for AM4 or AM5, DDR4 or DDR5&quot;, &quot;title_zh&quot;: &quot;AMD \u91cd\u65b0\u63a8\u51fa Ryzen 7 5800X3D\uff0c\u63a8\u51fa Ryzen 7 7700X3D \u4ee5\u5c0d\u6297\u4e0a\u6f32\u7684\u96f6\u4ef6\u50f9\u683c\u2014\u2014\u516b\u6838 X3D CPU \u5728 AM4 \u6216 AM5\u3001DDR4 \u6216 DDR5 \u4e0a\u552e\u50f9\u4e0d\u8db3 $350&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Mon, 01 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 31 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students" target="_blank">Dell XPS 13 targets MacBook Neo with Intel's Wildcat Lake — $699 starting price, $599 for students</a></div>
+    <div class="title-zh">Dell XPS 13 搭載 Intel Wildcat Lake 瞄準 MacBook Neo——起價 $699，學生版 $599</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Dell's XPS 13 is going after Apple's MacBook Neo with a $699 starting price, some higher specs, and Intel's new Wildcat Lake processors.</div>
+  <div class="summary-zh">Dell XPS 13 以 $699 起價對標 Apple MacBook Neo，配備更高的規格和 Intel 新的 Wildcat Lake 處理器。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students&quot;, &quot;title_en&quot;: &quot;Dell XPS 13 targets MacBook Neo with Intel's Wildcat Lake \u2014 $699 starting price, $599 for students&quot;, &quot;title_zh&quot;: &quot;Dell XPS 13 \u642d\u8f09 Intel Wildcat Lake \u7784\u6e96 MacBook Neo\u2014\u2014\u8d77\u50f9 $699\uff0c\u5b78\u751f\u7248 $599&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students&quot;, &quot;title_en&quot;: &quot;Dell XPS 13 targets MacBook Neo with Intel's Wildcat Lake \u2014 $699 starting price, $599 for students&quot;, &quot;title_zh&quot;: &quot;Dell XPS 13 \u642d\u8f09 Intel Wildcat Lake \u7784\u6e96 MacBook Neo\u2014\u2014\u8d77\u50f9 $699\uff0c\u5b78\u751f\u7248 $599&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/laptops/dell-xps-13-targets-macbook-neo-with-intels-wildcat-lake-usd699-starting-price-usd599-for-students&quot;, &quot;title_en&quot;: &quot;Dell XPS 13 targets MacBook Neo with Intel's Wildcat Lake \u2014 $699 starting price, $599 for students&quot;, &quot;title_zh&quot;: &quot;Dell XPS 13 \u642d\u8f09 Intel Wildcat Lake \u7784\u6e96 MacBook Neo\u2014\u2014\u8d77\u50f9 $699\uff0c\u5b78\u751f\u7248 $599&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 31 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity" target="_blank">Alienware debuts 39, 34-inch OLED gaming monitors — RGB Stripe Tandem and Penta Tandem tech should boost color performance and text clarity</a></div>
+    <div class="title-zh">Alienware 推出 39、34 吋 OLED 遊戲顯示器——RGB Stripe Tandem 和 Penta Tandem 技術應可提升色彩表現和文字清晰度</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Alienware hits the ground running at Computex with four new gaming monitors covering OLED and VA panel types.</div>
+  <div class="summary-zh">Alienware 在 Computex 推出四款新型遊戲顯示器，涵蓋 OLED 和 VA 面板類型。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity&quot;, &quot;title_en&quot;: &quot;Alienware debuts 39, 34-inch OLED gaming monitors \u2014 RGB Stripe Tandem and Penta Tandem tech should boost color performance and text clarity&quot;, &quot;title_zh&quot;: &quot;Alienware \u63a8\u51fa 39\u300134 \u540b OLED \u904a\u6232\u986f\u793a\u5668\u2014\u2014RGB Stripe Tandem \u548c Penta Tandem \u6280\u8853\u61c9\u53ef\u63d0\u5347\u8272\u5f69\u8868\u73fe\u548c\u6587\u5b57\u6e05\u6670\u5ea6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity&quot;, &quot;title_en&quot;: &quot;Alienware debuts 39, 34-inch OLED gaming monitors \u2014 RGB Stripe Tandem and Penta Tandem tech should boost color performance and text clarity&quot;, &quot;title_zh&quot;: &quot;Alienware \u63a8\u51fa 39\u300134 \u540b OLED \u904a\u6232\u986f\u793a\u5668\u2014\u2014RGB Stripe Tandem \u548c Penta Tandem \u6280\u8853\u61c9\u53ef\u63d0\u5347\u8272\u5f69\u8868\u73fe\u548c\u6587\u5b57\u6e05\u6670\u5ea6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/alienware-debuts-39-34-inch-oled-gaming-monitors-rgb-stripe-tandem-and-penta-tandem-tech-should-boost-color-performance-and-text-clarity&quot;, &quot;title_en&quot;: &quot;Alienware debuts 39, 34-inch OLED gaming monitors \u2014 RGB Stripe Tandem and Penta Tandem tech should boost color performance and text clarity&quot;, &quot;title_zh&quot;: &quot;Alienware \u63a8\u51fa 39\u300134 \u540b OLED \u904a\u6232\u986f\u793a\u5668\u2014\u2014RGB Stripe Tandem \u548c Penta Tandem \u6280\u8853\u61c9\u53ef\u63d0\u5347\u8272\u5f69\u8868\u73fe\u548c\u6587\u5b57\u6e05\u6670\u5ea6&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi11" data-url="https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Sun, 31 Ma</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs" target="_blank">Nvidia's long-awaited N1/N1X SoC specs leak ahead of Computex launch — N1 to feature up to 20 Arm-based cores, standard N1 equipped with 12- and 10-core configs</a></div>
+    <div class="title-zh">Nvidia 期待已久的 N1/N1X SoC 規格在 Computex 發佈前洩露——N1 將配備最高 20 個 Arm 核心，標準 N1 配備 12 核和 10 核配置</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The N1X reportedly comes in two SKUs: a top-end 20-core option with 6,144 CUDA cores matching the desktop RTX 5070, and a cut-down 18-core option with 5,120 CUDA cores. The standard N1 also has two configs, one with a 12-core CPU and 2,560 CUDA cores and a 10-core model with 2,048 CUDA cores.</div>
+  <div class="summary-zh">N1X 據報有兩個 SKU：頂端 20 核選項配備 6,144 CUDA 核心，與桌上型 RTX 5070 相當；低階 18 核選項配備 5,120 CUDA 核心。標準 N1 也有兩個配置，一個為 12 核 CPU 配 2,560 CUDA 核心，另一個為 10 核配 2,048 CUDA 核心。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi11"
+              onclick="toggleAnalysis('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs&quot;, &quot;title_en&quot;: &quot;Nvidia's long-awaited N1/N1X SoC specs leak ahead of Computex launch \u2014 N1 to feature up to 20 Arm-based cores, standard N1 equipped with 12- and 10-core configs&quot;, &quot;title_zh&quot;: &quot;Nvidia \u671f\u5f85\u5df2\u4e45\u7684 N1/N1X SoC \u898f\u683c\u5728 Computex \u767c\u4f48\u524d\u6d29\u9732\u2014\u2014N1 \u5c07\u914d\u5099\u6700\u9ad8 20 \u500b Arm \u6838\u5fc3\uff0c\u6a19\u6e96 N1 \u914d\u5099 12 \u6838\u548c 10 \u6838\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi11"
+              onclick="bookmarkArticle('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs&quot;, &quot;title_en&quot;: &quot;Nvidia's long-awaited N1/N1X SoC specs leak ahead of Computex launch \u2014 N1 to feature up to 20 Arm-based cores, standard N1 equipped with 12- and 10-core configs&quot;, &quot;title_zh&quot;: &quot;Nvidia \u671f\u5f85\u5df2\u4e45\u7684 N1/N1X SoC \u898f\u683c\u5728 Computex \u767c\u4f48\u524d\u6d29\u9732\u2014\u2014N1 \u5c07\u914d\u5099\u6700\u9ad8 20 \u500b Arm \u6838\u5fc3\uff0c\u6a19\u6e96 N1 \u914d\u5099 12 \u6838\u548c 10 \u6838\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/nvidias-long-awaited-n1-n1x-soc-specs-leak-ahead-of-computex-launch-n1-to-feature-up-to-20-arm-based-cores-standard-n1-equipped-with-12-and-10-core-configs&quot;, &quot;title_en&quot;: &quot;Nvidia's long-awaited N1/N1X SoC specs leak ahead of Computex launch \u2014 N1 to feature up to 20 Arm-based cores, standard N1 equipped with 12- and 10-core configs&quot;, &quot;title_zh&quot;: &quot;Nvidia \u671f\u5f85\u5df2\u4e45\u7684 N1/N1X SoC \u898f\u683c\u5728 Computex \u767c\u4f48\u524d\u6d29\u9732\u2014\u2014N1 \u5c07\u914d\u5099\u6700\u9ad8 20 \u500b Arm \u6838\u5fc3\uff0c\u6a19\u6e96 N1 \u914d\u5099 12 \u6838\u548c 10 \u6838\u914d\u7f6e&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Sun, 31 Ma&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi11"
+              onclick="copyPrompt('chi11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
