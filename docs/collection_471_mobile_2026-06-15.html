@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Mobile — 2026-06-15</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>📱 Mobile</h1>
+<div class="page-meta">2026-06-15 &nbsp;·&nbsp; 5 篇 &nbsp;·&nbsp; 更新：2026-06-15 14:26 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-mob0" data-url="https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Sun, 14 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/" target="_blank">Sundar Pichai on ‘California optimism’ &amp; doing hard, exciting work at 2026 Stanford Commencement Address</a></div>
+    <div class="title-zh">Sundar Pichai 在 2026 年史丹佛大學畢業典禮演講中談論「加州樂觀主義」及在 Alphabet 和 Google 進行艱難而令人興奮的工作</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Alphabet and Google CEO Sundar Pichai today gave the commencement speech to Stanford University’s Class of 2026.</div>
+  <div class="summary-zh">Alphabet 和 Google CEO Sundar Pichai 今日為史丹佛大學 2026 級畢業班發表畢業演講。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob0"
+              onclick="toggleAnalysis('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/&quot;, &quot;title_en&quot;: &quot;Sundar Pichai on \u2018California optimism\u2019 &amp; doing hard, exciting work at 2026 Stanford Commencement Address&quot;, &quot;title_zh&quot;: &quot;Sundar Pichai \u5728 2026 \u5e74\u53f2\u4e39\u4f5b\u5927\u5b78\u7562\u696d\u5178\u79ae\u6f14\u8b1b\u4e2d\u8ac7\u8ad6\u300c\u52a0\u5dde\u6a02\u89c0\u4e3b\u7fa9\u300d\u53ca\u5728 Alphabet \u548c Google \u9032\u884c\u8271\u96e3\u800c\u4ee4\u4eba\u8208\u596e\u7684\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob0"
+              onclick="bookmarkArticle('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/&quot;, &quot;title_en&quot;: &quot;Sundar Pichai on \u2018California optimism\u2019 &amp; doing hard, exciting work at 2026 Stanford Commencement Address&quot;, &quot;title_zh&quot;: &quot;Sundar Pichai \u5728 2026 \u5e74\u53f2\u4e39\u4f5b\u5927\u5b78\u7562\u696d\u5178\u79ae\u6f14\u8b1b\u4e2d\u8ac7\u8ad6\u300c\u52a0\u5dde\u6a02\u89c0\u4e3b\u7fa9\u300d\u53ca\u5728 Alphabet \u548c Google \u9032\u884c\u8271\u96e3\u800c\u4ee4\u4eba\u8208\u596e\u7684\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob0', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/sundar-pichai-2026-stanford/&quot;, &quot;title_en&quot;: &quot;Sundar Pichai on \u2018California optimism\u2019 &amp; doing hard, exciting work at 2026 Stanford Commencement Address&quot;, &quot;title_zh&quot;: &quot;Sundar Pichai \u5728 2026 \u5e74\u53f2\u4e39\u4f5b\u5927\u5b78\u7562\u696d\u5178\u79ae\u6f14\u8b1b\u4e2d\u8ac7\u8ad6\u300c\u52a0\u5dde\u6a02\u89c0\u4e3b\u7fa9\u300d\u53ca\u5728 Alphabet \u548c Google \u9032\u884c\u8271\u96e3\u800c\u4ee4\u4eba\u8208\u596e\u7684\u5de5\u4f5c&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob0"
+              onclick="copyPrompt('mob0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob1" data-url="https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">9to5Google</span>
+      <span class="date-tag">Sun, 14 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/" target="_blank">The ‘Galaxy Z Fold 8 Ultra’ has the potential to be a cruel joke</a></div>
+    <div class="title-zh">「Galaxy Z Fold 8 Ultra」有可能成為一個殘酷的玩笑</div>
+    
+<div class="summary-block">
+  <div class="summary-en">There are actual reasons to get excited about Samsung’s upcoming foldables but, the more I think about it, the more I’m realizing that there’s pretty strong potential for the “Galaxy Z Fold 8 Ultra” to not just be disappointing, but a slightly cruel joke.</div>
+  <div class="summary-zh">對於 Samsung 即將推出的摺疊螢幕手機，有真實的理由值得期待，但越來越多跡象顯示「Galaxy Z Fold 8 Ultra」不僅可能令人失望，甚至可能成為一個略帶殘酷的玩笑。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob1"
+              onclick="toggleAnalysis('mob1', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/&quot;, &quot;title_en&quot;: &quot;The \u2018Galaxy Z Fold 8 Ultra\u2019 has the potential to be a cruel joke&quot;, &quot;title_zh&quot;: &quot;\u300cGalaxy Z Fold 8 Ultra\u300d\u6709\u53ef\u80fd\u6210\u70ba\u4e00\u500b\u6b98\u9177\u7684\u73a9\u7b11&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob1"
+              onclick="bookmarkArticle('mob1', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/&quot;, &quot;title_en&quot;: &quot;The \u2018Galaxy Z Fold 8 Ultra\u2019 has the potential to be a cruel joke&quot;, &quot;title_zh&quot;: &quot;\u300cGalaxy Z Fold 8 Ultra\u300d\u6709\u53ef\u80fd\u6210\u70ba\u4e00\u500b\u6b98\u9177\u7684\u73a9\u7b11&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob1', {&quot;url&quot;: &quot;https://9to5google.com/2026/06/14/galaxy-z-fold-8-ultra-problems/&quot;, &quot;title_en&quot;: &quot;The \u2018Galaxy Z Fold 8 Ultra\u2019 has the potential to be a cruel joke&quot;, &quot;title_zh&quot;: &quot;\u300cGalaxy Z Fold 8 Ultra\u300d\u6709\u53ef\u80fd\u6210\u70ba\u4e00\u500b\u6b98\u9177\u7684\u73a9\u7b11&quot;, &quot;source&quot;: &quot;9to5Google&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob1"
+              onclick="copyPrompt('mob1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob2" data-url="https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Mon, 15 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php" target="_blank">Honor X80 Pro Max to debut on June 22, confirmed to pack a 11,000mAh battery</a></div>
+    <div class="title-zh">Honor X80 Pro Max 將於 6 月 22 日首發，確認搭載 11,000mAh 電池</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Honor has announced the launch date for the X80 Pro Max. Alongside the confirmation, the company has also unveiled the phone's design and color options. The Honor X80 Pro Max is set to launch in China on June 22, the company confirmed in an official Weibo post. Honor has also opened reservations for the smartphone through its official online store. Honor has confirmed that the X80 Pro Max will pack a massive 11,000mAh battery with support for 90W wired fast charging. The device will also support 27W wired reverse charging, allowing it to double as a power bank for charging other...</div>
+  <div class="summary-zh">Honor 宣布了 X80 Pro Max 的發布日期，並公開了該機的設計和色彩選項。Honor X80 Pro Max 將於 6 月 22 日在中國上市。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob2"
+              onclick="toggleAnalysis('mob2', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php&quot;, &quot;title_en&quot;: &quot;Honor X80 Pro Max to debut on June 22, confirmed to pack a 11,000mAh battery&quot;, &quot;title_zh&quot;: &quot;Honor X80 Pro Max \u5c07\u65bc 6 \u6708 22 \u65e5\u9996\u767c\uff0c\u78ba\u8a8d\u642d\u8f09 11,000mAh \u96fb\u6c60&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob2"
+              onclick="bookmarkArticle('mob2', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php&quot;, &quot;title_en&quot;: &quot;Honor X80 Pro Max to debut on June 22, confirmed to pack a 11,000mAh battery&quot;, &quot;title_zh&quot;: &quot;Honor X80 Pro Max \u5c07\u65bc 6 \u6708 22 \u65e5\u9996\u767c\uff0c\u78ba\u8a8d\u642d\u8f09 11,000mAh \u96fb\u6c60&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob2', {&quot;url&quot;: &quot;https://www.gsmarena.com/honor_x80_pro_max_to_debut_on_june_22_confirmed_to_pack_a_11000mah_battery-news-73266.php&quot;, &quot;title_en&quot;: &quot;Honor X80 Pro Max to debut on June 22, confirmed to pack a 11,000mAh battery&quot;, &quot;title_zh&quot;: &quot;Honor X80 Pro Max \u5c07\u65bc 6 \u6708 22 \u65e5\u9996\u767c\uff0c\u78ba\u8a8d\u642d\u8f09 11,000mAh \u96fb\u6c60&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob2"
+              onclick="copyPrompt('mob2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob3" data-url="https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Mon, 15 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php" target="_blank">Top 10 trending phones of week 24</a></div>
+    <div class="title-zh">第 24 週十大熱門手機</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As the hype surrounding the Xiaomi 17T pair died down a little, the Samsung Galaxy A57 returned to the top of our trending chart. The 17T Pro took the silver medal, while the Galaxy S26 Ultra completed the podium. [#InlinePriceWidget, 14379, 1#] Xiaomi 17T is now fourth, sitting ahead of the Galaxy A17 and the Apple iPhone 17 Pro Max. Redmi Note 15 took the seventh spot, followed by the Motorola Moto G Max and the vanilla iPhone 17. The final spot once again goes to the Poco X8 Pro. Samsung Galaxy A57 5G RANK: 1WAS:...</div>
+  <div class="summary-zh">隨著 Xiaomi 17T 系列的熱度有所下降，Samsung Galaxy A57 重返我們的熱門榜單首位。17T Pro 獲得亞軍，Galaxy S26 Ultra 位列第三。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob3"
+              onclick="toggleAnalysis('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 24&quot;, &quot;title_zh&quot;: &quot;\u7b2c 24 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob3"
+              onclick="bookmarkArticle('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 24&quot;, &quot;title_zh&quot;: &quot;\u7b2c 24 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob3', {&quot;url&quot;: &quot;https://www.gsmarena.com/top_10_trending_phones_of_week_24-news-73265.php&quot;, &quot;title_en&quot;: &quot;Top 10 trending phones of week 24&quot;, &quot;title_zh&quot;: &quot;\u7b2c 24 \u9031\u5341\u5927\u71b1\u9580\u624b\u6a5f&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Mon, 15 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob3"
+              onclick="copyPrompt('mob3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-mob4" data-url="https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">GSMArena</span>
+      <span class="date-tag">Sun, 14 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php" target="_blank">iOS 27 announced, Galaxy S27 leaks, Week 24 in review</a></div>
+    <div class="title-zh">iOS 27 發布、Galaxy S27 洩露、第 24 週回顧</div>
+    
+<div class="summary-block">
+  <div class="summary-en">It was a jam-packed week as Apple introduced a slew of new updates at its annual Worldwide Developers Conference. The big new addition coming to iOS 27, iPadOS 27, macOS 27, watchOS 27, and visionOS 27 is the all-new Siri AI, which brings an overhauled set of capabilities. Here's what's new in iOS 27 and iPadOS 27 They're available for developers today and a public beta will come next month. It is a separate app and is based on Google's Gemini models, featuring on-device processing, while also relying on Apple's Private...</div>
+  <div class="summary-zh">Apple 在其年度全球開發者大會上推出了一系列新更新，iOS 27、iPadOS 27、macOS 27、watchOS 27 和 visionOS 27 的主要新增功能是全新的 Siri AI，提供經過改進的功能集。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('mob4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-mob4"
+              onclick="toggleAnalysis('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php&quot;, &quot;title_en&quot;: &quot;iOS 27 announced, Galaxy S27 leaks, Week 24 in review&quot;, &quot;title_zh&quot;: &quot;iOS 27 \u767c\u5e03\u3001Galaxy S27 \u6d29\u9732\u3001\u7b2c 24 \u9031\u56de\u9867&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-mob4"
+              onclick="bookmarkArticle('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php&quot;, &quot;title_en&quot;: &quot;iOS 27 announced, Galaxy S27 leaks, Week 24 in review&quot;, &quot;title_zh&quot;: &quot;iOS 27 \u767c\u5e03\u3001Galaxy S27 \u6d29\u9732\u3001\u7b2c 24 \u9031\u56de\u9867&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-mob4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-mob4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('mob4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('mob4', {&quot;url&quot;: &quot;https://www.gsmarena.com/ios_27_announced_galaxy_s27_leaks_week_24_in_review-news-73261.php&quot;, &quot;title_en&quot;: &quot;iOS 27 announced, Galaxy S27 leaks, Week 24 in review&quot;, &quot;title_zh&quot;: &quot;iOS 27 \u767c\u5e03\u3001Galaxy S27 \u6d29\u9732\u3001\u7b2c 24 \u9031\u56de\u9867&quot;, &quot;source&quot;: &quot;GSMArena&quot;, &quot;date&quot;: &quot;Sun, 14 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-mob4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-mob4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-mob4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-mob4"
+              onclick="copyPrompt('mob4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
