@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-06-17</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-06-17 &nbsp;·&nbsp; 18 篇 &nbsp;·&nbsp; 更新：2026-06-18 00:58 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china" target="_blank">DeepSeek was set to be added to US Entity List for supporting China’s military and intelligence operations, report claims — White House holds off to avoid escalating tensions with China</a></div>
+    <div class="title-zh">DeepSeek 據報將被加入美國實體清單以支持中國軍事和情報行動——白宮暫停行動以避免與中國升級緊張關係</div>
+    
+<div class="summary-block">
+  <div class="summary-en">DeepSeek and CXMT, which have both been tagged as supporting Chinese military and intelligence operations, are set to be added to the U.S.'s Entity List. However, the White House hasn't included them yet in order to avoid escalating trade tensions with Beijing.</div>
+  <div class="summary-zh">DeepSeek 和 CXMT 因被標記為支持中國軍事和情報行動，將被加入美國實體清單。然而，白宮為了避免與北京的貿易緊張升級而尚未將其列入。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china&quot;, &quot;title_en&quot;: &quot;DeepSeek was set to be added to US Entity List for supporting China\u2019s military and intelligence operations, report claims \u2014 White House holds off to avoid escalating tensions with China&quot;, &quot;title_zh&quot;: &quot;DeepSeek \u64da\u5831\u5c07\u88ab\u52a0\u5165\u7f8e\u570b\u5be6\u9ad4\u6e05\u55ae\u4ee5\u652f\u6301\u4e2d\u570b\u8ecd\u4e8b\u548c\u60c5\u5831\u884c\u52d5\u2014\u2014\u767d\u5bae\u66ab\u505c\u884c\u52d5\u4ee5\u907f\u514d\u8207\u4e2d\u570b\u5347\u7d1a\u7dca\u5f35\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china&quot;, &quot;title_en&quot;: &quot;DeepSeek was set to be added to US Entity List for supporting China\u2019s military and intelligence operations, report claims \u2014 White House holds off to avoid escalating tensions with China&quot;, &quot;title_zh&quot;: &quot;DeepSeek \u64da\u5831\u5c07\u88ab\u52a0\u5165\u7f8e\u570b\u5be6\u9ad4\u6e05\u55ae\u4ee5\u652f\u6301\u4e2d\u570b\u8ecd\u4e8b\u548c\u60c5\u5831\u884c\u52d5\u2014\u2014\u767d\u5bae\u66ab\u505c\u884c\u52d5\u4ee5\u907f\u514d\u8207\u4e2d\u570b\u5347\u7d1a\u7dca\u5f35\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/deepseek-was-set-to-be-added-to-us-entity-list-for-supporting-chinas-military-and-intelligence-operations-report-claims-white-house-holds-off-to-avoid-escalating-tensions-with-china&quot;, &quot;title_en&quot;: &quot;DeepSeek was set to be added to US Entity List for supporting China\u2019s military and intelligence operations, report claims \u2014 White House holds off to avoid escalating tensions with China&quot;, &quot;title_zh&quot;: &quot;DeepSeek \u64da\u5831\u5c07\u88ab\u52a0\u5165\u7f8e\u570b\u5be6\u9ad4\u6e05\u55ae\u4ee5\u652f\u6301\u4e2d\u570b\u8ecd\u4e8b\u548c\u60c5\u5831\u884c\u52d5\u2014\u2014\u767d\u5bae\u66ab\u505c\u884c\u52d5\u4ee5\u907f\u514d\u8207\u4e2d\u570b\u5347\u7d1a\u7dca\u5f35\u95dc\u4fc2&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159" target="_blank">Snag a pro-level 180 Hz gaming monitor at entry-level pricing — Gigabyte 27-inch 1440p monitor up for grabs at $159</a></div>
+    <div class="title-zh">入門級價格享受專業級 180 Hz 遊戲監視器——Gigabyte 27 英寸 1440p 監視器低至 $159</div>
+    
+<div class="summary-block">
+  <div class="summary-en">For a limited time, Newegg has the Gigabyte GS27QA on sale for $159.99, 36%off its regular price.</div>
+  <div class="summary-zh">Newegg 限時推出 Gigabyte GS27QA，售價 $159.99，相比原價便宜 36%。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159&quot;, &quot;title_en&quot;: &quot;Snag a pro-level 180 Hz gaming monitor at entry-level pricing \u2014 Gigabyte 27-inch 1440p monitor up for grabs at $159&quot;, &quot;title_zh&quot;: &quot;\u5165\u9580\u7d1a\u50f9\u683c\u4eab\u53d7\u5c08\u696d\u7d1a 180 Hz \u904a\u6232\u76e3\u8996\u5668\u2014\u2014Gigabyte 27 \u82f1\u5bf8 1440p \u76e3\u8996\u5668\u4f4e\u81f3 $159&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159&quot;, &quot;title_en&quot;: &quot;Snag a pro-level 180 Hz gaming monitor at entry-level pricing \u2014 Gigabyte 27-inch 1440p monitor up for grabs at $159&quot;, &quot;title_zh&quot;: &quot;\u5165\u9580\u7d1a\u50f9\u683c\u4eab\u53d7\u5c08\u696d\u7d1a 180 Hz \u904a\u6232\u76e3\u8996\u5668\u2014\u2014Gigabyte 27 \u82f1\u5bf8 1440p \u76e3\u8996\u5668\u4f4e\u81f3 $159&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/snag-a-pro-level-gaming-monitor-at-entry-level-pricing-gigabyte-27-inch-1440p-180-hz-monitor-up-for-grabs-at-usd159&quot;, &quot;title_en&quot;: &quot;Snag a pro-level 180 Hz gaming monitor at entry-level pricing \u2014 Gigabyte 27-inch 1440p monitor up for grabs at $159&quot;, &quot;title_zh&quot;: &quot;\u5165\u9580\u7d1a\u50f9\u683c\u4eab\u53d7\u5c08\u696d\u7d1a 180 Hz \u904a\u6232\u76e3\u8996\u5668\u2014\u2014Gigabyte 27 \u82f1\u5bf8 1440p \u76e3\u8996\u5668\u4f4e\u81f3 $159&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents" target="_blank">Nvidia releases RTX Remix 1.5 with new RTX IO compression reducing mod file sizes by up to 37% — update also adds Smooth Normals and 'RTX Remix Skills' Agents</a></div>
+    <div class="title-zh">Nvidia 發布 RTX Remix 1.5，新增 RTX IO 壓縮功能可減少 37% 模組文件大小——更新還新增平滑法線和 RTX Remix Skills Agents</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nvidia has updated RTX Remix with a bunch of new features that will help improve the fidelity and reduce the file size of modded games, along with the complexity of developing said mods.</div>
+  <div class="summary-zh">Nvidia 已更新 RTX Remix，新增多項功能以提升模組遊戲保真度並減少文件大小，同時降低模組開發的複雜性。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents&quot;, &quot;title_en&quot;: &quot;Nvidia releases RTX Remix 1.5 with new RTX IO compression reducing mod file sizes by up to 37% \u2014 update also adds Smooth Normals and 'RTX Remix Skills' Agents&quot;, &quot;title_zh&quot;: &quot;Nvidia \u767c\u5e03 RTX Remix 1.5\uff0c\u65b0\u589e RTX IO \u58d3\u7e2e\u529f\u80fd\u53ef\u6e1b\u5c11 37% \u6a21\u7d44\u6587\u4ef6\u5927\u5c0f\u2014\u2014\u66f4\u65b0\u9084\u65b0\u589e\u5e73\u6ed1\u6cd5\u7dda\u548c RTX Remix Skills Agents&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents&quot;, &quot;title_en&quot;: &quot;Nvidia releases RTX Remix 1.5 with new RTX IO compression reducing mod file sizes by up to 37% \u2014 update also adds Smooth Normals and 'RTX Remix Skills' Agents&quot;, &quot;title_zh&quot;: &quot;Nvidia \u767c\u5e03 RTX Remix 1.5\uff0c\u65b0\u589e RTX IO \u58d3\u7e2e\u529f\u80fd\u53ef\u6e1b\u5c11 37% \u6a21\u7d44\u6587\u4ef6\u5927\u5c0f\u2014\u2014\u66f4\u65b0\u9084\u65b0\u589e\u5e73\u6ed1\u6cd5\u7dda\u548c RTX Remix Skills Agents&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/gpus/nvidia-releases-rtx-remix-1-5-with-new-rtx-io-compression-reducing-mod-file-sizes-by-up-to-37-percent-update-also-adds-smooth-normals-and-rtx-remix-skills-agents&quot;, &quot;title_en&quot;: &quot;Nvidia releases RTX Remix 1.5 with new RTX IO compression reducing mod file sizes by up to 37% \u2014 update also adds Smooth Normals and 'RTX Remix Skills' Agents&quot;, &quot;title_zh&quot;: &quot;Nvidia \u767c\u5e03 RTX Remix 1.5\uff0c\u65b0\u589e RTX IO \u58d3\u7e2e\u529f\u80fd\u53ef\u6e1b\u5c11 37% \u6a21\u7d44\u6587\u4ef6\u5927\u5c0f\u2014\u2014\u66f4\u65b0\u9084\u65b0\u589e\u5e73\u6ed1\u6cd5\u7dda\u548c RTX Remix Skills Agents&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement" target="_blank">Researchers build brain-like memory device for AI sensors that may improve energy efficiency — phototransistor device combines light sensing, memory, and processing to cut data movement</a></div>
+    <div class="title-zh">研究人員為 AI 感測器開發類腦記憶裝置以提升能源效率——光電晶體管裝置結合光感測、記憶和處理以減少數據移動</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Oregon State University researchers have developed a brain-inspired phototransistor that combines light sensing, memory, and signal processing in one device. The hardware can electronically control how long optical memories persist or fade, potentially improving energy efficiency in future AI vision systems.</div>
+  <div class="summary-zh">俄勒岡州立大學研究人員開發了一種類腦光電晶體管，在單一裝置中集成光感測、記憶和信號處理。該硬體能電子控制光學記憶的持久時間，有望改善未來 AI 視覺系統的能源效率。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement&quot;, &quot;title_en&quot;: &quot;Researchers build brain-like memory device for AI sensors that may improve energy efficiency \u2014 phototransistor device combines light sensing, memory, and processing to cut data movement&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u70ba AI \u611f\u6e2c\u5668\u958b\u767c\u985e\u8166\u8a18\u61b6\u88dd\u7f6e\u4ee5\u63d0\u5347\u80fd\u6e90\u6548\u7387\u2014\u2014\u5149\u96fb\u6676\u9ad4\u7ba1\u88dd\u7f6e\u7d50\u5408\u5149\u611f\u6e2c\u3001\u8a18\u61b6\u548c\u8655\u7406\u4ee5\u6e1b\u5c11\u6578\u64da\u79fb\u52d5&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement&quot;, &quot;title_en&quot;: &quot;Researchers build brain-like memory device for AI sensors that may improve energy efficiency \u2014 phototransistor device combines light sensing, memory, and processing to cut data movement&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u70ba AI \u611f\u6e2c\u5668\u958b\u767c\u985e\u8166\u8a18\u61b6\u88dd\u7f6e\u4ee5\u63d0\u5347\u80fd\u6e90\u6548\u7387\u2014\u2014\u5149\u96fb\u6676\u9ad4\u7ba1\u88dd\u7f6e\u7d50\u5408\u5149\u611f\u6e2c\u3001\u8a18\u61b6\u548c\u8655\u7406\u4ee5\u6e1b\u5c11\u6578\u64da\u79fb\u52d5&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-build-brain-like-memory-device-for-ai-sensors-that-may-improve-energy-efficiency-phototransistor-device-combines-light-sensing-memory-and-processing-to-cut-data-movement&quot;, &quot;title_en&quot;: &quot;Researchers build brain-like memory device for AI sensors that may improve energy efficiency \u2014 phototransistor device combines light sensing, memory, and processing to cut data movement&quot;, &quot;title_zh&quot;: &quot;\u7814\u7a76\u4eba\u54e1\u70ba AI \u611f\u6e2c\u5668\u958b\u767c\u985e\u8166\u8a18\u61b6\u88dd\u7f6e\u4ee5\u63d0\u5347\u80fd\u6e90\u6548\u7387\u2014\u2014\u5149\u96fb\u6676\u9ad4\u7ba1\u88dd\u7f6e\u7d50\u5408\u5149\u611f\u6e2c\u3001\u8a18\u61b6\u548c\u8655\u7406\u4ee5\u6e1b\u5c11\u6578\u64da\u79fb\u52d5&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage" target="_blank">Undersea cable connecting Egypt and Syria has been cut, state-owned telecom operator says — Damascus blames 'systematic sabotage campaign' as cause of damage</a></div>
+    <div class="title-zh">連接埃及和敘利亞的海底電纜遭切斷，國有電信運營商表示——大馬士革指責「系統性破壞活動」為損壞原因</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The Syrian government blamed a third party for the damage on its undersea cable that connects it to Egypt. Damascus didn't mention any specific state or non-state actor, but its location makes it a prime target for disruption.</div>
+  <div class="summary-zh">敘利亞政府指責第三方造成其與埃及連接的海底電纜損壞。大馬士革未提及任何具體國家或非國家行為體，但其地理位置使其成為破壞目標。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage&quot;, &quot;title_en&quot;: &quot;Undersea cable connecting Egypt and Syria has been cut, state-owned telecom operator says \u2014 Damascus blames 'systematic sabotage campaign' as cause of damage&quot;, &quot;title_zh&quot;: &quot;\u9023\u63a5\u57c3\u53ca\u548c\u6558\u5229\u4e9e\u7684\u6d77\u5e95\u96fb\u7e9c\u906d\u5207\u65b7\uff0c\u570b\u6709\u96fb\u4fe1\u904b\u71df\u5546\u8868\u793a\u2014\u2014\u5927\u99ac\u58eb\u9769\u6307\u8cac\u300c\u7cfb\u7d71\u6027\u7834\u58de\u6d3b\u52d5\u300d\u70ba\u640d\u58de\u539f\u56e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage&quot;, &quot;title_en&quot;: &quot;Undersea cable connecting Egypt and Syria has been cut, state-owned telecom operator says \u2014 Damascus blames 'systematic sabotage campaign' as cause of damage&quot;, &quot;title_zh&quot;: &quot;\u9023\u63a5\u57c3\u53ca\u548c\u6558\u5229\u4e9e\u7684\u6d77\u5e95\u96fb\u7e9c\u906d\u5207\u65b7\uff0c\u570b\u6709\u96fb\u4fe1\u904b\u71df\u5546\u8868\u793a\u2014\u2014\u5927\u99ac\u58eb\u9769\u6307\u8cac\u300c\u7cfb\u7d71\u6027\u7834\u58de\u6d3b\u52d5\u300d\u70ba\u640d\u58de\u539f\u56e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.tomshardware.com/networking/undersea-cable-connecting-egypt-and-syria-has-been-cut-damascus-blames-systematic-sabotage-campaign-as-cause-of-damage&quot;, &quot;title_en&quot;: &quot;Undersea cable connecting Egypt and Syria has been cut, state-owned telecom operator says \u2014 Damascus blames 'systematic sabotage campaign' as cause of damage&quot;, &quot;title_zh&quot;: &quot;\u9023\u63a5\u57c3\u53ca\u548c\u6558\u5229\u4e9e\u7684\u6d77\u5e95\u96fb\u7e9c\u906d\u5207\u65b7\uff0c\u570b\u6709\u96fb\u4fe1\u904b\u71df\u5546\u8868\u793a\u2014\u2014\u5927\u99ac\u58eb\u9769\u6307\u8cac\u300c\u7cfb\u7d71\u6027\u7834\u58de\u6d3b\u52d5\u300d\u70ba\u640d\u58de\u539f\u56e0&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket" target="_blank">First official details of AMD's next-gen 'Mustang Peak' Threadripper CPUs come into view — chips feature DDR5, PCIe 6.0, and a new socket</a></div>
+    <div class="title-zh">AMD 下一代「Mustang Peak」Threadripper CPU 首次官方細節曝光——晶片採用 DDR5、PCIe 6.0 和新插槽</div>
+    
+<div class="summary-block">
+  <div class="summary-en">We now have the first confirmed details about AMD's Zen 6-based Threadripper CPUs, code-named Mustang Peak.</div>
+  <div class="summary-zh">AMD Zen 6 架構 Threadripper CPU「Mustang Peak」的首個確認細節已披露。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket&quot;, &quot;title_en&quot;: &quot;First official details of AMD's next-gen 'Mustang Peak' Threadripper CPUs come into view \u2014 chips feature DDR5, PCIe 6.0, and a new socket&quot;, &quot;title_zh&quot;: &quot;AMD \u4e0b\u4e00\u4ee3\u300cMustang Peak\u300dThreadripper CPU \u9996\u6b21\u5b98\u65b9\u7d30\u7bc0\u66dd\u5149\u2014\u2014\u6676\u7247\u63a1\u7528 DDR5\u3001PCIe 6.0 \u548c\u65b0\u63d2\u69fd&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket&quot;, &quot;title_en&quot;: &quot;First official details of AMD's next-gen 'Mustang Peak' Threadripper CPUs come into view \u2014 chips feature DDR5, PCIe 6.0, and a new socket&quot;, &quot;title_zh&quot;: &quot;AMD \u4e0b\u4e00\u4ee3\u300cMustang Peak\u300dThreadripper CPU \u9996\u6b21\u5b98\u65b9\u7d30\u7bc0\u66dd\u5149\u2014\u2014\u6676\u7247\u63a1\u7528 DDR5\u3001PCIe 6.0 \u548c\u65b0\u63d2\u69fd&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/first-official-details-of-amds-next-gen-mustang-peak-threadripper-cpus-come-into-view-chips-feature-ddr5-pcie-6-0-and-a-new-socket&quot;, &quot;title_en&quot;: &quot;First official details of AMD's next-gen 'Mustang Peak' Threadripper CPUs come into view \u2014 chips feature DDR5, PCIe 6.0, and a new socket&quot;, &quot;title_zh&quot;: &quot;AMD \u4e0b\u4e00\u4ee3\u300cMustang Peak\u300dThreadripper CPU \u9996\u6b21\u5b98\u65b9\u7d30\u7bc0\u66dd\u5149\u2014\u2014\u6676\u7247\u63a1\u7528 DDR5\u3001PCIe 6.0 \u548c\u65b0\u63d2\u69fd&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor" target="_blank">Save $500 on this Acer 16” Predator Helios Neo 16 IPS Gaming laptop — just $1,499.99 gets you a powerful portable gaming rig with an RTX 5070, 32GB DDR5, and Intel Core Ultra 9 275 HX processor</a></div>
+    <div class="title-zh">Acer 16 英寸 Predator Helios Neo 16 IPS 遊戲筆電優惠 $500——僅 $1,499.99 即可獲得搭載 RTX 5070、32GB DDR5 和 Intel Core Ultra 9 275 HX 的強大遊戲本</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Save $500 on Acer’s Predator Helios Neo 16 AI Gaming laptop and score a powerful gaming laptop with 32GB of RAM and RTX 5070 for only $1,499.99.</div>
+  <div class="summary-zh">Acer Predator Helios Neo 16 AI Gaming 筆電現優惠 $500，32GB 記憶體和 RTX 5070 遊戲本僅售 $1,499.99。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor&quot;, &quot;title_en&quot;: &quot;Save $500 on this Acer 16\u201d Predator Helios Neo 16 IPS Gaming laptop \u2014 just $1,499.99 gets you a powerful portable gaming rig with an RTX 5070, 32GB DDR5, and Intel Core Ultra 9 275 HX processor&quot;, &quot;title_zh&quot;: &quot;Acer 16 \u82f1\u5bf8 Predator Helios Neo 16 IPS \u904a\u6232\u7b46\u96fb\u512a\u60e0 $500\u2014\u2014\u50c5 $1,499.99 \u5373\u53ef\u7372\u5f97\u642d\u8f09 RTX 5070\u300132GB DDR5 \u548c Intel Core Ultra 9 275 HX \u7684\u5f37\u5927\u904a\u6232\u672c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor&quot;, &quot;title_en&quot;: &quot;Save $500 on this Acer 16\u201d Predator Helios Neo 16 IPS Gaming laptop \u2014 just $1,499.99 gets you a powerful portable gaming rig with an RTX 5070, 32GB DDR5, and Intel Core Ultra 9 275 HX processor&quot;, &quot;title_zh&quot;: &quot;Acer 16 \u82f1\u5bf8 Predator Helios Neo 16 IPS \u904a\u6232\u7b46\u96fb\u512a\u60e0 $500\u2014\u2014\u50c5 $1,499.99 \u5373\u53ef\u7372\u5f97\u642d\u8f09 RTX 5070\u300132GB DDR5 \u548c Intel Core Ultra 9 275 HX \u7684\u5f37\u5927\u904a\u6232\u672c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/save-usd500-on-this-acer-16-predator-helios-neo-16-ips-gaming-laptop-just-usd1-499-99-gets-you-a-powerful-portable-gaming-rig-with-an-rtx-5070-32gb-ddr5-and-intel-core-ultra-9-275-hx-processor&quot;, &quot;title_en&quot;: &quot;Save $500 on this Acer 16\u201d Predator Helios Neo 16 IPS Gaming laptop \u2014 just $1,499.99 gets you a powerful portable gaming rig with an RTX 5070, 32GB DDR5, and Intel Core Ultra 9 275 HX processor&quot;, &quot;title_zh&quot;: &quot;Acer 16 \u82f1\u5bf8 Predator Helios Neo 16 IPS \u904a\u6232\u7b46\u96fb\u512a\u60e0 $500\u2014\u2014\u50c5 $1,499.99 \u5373\u53ef\u7372\u5f97\u642d\u8f09 RTX 5070\u300132GB DDR5 \u548c Intel Core Ultra 9 275 HX \u7684\u5f37\u5927\u904a\u6232\u672c&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review" target="_blank">ViewSonic VX2738-2K 27-inch OLED review: An OLED value play</a></div>
+    <div class="title-zh">ViewSonic VX2738-2K 27 英寸 OLED 評測：平民化 OLED 之選</div>
+    
+<div class="summary-block">
+  <div class="summary-en">ViewSonic’s VX2738-2K OLED is a high-performance 27-inch QHD gaming monitor with 240 Hz, Adaptive-Sync, HDR and Quantum Dot color. It delivers smooth speed, quick response and saturated color for a relatively low price.</div>
+  <div class="summary-zh">ViewSonic VX2738-2K OLED 是一款高效能 27 英寸 QHD 遊戲監視器，搭載 240 Hz、Adaptive-Sync、HDR 和量子點色彩技術，以相對低廉的價格提供流暢速度、快速反應時間和飽和色彩。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review&quot;, &quot;title_en&quot;: &quot;ViewSonic VX2738-2K 27-inch OLED review: An OLED value play&quot;, &quot;title_zh&quot;: &quot;ViewSonic VX2738-2K 27 \u82f1\u5bf8 OLED \u8a55\u6e2c\uff1a\u5e73\u6c11\u5316 OLED \u4e4b\u9078&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review&quot;, &quot;title_en&quot;: &quot;ViewSonic VX2738-2K 27-inch OLED review: An OLED value play&quot;, &quot;title_zh&quot;: &quot;ViewSonic VX2738-2K 27 \u82f1\u5bf8 OLED \u8a55\u6e2c\uff1a\u5e73\u6c11\u5316 OLED \u4e4b\u9078&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://www.tomshardware.com/monitors/gaming-monitors/viewsonic-vx2738-2k-27-inch-oled-review&quot;, &quot;title_en&quot;: &quot;ViewSonic VX2738-2K 27-inch OLED review: An OLED value play&quot;, &quot;title_zh&quot;: &quot;ViewSonic VX2738-2K 27 \u82f1\u5bf8 OLED \u8a55\u6e2c\uff1a\u5e73\u6c11\u5316 OLED \u4e4b\u9078&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself" target="_blank">Nvidia reveals AI robots that taught themselves to install GPUs into motherboards — video shows robot ‘solve high-precision tasks like… installing GPUs all by itself’</a></div>
+    <div class="title-zh">Nvidia 展示自主學習安裝 GPU 至主機板的 AI 機器人——影片展現機器人「獨立完成 GPU 安裝等高精密任務」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nvidia showcases agentic robots that can teach themselves high-precision and dexterous tasks - like PC building - in the real world.</div>
+  <div class="summary-zh">Nvidia 展示代理型機器人能在現實世界中自主學習高精密和靈巧任務，如電腦組裝。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself&quot;, &quot;title_en&quot;: &quot;Nvidia reveals AI robots that taught themselves to install GPUs into motherboards \u2014 video shows robot \u2018solve high-precision tasks like\u2026 installing GPUs all by itself\u2019&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5c55\u793a\u81ea\u4e3b\u5b78\u7fd2\u5b89\u88dd GPU \u81f3\u4e3b\u6a5f\u677f\u7684 AI \u6a5f\u5668\u4eba\u2014\u2014\u5f71\u7247\u5c55\u73fe\u6a5f\u5668\u4eba\u300c\u7368\u7acb\u5b8c\u6210 GPU \u5b89\u88dd\u7b49\u9ad8\u7cbe\u5bc6\u4efb\u52d9\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself&quot;, &quot;title_en&quot;: &quot;Nvidia reveals AI robots that taught themselves to install GPUs into motherboards \u2014 video shows robot \u2018solve high-precision tasks like\u2026 installing GPUs all by itself\u2019&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5c55\u793a\u81ea\u4e3b\u5b78\u7fd2\u5b89\u88dd GPU \u81f3\u4e3b\u6a5f\u677f\u7684 AI \u6a5f\u5668\u4eba\u2014\u2014\u5f71\u7247\u5c55\u73fe\u6a5f\u5668\u4eba\u300c\u7368\u7acb\u5b8c\u6210 GPU \u5b89\u88dd\u7b49\u9ad8\u7cbe\u5bc6\u4efb\u52d9\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/artificial-intelligence/nvidia-reveals-ai-robots-that-taught-themselves-to-install-gpus-into-motherboards-video-shows-robot-solve-high-precision-tasks-like-installing-gpus-all-by-itself&quot;, &quot;title_en&quot;: &quot;Nvidia reveals AI robots that taught themselves to install GPUs into motherboards \u2014 video shows robot \u2018solve high-precision tasks like\u2026 installing GPUs all by itself\u2019&quot;, &quot;title_zh&quot;: &quot;Nvidia \u5c55\u793a\u81ea\u4e3b\u5b78\u7fd2\u5b89\u88dd GPU \u81f3\u4e3b\u6a5f\u677f\u7684 AI \u6a5f\u5668\u4eba\u2014\u2014\u5f71\u7247\u5c55\u73fe\u6a5f\u5668\u4eba\u300c\u7368\u7acb\u5b8c\u6210 GPU \u5b89\u88dd\u7b49\u9ad8\u7cbe\u5bc6\u4efb\u52d9\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april" target="_blank">Fight the price rises on SSDs with this 31% saving on Samsung's brilliant 1TB 990 Pro SSD — now $219 at Amazon, lowest price since April</a></div>
+    <div class="title-zh">利用 31% 折扣對抗 SSD 漲價——Samsung 1TB 990 Pro SSD 現 Amazon 售價 $219，為 4 月以來最低價</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Save $100 off the price of this 1TB Samsung 990 Pro SSD. Amazon's 31% discount fights off the current storage price rises.</div>
+  <div class="summary-zh">1TB Samsung 990 Pro SSD 價格下降 $100。Amazon 的 31% 折扣有助對抗當前儲存價格上漲。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april&quot;, &quot;title_en&quot;: &quot;Fight the price rises on SSDs with this 31% saving on Samsung's brilliant 1TB 990 Pro SSD \u2014 now $219 at Amazon, lowest price since April&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528 31% \u6298\u6263\u5c0d\u6297 SSD \u6f32\u50f9\u2014\u2014Samsung 1TB 990 Pro SSD \u73fe Amazon \u552e\u50f9 $219\uff0c\u70ba 4 \u6708\u4ee5\u4f86\u6700\u4f4e\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april&quot;, &quot;title_en&quot;: &quot;Fight the price rises on SSDs with this 31% saving on Samsung's brilliant 1TB 990 Pro SSD \u2014 now $219 at Amazon, lowest price since April&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528 31% \u6298\u6263\u5c0d\u6297 SSD \u6f32\u50f9\u2014\u2014Samsung 1TB 990 Pro SSD \u73fe Amazon \u552e\u50f9 $219\uff0c\u70ba 4 \u6708\u4ee5\u4f86\u6700\u4f4e\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/fight-the-price-rises-on-ssds-with-this-31-percent-saving-on-samsungs-brilliant-1tb-990-pro-ssd-now-usd219-at-amazon-lowest-price-since-april&quot;, &quot;title_en&quot;: &quot;Fight the price rises on SSDs with this 31% saving on Samsung's brilliant 1TB 990 Pro SSD \u2014 now $219 at Amazon, lowest price since April&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528 31% \u6298\u6263\u5c0d\u6297 SSD \u6f32\u50f9\u2014\u2014Samsung 1TB 990 Pro SSD \u73fe Amazon \u552e\u50f9 $219\uff0c\u70ba 4 \u6708\u4ee5\u4f86\u6700\u4f4e\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations" target="_blank">U.S. gov't asks court to dismiss NAACP lawsuit against Elon Musk's xAI over use of unpermitted gas turbines — DOJ says Grok model running at Colossus 2 ‘supports mission-critical operations’</a></div>
+    <div class="title-zh">美國政府要求法院駁回 NAACP 對 Elon Musk xAI 非法使用燃氣渦輪機的訴訟——司法部稱 Grok 模型運行於 Colossus 2 「支持關鍵任務行動」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The US government is seeking dismissal of a lawsuit from the NAACP, arguing that the Colossus 2 data center is crucial for national security. The data center runs the Grok Gov AI model, and the government claims a shutdown &quot;directly threatens ongoing national security interests.&quot;</div>
+  <div class="summary-zh">美國政府尋求駁回 NAACP 訴訟，辯稱 Colossus 2 數據中心對國家安全至關重要。該數據中心運行 Grok Gov AI 模型，政府聲稱關閉將「直接威脅持續的國家安全利益」。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations&quot;, &quot;title_en&quot;: &quot;U.S. gov't asks court to dismiss NAACP lawsuit against Elon Musk's xAI over use of unpermitted gas turbines \u2014 DOJ says Grok model running at Colossus 2 \u2018supports mission-critical operations\u2019&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u653f\u5e9c\u8981\u6c42\u6cd5\u9662\u99c1\u56de NAACP \u5c0d Elon Musk xAI \u975e\u6cd5\u4f7f\u7528\u71c3\u6c23\u6e26\u8f2a\u6a5f\u7684\u8a34\u8a1f\u2014\u2014\u53f8\u6cd5\u90e8\u7a31 Grok \u6a21\u578b\u904b\u884c\u65bc Colossus 2 \u300c\u652f\u6301\u95dc\u9375\u4efb\u52d9\u884c\u52d5\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations&quot;, &quot;title_en&quot;: &quot;U.S. gov't asks court to dismiss NAACP lawsuit against Elon Musk's xAI over use of unpermitted gas turbines \u2014 DOJ says Grok model running at Colossus 2 \u2018supports mission-critical operations\u2019&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u653f\u5e9c\u8981\u6c42\u6cd5\u9662\u99c1\u56de NAACP \u5c0d Elon Musk xAI \u975e\u6cd5\u4f7f\u7528\u71c3\u6c23\u6e26\u8f2a\u6a5f\u7684\u8a34\u8a1f\u2014\u2014\u53f8\u6cd5\u90e8\u7a31 Grok \u6a21\u578b\u904b\u884c\u65bc Colossus 2 \u300c\u652f\u6301\u95dc\u9375\u4efb\u52d9\u884c\u52d5\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://www.tomshardware.com/tech-industry/big-tech/u-s-govt-asks-court-to-dismiss-naacp-lawsuit-against-elon-musks-xai-over-use-of-unpermitted-gas-turbines-doj-says-grok-model-running-at-colossus-2-supports-mission-critical-operations&quot;, &quot;title_en&quot;: &quot;U.S. gov't asks court to dismiss NAACP lawsuit against Elon Musk's xAI over use of unpermitted gas turbines \u2014 DOJ says Grok model running at Colossus 2 \u2018supports mission-critical operations\u2019&quot;, &quot;title_zh&quot;: &quot;\u7f8e\u570b\u653f\u5e9c\u8981\u6c42\u6cd5\u9662\u99c1\u56de NAACP \u5c0d Elon Musk xAI \u975e\u6cd5\u4f7f\u7528\u71c3\u6c23\u6e26\u8f2a\u6a5f\u7684\u8a34\u8a1f\u2014\u2014\u53f8\u6cd5\u90e8\u7a31 Grok \u6a21\u578b\u904b\u884c\u65bc Colossus 2 \u300c\u652f\u6301\u95dc\u9375\u4efb\u52d9\u884c\u52d5\u300d&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi11" data-url="https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises" target="_blank">This $339 Corsair 32GB DDR5 RAM kit is the cheapest on sale right now, $45 less than the next-best rival — secure overclockable RGB kit with 6,000 MT/s speeds for a new gaming PC build and beat inevitable future price rises</a></div>
+    <div class="title-zh">這款 $339 Corsair 32GB DDR5 RAM 套件是目前最便宜的在售品——比次優競品便宜 $45，可超頻 RGB 套件支持 6,000 MT/s 速度適合新遊戲 PC 組裝並對抗未來漲價</div>
+    
+<div class="summary-block">
+  <div class="summary-en">This 32GB Corsair Vengeance DDR5-6000 RAM kit is on sale at Woot for $339.99 right now, $45 less than its next-best rival.</div>
+  <div class="summary-zh">32GB Corsair Vengeance DDR5-6000 RAM 套件在 Woot 現售 $339.99，比次優競品便宜 $45。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi11"
+              onclick="toggleAnalysis('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises&quot;, &quot;title_en&quot;: &quot;This $339 Corsair 32GB DDR5 RAM kit is the cheapest on sale right now, $45 less than the next-best rival \u2014 secure overclockable RGB kit with 6,000 MT/s speeds for a new gaming PC build and beat inevitable future price rises&quot;, &quot;title_zh&quot;: &quot;\u9019\u6b3e $339 Corsair 32GB DDR5 RAM \u5957\u4ef6\u662f\u76ee\u524d\u6700\u4fbf\u5b9c\u7684\u5728\u552e\u54c1\u2014\u2014\u6bd4\u6b21\u512a\u7af6\u54c1\u4fbf\u5b9c $45\uff0c\u53ef\u8d85\u983b RGB \u5957\u4ef6\u652f\u6301 6,000 MT/s \u901f\u5ea6\u9069\u5408\u65b0\u904a\u6232 PC \u7d44\u88dd\u4e26\u5c0d\u6297\u672a\u4f86\u6f32\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi11"
+              onclick="bookmarkArticle('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises&quot;, &quot;title_en&quot;: &quot;This $339 Corsair 32GB DDR5 RAM kit is the cheapest on sale right now, $45 less than the next-best rival \u2014 secure overclockable RGB kit with 6,000 MT/s speeds for a new gaming PC build and beat inevitable future price rises&quot;, &quot;title_zh&quot;: &quot;\u9019\u6b3e $339 Corsair 32GB DDR5 RAM \u5957\u4ef6\u662f\u76ee\u524d\u6700\u4fbf\u5b9c\u7684\u5728\u552e\u54c1\u2014\u2014\u6bd4\u6b21\u512a\u7af6\u54c1\u4fbf\u5b9c $45\uff0c\u53ef\u8d85\u983b RGB \u5957\u4ef6\u652f\u6301 6,000 MT/s \u901f\u5ea6\u9069\u5408\u65b0\u904a\u6232 PC \u7d44\u88dd\u4e26\u5c0d\u6297\u672a\u4f86\u6f32\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi11', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ddr5/this-usd339-corsair-32gb-ddr5-ram-kit-is-the-cheapest-on-sale-right-now-usd45-less-than-the-next-best-rival-secure-overclockable-rgb-kit-with-6-000-mt-s-speeds-for-a-new-gaming-pc-build-and-beat-inevitable-future-price-rises&quot;, &quot;title_en&quot;: &quot;This $339 Corsair 32GB DDR5 RAM kit is the cheapest on sale right now, $45 less than the next-best rival \u2014 secure overclockable RGB kit with 6,000 MT/s speeds for a new gaming PC build and beat inevitable future price rises&quot;, &quot;title_zh&quot;: &quot;\u9019\u6b3e $339 Corsair 32GB DDR5 RAM \u5957\u4ef6\u662f\u76ee\u524d\u6700\u4fbf\u5b9c\u7684\u5728\u552e\u54c1\u2014\u2014\u6bd4\u6b21\u512a\u7af6\u54c1\u4fbf\u5b9c $45\uff0c\u53ef\u8d85\u983b RGB \u5957\u4ef6\u652f\u6301 6,000 MT/s \u901f\u5ea6\u9069\u5408\u65b0\u904a\u6232 PC \u7d44\u88dd\u4e26\u5c0d\u6297\u672a\u4f86\u6f32\u50f9&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi11"
+              onclick="copyPrompt('chi11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi12" data-url="https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth" target="_blank">SMI says Nvidia is driving its consumer PCIe 6.0 roadmap, not AMD and Intel — RTX Spark agentic AI platform fuels a hunger for storage bandwidth</a></div>
+    <div class="title-zh">SMI 表示 Nvidia 主導其消費端 PCIe 6.0 路線圖，而非 AMD 和 Intel——RTX Spark 代理型 AI 平台推動對儲存頻寬的渴望</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Nvidia may be ahead of AMD and Intel with PCIe Gen6-supporting platform for client PCs due to its client agentic AI ambitions, and that roadmap has suppliers like Silicon Motion paying attention.</div>
+  <div class="summary-zh">由於客戶端代理型 AI 野心，Nvidia 在支持 PCIe Gen6 的客戶端平台上可能領先 AMD 和 Intel，該路線圖已引起 Silicon Motion 等供應商的關注。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi12"
+              onclick="toggleAnalysis('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth&quot;, &quot;title_en&quot;: &quot;SMI says Nvidia is driving its consumer PCIe 6.0 roadmap, not AMD and Intel \u2014 RTX Spark agentic AI platform fuels a hunger for storage bandwidth&quot;, &quot;title_zh&quot;: &quot;SMI \u8868\u793a Nvidia \u4e3b\u5c0e\u5176\u6d88\u8cbb\u7aef PCIe 6.0 \u8def\u7dda\u5716\uff0c\u800c\u975e AMD \u548c Intel\u2014\u2014RTX Spark \u4ee3\u7406\u578b AI \u5e73\u53f0\u63a8\u52d5\u5c0d\u5132\u5b58\u983b\u5bec\u7684\u6e34\u671b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi12"
+              onclick="bookmarkArticle('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth&quot;, &quot;title_en&quot;: &quot;SMI says Nvidia is driving its consumer PCIe 6.0 roadmap, not AMD and Intel \u2014 RTX Spark agentic AI platform fuels a hunger for storage bandwidth&quot;, &quot;title_zh&quot;: &quot;SMI \u8868\u793a Nvidia \u4e3b\u5c0e\u5176\u6d88\u8cbb\u7aef PCIe 6.0 \u8def\u7dda\u5716\uff0c\u800c\u975e AMD \u548c Intel\u2014\u2014RTX Spark \u4ee3\u7406\u578b AI \u5e73\u53f0\u63a8\u52d5\u5c0d\u5132\u5b58\u983b\u5bec\u7684\u6e34\u671b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi12', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ssds/silicon-motions-client-pcie-6-x-roadmap-is-driven-by-nvidia-not-by-amd-and-intel-rtx-spark-agentic-ai-platform-could-fuel-a-hunger-for-storage-bandwidth&quot;, &quot;title_en&quot;: &quot;SMI says Nvidia is driving its consumer PCIe 6.0 roadmap, not AMD and Intel \u2014 RTX Spark agentic AI platform fuels a hunger for storage bandwidth&quot;, &quot;title_zh&quot;: &quot;SMI \u8868\u793a Nvidia \u4e3b\u5c0e\u5176\u6d88\u8cbb\u7aef PCIe 6.0 \u8def\u7dda\u5716\uff0c\u800c\u975e AMD \u548c Intel\u2014\u2014RTX Spark \u4ee3\u7406\u578b AI \u5e73\u53f0\u63a8\u52d5\u5c0d\u5132\u5b58\u983b\u5bec\u7684\u6e34\u671b&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi12"
+              onclick="copyPrompt('chi12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi13" data-url="https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change" target="_blank">AMD silently removes memory encryption from consumer Ryzen CPUs, leaving users unaware that they may be vulnerable — security feature vanishes after newer AGESA firmware, AMD engineers go radio silent when pressed about the change</a></div>
+    <div class="title-zh">AMD 悄悄從消費級 Ryzen CPU 移除記憶體加密，用戶無知可能面臨安全風險——安全功能在新版 AGESA 韌體後消失，AMD 工程師被問及此變更時保持沉默</div>
+    
+<div class="summary-block">
+  <div class="summary-en">AMD has reportedly stripped TSME from consumer Ryzen processors after years of working support, with testing suggesting newer AGESA firmware disables the memory-encryption feature while Pro and EPYC CPUs remain unaffected.</div>
+  <div class="summary-zh">AMD 據報在多年支持後從消費級 Ryzen 處理器中移除 TSME，測試顯示新版 AGESA 韌體禁用此記憶體加密功能，而 Pro 和 EPYC CPU 保持不受影響。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi13')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi13"
+              onclick="toggleAnalysis('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change&quot;, &quot;title_en&quot;: &quot;AMD silently removes memory encryption from consumer Ryzen CPUs, leaving users unaware that they may be vulnerable \u2014 security feature vanishes after newer AGESA firmware, AMD engineers go radio silent when pressed about the change&quot;, &quot;title_zh&quot;: &quot;AMD \u6084\u6084\u5f9e\u6d88\u8cbb\u7d1a Ryzen CPU \u79fb\u9664\u8a18\u61b6\u9ad4\u52a0\u5bc6\uff0c\u7528\u6236\u7121\u77e5\u53ef\u80fd\u9762\u81e8\u5b89\u5168\u98a8\u96aa\u2014\u2014\u5b89\u5168\u529f\u80fd\u5728\u65b0\u7248 AGESA \u97cc\u9ad4\u5f8c\u6d88\u5931\uff0cAMD \u5de5\u7a0b\u5e2b\u88ab\u554f\u53ca\u6b64\u8b8a\u66f4\u6642\u4fdd\u6301\u6c89\u9ed8&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi13"
+              onclick="bookmarkArticle('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change&quot;, &quot;title_en&quot;: &quot;AMD silently removes memory encryption from consumer Ryzen CPUs, leaving users unaware that they may be vulnerable \u2014 security feature vanishes after newer AGESA firmware, AMD engineers go radio silent when pressed about the change&quot;, &quot;title_zh&quot;: &quot;AMD \u6084\u6084\u5f9e\u6d88\u8cbb\u7d1a Ryzen CPU \u79fb\u9664\u8a18\u61b6\u9ad4\u52a0\u5bc6\uff0c\u7528\u6236\u7121\u77e5\u53ef\u80fd\u9762\u81e8\u5b89\u5168\u98a8\u96aa\u2014\u2014\u5b89\u5168\u529f\u80fd\u5728\u65b0\u7248 AGESA \u97cc\u9ad4\u5f8c\u6d88\u5931\uff0cAMD \u5de5\u7a0b\u5e2b\u88ab\u554f\u53ca\u6b64\u8b8a\u66f4\u6642\u4fdd\u6301\u6c89\u9ed8&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi13">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi13"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi13')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi13', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/cpus/amd-silently-removes-memory-encryption-from-consumer-ryzen-cpus-leaving-users-unaware-that-they-may-be-vulnerable-security-feature-vanishes-after-newer-agesa-firmware-amd-engineers-go-radio-silent-when-pressed-about-the-change&quot;, &quot;title_en&quot;: &quot;AMD silently removes memory encryption from consumer Ryzen CPUs, leaving users unaware that they may be vulnerable \u2014 security feature vanishes after newer AGESA firmware, AMD engineers go radio silent when pressed about the change&quot;, &quot;title_zh&quot;: &quot;AMD \u6084\u6084\u5f9e\u6d88\u8cbb\u7d1a Ryzen CPU \u79fb\u9664\u8a18\u61b6\u9ad4\u52a0\u5bc6\uff0c\u7528\u6236\u7121\u77e5\u53ef\u80fd\u9762\u81e8\u5b89\u5168\u98a8\u96aa\u2014\u2014\u5b89\u5168\u529f\u80fd\u5728\u65b0\u7248 AGESA \u97cc\u9ad4\u5f8c\u6d88\u5931\uff0cAMD \u5de5\u7a0b\u5e2b\u88ab\u554f\u53ca\u6b64\u8b8a\u66f4\u6642\u4fdd\u6301\u6c89\u9ed8&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi13"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi13">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi13"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi13"
+              onclick="copyPrompt('chi13')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi14" data-url="https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Tom's Hardware</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt" target="_blank">Chinese memory brands ditch Samsung and Micron for homegrown CXMT and YMTC silicon — Corsair, HP, and Dell are already adopting the China-produced DDR5 chips</a></div>
+    <div class="title-zh">中國記憶體品牌棄用 Samsung 和 Micron 轉向國產 CXMT 和 YMTC 晶片——Corsair、HP 和 Dell 已採用中國製 DDR5 晶片</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Chinese memory brands Gloway and KingBank have begun using homemade chips to produce DDR5 memory kits in lieu of Samsung, Micron, or SK hynix DRAM.</div>
+  <div class="summary-zh">中國記憶體品牌 Gloway 和 KingBank 已開始使用國產晶片製造 DDR5 記憶體套件，而非 Samsung、Micron 或 SK hynix DRAM。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi14')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi14"
+              onclick="toggleAnalysis('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt&quot;, &quot;title_en&quot;: &quot;Chinese memory brands ditch Samsung and Micron for homegrown CXMT and YMTC silicon \u2014 Corsair, HP, and Dell are already adopting the China-produced DDR5 chips&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u8a18\u61b6\u9ad4\u54c1\u724c\u68c4\u7528 Samsung \u548c Micron \u8f49\u5411\u570b\u7522 CXMT \u548c YMTC \u6676\u7247\u2014\u2014Corsair\u3001HP \u548c Dell \u5df2\u63a1\u7528\u4e2d\u570b\u88fd DDR5 \u6676\u7247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi14"
+              onclick="bookmarkArticle('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt&quot;, &quot;title_en&quot;: &quot;Chinese memory brands ditch Samsung and Micron for homegrown CXMT and YMTC silicon \u2014 Corsair, HP, and Dell are already adopting the China-produced DDR5 chips&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u8a18\u61b6\u9ad4\u54c1\u724c\u68c4\u7528 Samsung \u548c Micron \u8f49\u5411\u570b\u7522 CXMT \u548c YMTC \u6676\u7247\u2014\u2014Corsair\u3001HP \u548c Dell \u5df2\u63a1\u7528\u4e2d\u570b\u88fd DDR5 \u6676\u7247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi14">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi14"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi14')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi14', {&quot;url&quot;: &quot;https://www.tomshardware.com/pc-components/ram/chinese-memory-vendors-snub-industry-giants-in-favor-of-homegrown-ram-chips-samsung-micron-and-sk-hynix-face-a-chinese-supply-chain-revolt&quot;, &quot;title_en&quot;: &quot;Chinese memory brands ditch Samsung and Micron for homegrown CXMT and YMTC silicon \u2014 Corsair, HP, and Dell are already adopting the China-produced DDR5 chips&quot;, &quot;title_zh&quot;: &quot;\u4e2d\u570b\u8a18\u61b6\u9ad4\u54c1\u724c\u68c4\u7528 Samsung \u548c Micron \u8f49\u5411\u570b\u7522 CXMT \u548c YMTC \u6676\u7247\u2014\u2014Corsair\u3001HP \u548c Dell \u5df2\u63a1\u7528\u4e2d\u570b\u88fd DDR5 \u6676\u7247&quot;, &quot;source&quot;: &quot;Tom's Hardware&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi14"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi14">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi14"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi14"
+              onclick="copyPrompt('chi14')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi15" data-url="https://www.eetimes.com/built-in-memory-built-in-confidence/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/built-in-memory-built-in-confidence/" target="_blank">Built-In Memory. Built-In Confidence.</a></div>
+    <div class="title-zh">內建記憶體。內建信心。</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Removing the Memory Bottleneck Standing Between Your Team and Edge AI Memory supply volatility is creating real risk for edge AI innovators. Shortages and rising prices are expected to persist through 2026</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/built-in-memory-built-in-confidence/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi15')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi15"
+              onclick="toggleAnalysis('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/built-in-memory-built-in-confidence/&quot;, &quot;title_en&quot;: &quot;Built-In Memory. Built-In Confidence.&quot;, &quot;title_zh&quot;: &quot;\u5167\u5efa\u8a18\u61b6\u9ad4\u3002\u5167\u5efa\u4fe1\u5fc3\u3002&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi15"
+              onclick="bookmarkArticle('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/built-in-memory-built-in-confidence/&quot;, &quot;title_en&quot;: &quot;Built-In Memory. Built-In Confidence.&quot;, &quot;title_zh&quot;: &quot;\u5167\u5efa\u8a18\u61b6\u9ad4\u3002\u5167\u5efa\u4fe1\u5fc3\u3002&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi15">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi15"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi15')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi15', {&quot;url&quot;: &quot;https://www.eetimes.com/built-in-memory-built-in-confidence/&quot;, &quot;title_en&quot;: &quot;Built-In Memory. Built-In Confidence.&quot;, &quot;title_zh&quot;: &quot;\u5167\u5efa\u8a18\u61b6\u9ad4\u3002\u5167\u5efa\u4fe1\u5fc3\u3002&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi15"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi15">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi15"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi15"
+              onclick="copyPrompt('chi15')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi16" data-url="https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/" target="_blank">Beyond Chiplets, CMOS 2.0 Moves Scaling into the Circuit</a></div>
+    <div class="title-zh">超越小晶片，CMOS 2.0 將縮放轉向電路層面</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As transistor scaling becomes harder, the semiconductor industry has been moving outward toward chiplets, advanced packaging, high-bandwidth memory, and heterogeneous integration. CMOS 2.0, imec’s term for</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi16')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi16"
+              onclick="toggleAnalysis('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/&quot;, &quot;title_en&quot;: &quot;Beyond Chiplets, CMOS 2.0 Moves Scaling into the Circuit&quot;, &quot;title_zh&quot;: &quot;\u8d85\u8d8a\u5c0f\u6676\u7247\uff0cCMOS 2.0 \u5c07\u7e2e\u653e\u8f49\u5411\u96fb\u8def\u5c64\u9762&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi16"
+              onclick="bookmarkArticle('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/&quot;, &quot;title_en&quot;: &quot;Beyond Chiplets, CMOS 2.0 Moves Scaling into the Circuit&quot;, &quot;title_zh&quot;: &quot;\u8d85\u8d8a\u5c0f\u6676\u7247\uff0cCMOS 2.0 \u5c07\u7e2e\u653e\u8f49\u5411\u96fb\u8def\u5c64\u9762&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi16">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi16"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi16')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi16', {&quot;url&quot;: &quot;https://www.eetimes.com/beyond-chiplets-cmos-2-0-moves-scaling-into-the-circuit/&quot;, &quot;title_en&quot;: &quot;Beyond Chiplets, CMOS 2.0 Moves Scaling into the Circuit&quot;, &quot;title_zh&quot;: &quot;\u8d85\u8d8a\u5c0f\u6676\u7247\uff0cCMOS 2.0 \u5c07\u7e2e\u653e\u8f49\u5411\u96fb\u8def\u5c64\u9762&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi16"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi16">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi16"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi16"
+              onclick="copyPrompt('chi16')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi17" data-url="https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 17 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/" target="_blank">AI Isn’t the Real Bottleneck in Autonomy; Wireless Is</a></div>
+    <div class="title-zh">AI 不是自主系統的真正瓶頸；無線才是</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Picture a drone inspecting a power line after a storm. It is streaming video back to an operator, sending telemetry to a control system, maintaining positioning data, and adjusting its flight path in real</div>
+  
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi17')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi17"
+              onclick="toggleAnalysis('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/&quot;, &quot;title_en&quot;: &quot;AI Isn\u2019t the Real Bottleneck in Autonomy; Wireless Is&quot;, &quot;title_zh&quot;: &quot;AI \u4e0d\u662f\u81ea\u4e3b\u7cfb\u7d71\u7684\u771f\u6b63\u74f6\u9838\uff1b\u7121\u7dda\u624d\u662f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi17"
+              onclick="bookmarkArticle('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/&quot;, &quot;title_en&quot;: &quot;AI Isn\u2019t the Real Bottleneck in Autonomy; Wireless Is&quot;, &quot;title_zh&quot;: &quot;AI \u4e0d\u662f\u81ea\u4e3b\u7cfb\u7d71\u7684\u771f\u6b63\u74f6\u9838\uff1b\u7121\u7dda\u624d\u662f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi17">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi17"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi17')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi17', {&quot;url&quot;: &quot;https://www.eetimes.com/ai-isnt-the-real-bottleneck-in-autonomy-wireless-is/&quot;, &quot;title_en&quot;: &quot;AI Isn\u2019t the Real Bottleneck in Autonomy; Wireless Is&quot;, &quot;title_zh&quot;: &quot;AI \u4e0d\u662f\u81ea\u4e3b\u7cfb\u7d71\u7684\u771f\u6b63\u74f6\u9838\uff1b\u7121\u7dda\u624d\u662f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 17 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi17"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi17">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi17"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi17"
+              onclick="copyPrompt('chi17')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
