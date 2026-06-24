@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 Chips / SoC — 2026-06-24</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>💾 Chips / SoC</h1>
+<div class="page-meta">2026-06-24 &nbsp;·&nbsp; 13 篇 &nbsp;·&nbsp; 更新：2026-06-25 00:25 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-chi0" data-url="https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/" target="_blank">Deep UV Lithography Processing, the Best Kept Secret of EUV Lithography</a></div>
+    <div class="title-zh">深紫外光刻工藝，EUV光刻的最大秘密武器</div>
+    
+<div class="summary-block">
+  <div class="summary-en">When it comes to chip performance, Moore’s Law remains the most enduring innovation story in the semiconductor industry, despite constant predictions of its demise. Each new logic and memory node is</div>
+  <div class="summary-zh">儘管業界不斷預測摩爾定律走向終結，但它仍然是半導體產業最持久的創新故事。每個新的邏輯和記憶體節點都在推進芯片性能的進步。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi0"
+              onclick="toggleAnalysis('chi0', {&quot;url&quot;: &quot;https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/&quot;, &quot;title_en&quot;: &quot;Deep UV Lithography Processing, the Best Kept Secret of EUV Lithography&quot;, &quot;title_zh&quot;: &quot;\u6df1\u7d2b\u5916\u5149\u523b\u5de5\u85dd\uff0cEUV\u5149\u523b\u7684\u6700\u5927\u79d8\u5bc6\u6b66\u5668&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi0"
+              onclick="bookmarkArticle('chi0', {&quot;url&quot;: &quot;https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/&quot;, &quot;title_en&quot;: &quot;Deep UV Lithography Processing, the Best Kept Secret of EUV Lithography&quot;, &quot;title_zh&quot;: &quot;\u6df1\u7d2b\u5916\u5149\u523b\u5de5\u85dd\uff0cEUV\u5149\u523b\u7684\u6700\u5927\u79d8\u5bc6\u6b66\u5668&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi0', {&quot;url&quot;: &quot;https://www.eetimes.com/deep-uv-lithography-processing-the-best-kept-secret-of-euv-lithography/&quot;, &quot;title_en&quot;: &quot;Deep UV Lithography Processing, the Best Kept Secret of EUV Lithography&quot;, &quot;title_zh&quot;: &quot;\u6df1\u7d2b\u5916\u5149\u523b\u5de5\u85dd\uff0cEUV\u5149\u523b\u7684\u6700\u5927\u79d8\u5bc6\u6b66\u5668&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi0"
+              onclick="copyPrompt('chi0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi1" data-url="https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/" target="_blank">Pressure and Ultrasonic Flow Sensing for Smarter Fluid Systems</a></div>
+    <div class="title-zh">用於智能流體系統的壓力和超聲波流量傳感</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Modern fluid systems demand accurate, reliable monitoring to detect inefficiencies, prevent failures, and optimise performance. Engineers often face challenges with measurement accuracy at low flow rates,</div>
+  <div class="summary-zh">現代流體系統需要準確可靠的監測以檢測效率問題、預防故障並優化性能。工程師在低流量測量精度方面經常面臨挑戰。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi1"
+              onclick="toggleAnalysis('chi1', {&quot;url&quot;: &quot;https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/&quot;, &quot;title_en&quot;: &quot;Pressure and Ultrasonic Flow Sensing for Smarter Fluid Systems&quot;, &quot;title_zh&quot;: &quot;\u7528\u65bc\u667a\u80fd\u6d41\u9ad4\u7cfb\u7d71\u7684\u58d3\u529b\u548c\u8d85\u8072\u6ce2\u6d41\u91cf\u50b3\u611f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi1"
+              onclick="bookmarkArticle('chi1', {&quot;url&quot;: &quot;https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/&quot;, &quot;title_en&quot;: &quot;Pressure and Ultrasonic Flow Sensing for Smarter Fluid Systems&quot;, &quot;title_zh&quot;: &quot;\u7528\u65bc\u667a\u80fd\u6d41\u9ad4\u7cfb\u7d71\u7684\u58d3\u529b\u548c\u8d85\u8072\u6ce2\u6d41\u91cf\u50b3\u611f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi1', {&quot;url&quot;: &quot;https://www.eetimes.com/pressure-and-ultrasonic-flow-sensing-for-smarter-fluid-systems-2/&quot;, &quot;title_en&quot;: &quot;Pressure and Ultrasonic Flow Sensing for Smarter Fluid Systems&quot;, &quot;title_zh&quot;: &quot;\u7528\u65bc\u667a\u80fd\u6d41\u9ad4\u7cfb\u7d71\u7684\u58d3\u529b\u548c\u8d85\u8072\u6ce2\u6d41\u91cf\u50b3\u611f&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi1"
+              onclick="copyPrompt('chi1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi2" data-url="https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/" target="_blank">Boosting Motor Control Performance with Advanced Microcontroller Technology</a></div>
+    <div class="title-zh">利用先進微控制器技術提升馬達控制性能</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Date:&amp;nbsp;Tuesday, July 14, 2026 or Thursday, July 23, 2026 Motor control applications demand increasing precision, efficiency, and robustness while reducing development time.&amp;nbsp; Join this webinar &amp;nbsp;where our expert will introduce key control concepts such as field-oriented control and power factor correction, and demonstrates how dedicated hardware acceleration, integrated peripherals, and advanced processing capabilities enable faster, more reliable motor control system design. Attendees will gain insight into: Fundamentals of FOC and digital PFC in modern motor control Hardware acceleration for faster and more precise control High-performance MCU architecture and integrated peripherals Built-in protection and reliability for demanding environments Not sure if you will be able to</div>
+  <div class="summary-zh">馬達控制應用需要提高精度、效率和穩健性，同時縮短開發時間。此網路研討會將介紹磁場定向控制等關鍵控制概念。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi2"
+              onclick="toggleAnalysis('chi2', {&quot;url&quot;: &quot;https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/&quot;, &quot;title_en&quot;: &quot;Boosting Motor Control Performance with Advanced Microcontroller Technology&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528\u5148\u9032\u5fae\u63a7\u5236\u5668\u6280\u8853\u63d0\u5347\u99ac\u9054\u63a7\u5236\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi2"
+              onclick="bookmarkArticle('chi2', {&quot;url&quot;: &quot;https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/&quot;, &quot;title_en&quot;: &quot;Boosting Motor Control Performance with Advanced Microcontroller Technology&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528\u5148\u9032\u5fae\u63a7\u5236\u5668\u6280\u8853\u63d0\u5347\u99ac\u9054\u63a7\u5236\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi2', {&quot;url&quot;: &quot;https://www.eetimes.com/boosting-motor-control-performance-with-advanced-microcontroller-technology/&quot;, &quot;title_en&quot;: &quot;Boosting Motor Control Performance with Advanced Microcontroller Technology&quot;, &quot;title_zh&quot;: &quot;\u5229\u7528\u5148\u9032\u5fae\u63a7\u5236\u5668\u6280\u8853\u63d0\u5347\u99ac\u9054\u63a7\u5236\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi2"
+              onclick="copyPrompt('chi2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi3" data-url="https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/" target="_blank">Solid-State Circuit Breakers for DC Grids Architecture, Protection Performance</a></div>
+    <div class="title-zh">直流電網固態斷路器：架構和保護性能</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Date:&amp;nbsp;Tuesday, July 28, 2026 Time:&amp;nbsp; 8:00 am PDT | 11:00am EDT | 17:00 CEST Protection is emerging as a critical bottleneck: mechanical breakers struggle with arcing, speed, and selective coordination at high</div>
+  <div class="summary-zh">保護成為關鍵瓶頸：機械式斷路器在電弧、速度和高功率選擇協調方面面臨困難。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi3"
+              onclick="toggleAnalysis('chi3', {&quot;url&quot;: &quot;https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/&quot;, &quot;title_en&quot;: &quot;Solid-State Circuit Breakers for DC Grids Architecture, Protection Performance&quot;, &quot;title_zh&quot;: &quot;\u76f4\u6d41\u96fb\u7db2\u56fa\u614b\u65b7\u8def\u5668\uff1a\u67b6\u69cb\u548c\u4fdd\u8b77\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi3"
+              onclick="bookmarkArticle('chi3', {&quot;url&quot;: &quot;https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/&quot;, &quot;title_en&quot;: &quot;Solid-State Circuit Breakers for DC Grids Architecture, Protection Performance&quot;, &quot;title_zh&quot;: &quot;\u76f4\u6d41\u96fb\u7db2\u56fa\u614b\u65b7\u8def\u5668\uff1a\u67b6\u69cb\u548c\u4fdd\u8b77\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi3', {&quot;url&quot;: &quot;https://www.eetimes.com/solid-state-circuit-breakers-for-dc-grids-architecture-protection-performance/&quot;, &quot;title_en&quot;: &quot;Solid-State Circuit Breakers for DC Grids Architecture, Protection Performance&quot;, &quot;title_zh&quot;: &quot;\u76f4\u6d41\u96fb\u7db2\u56fa\u614b\u65b7\u8def\u5668\uff1a\u67b6\u69cb\u548c\u4fdd\u8b77\u6027\u80fd&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi3"
+              onclick="copyPrompt('chi3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi4" data-url="https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">EE Times</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/" target="_blank">Silicon Saxony Shows Promise, Limits of Europe’s Chips Act</a></div>
+    <div class="title-zh">矽薩克森展現前景，歐洲芯片法案的局限性</div>
+    
+<div class="summary-block">
+  <div class="summary-en">For years, European policymakers have debated how to convert semiconductor sovereignty from a political aspiration into fabs, technologies, and supply chains. Managing director of Silicon Saxony Frank</div>
+  <div class="summary-zh">多年來，歐洲決策者一直在討論如何將半導體主權從政治願景轉化為晶圓廠、技術和供應鏈。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi4"
+              onclick="toggleAnalysis('chi4', {&quot;url&quot;: &quot;https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/&quot;, &quot;title_en&quot;: &quot;Silicon Saxony Shows Promise, Limits of Europe\u2019s Chips Act&quot;, &quot;title_zh&quot;: &quot;\u77fd\u85a9\u514b\u68ee\u5c55\u73fe\u524d\u666f\uff0c\u6b50\u6d32\u82af\u7247\u6cd5\u6848\u7684\u5c40\u9650\u6027&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi4"
+              onclick="bookmarkArticle('chi4', {&quot;url&quot;: &quot;https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/&quot;, &quot;title_en&quot;: &quot;Silicon Saxony Shows Promise, Limits of Europe\u2019s Chips Act&quot;, &quot;title_zh&quot;: &quot;\u77fd\u85a9\u514b\u68ee\u5c55\u73fe\u524d\u666f\uff0c\u6b50\u6d32\u82af\u7247\u6cd5\u6848\u7684\u5c40\u9650\u6027&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi4', {&quot;url&quot;: &quot;https://www.eetimes.com/silicon-saxony-shows-promise-limits-of-europes-chips-act/&quot;, &quot;title_en&quot;: &quot;Silicon Saxony Shows Promise, Limits of Europe\u2019s Chips Act&quot;, &quot;title_zh&quot;: &quot;\u77fd\u85a9\u514b\u68ee\u5c55\u73fe\u524d\u666f\uff0c\u6b50\u6d32\u82af\u7247\u6cd5\u6848\u7684\u5c40\u9650\u6027&quot;, &quot;source&quot;: &quot;EE Times&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi4"
+              onclick="copyPrompt('chi4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi5" data-url="https://semiengineering.com/how-far-left-can-you-shift/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/how-far-left-can-you-shift/" target="_blank">How Far Left Can You Shift?</a></div>
+    <div class="title-zh">你能左移多遠？</div>
+    
+<div class="summary-block">
+  <div class="summary-en">More steps in the design flow are shifting left, which makes a complicated design process even more complex. This includes early software prototyping, workload mapping, verification, multi-physics integration, verification, IP qualification. Frank Schirrmeister, executive director of strategic programs for System Solutions at Synopsys, talks about the increasing number of steps, the potential trouble spots, how reuse and chiplets impact the flow, and what engineers need to know in order to get a working chip out the door and on schedule. The post How Far Left Can You Shift? appeared first on Semiconductor Engineering .</div>
+  <div class="summary-zh">設計流程中越來越多步驟正在左移，使複雜的設計流程變得更加複雜。這包括早期軟體原型設計、工作負載映射、驗證和多物理場整合。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/how-far-left-can-you-shift/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi5"
+              onclick="toggleAnalysis('chi5', {&quot;url&quot;: &quot;https://semiengineering.com/how-far-left-can-you-shift/&quot;, &quot;title_en&quot;: &quot;How Far Left Can You Shift?&quot;, &quot;title_zh&quot;: &quot;\u4f60\u80fd\u5de6\u79fb\u591a\u9060\uff1f&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi5"
+              onclick="bookmarkArticle('chi5', {&quot;url&quot;: &quot;https://semiengineering.com/how-far-left-can-you-shift/&quot;, &quot;title_en&quot;: &quot;How Far Left Can You Shift?&quot;, &quot;title_zh&quot;: &quot;\u4f60\u80fd\u5de6\u79fb\u591a\u9060\uff1f&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi5', {&quot;url&quot;: &quot;https://semiengineering.com/how-far-left-can-you-shift/&quot;, &quot;title_en&quot;: &quot;How Far Left Can You Shift?&quot;, &quot;title_zh&quot;: &quot;\u4f60\u80fd\u5de6\u79fb\u591a\u9060\uff1f&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi5"
+              onclick="copyPrompt('chi5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi6" data-url="https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/" target="_blank">Continuous Physics Reasoning: Definition, Minimum Criteria, and the Role of Foundation Models for Physics</a></div>
+    <div class="title-zh">連續物理推理：定義、最低標準和基礎模型在物理中的角色</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Abstract Physical products are increasingly constrained by thermal, mechanical, electrical, and manufacturing realities, yet much of industry still relies on intermittent, expert-mediated physics evaluation. As systems become more complex and tightly coupled, this limits not only product development, but also manufacturing readiness, operational efficiency, and lifecycle performance. This paper proposes Continuous Physics Reasoning as a category of engineering capability in which physical reasoning becomes continuously available across the product lifecycle—from design, evaluation, and validation to manufacturing and operation—rather than being confined to discrete simulation checkpoints. We define a foundation model for physics as the enabling system class for Continuous Physics Reasoning</div>
+  <div class="summary-zh">物理產品日益受熱、機械、電氣和製造現實的限制，但業界仍依賴間斷的、專家調解的物理評估。隨著系統變得更複雜且緊密耦合，這限制了產品開發。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi6"
+              onclick="toggleAnalysis('chi6', {&quot;url&quot;: &quot;https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/&quot;, &quot;title_en&quot;: &quot;Continuous Physics Reasoning:\u2028Definition, Minimum Criteria, and the Role of Foundation Models for Physics&quot;, &quot;title_zh&quot;: &quot;\u9023\u7e8c\u7269\u7406\u63a8\u7406\uff1a\u5b9a\u7fa9\u3001\u6700\u4f4e\u6a19\u6e96\u548c\u57fa\u790e\u6a21\u578b\u5728\u7269\u7406\u4e2d\u7684\u89d2\u8272&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi6"
+              onclick="bookmarkArticle('chi6', {&quot;url&quot;: &quot;https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/&quot;, &quot;title_en&quot;: &quot;Continuous Physics Reasoning:\u2028Definition, Minimum Criteria, and the Role of Foundation Models for Physics&quot;, &quot;title_zh&quot;: &quot;\u9023\u7e8c\u7269\u7406\u63a8\u7406\uff1a\u5b9a\u7fa9\u3001\u6700\u4f4e\u6a19\u6e96\u548c\u57fa\u790e\u6a21\u578b\u5728\u7269\u7406\u4e2d\u7684\u89d2\u8272&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi6', {&quot;url&quot;: &quot;https://semiengineering.com/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/&quot;, &quot;title_en&quot;: &quot;Continuous Physics Reasoning:\u2028Definition, Minimum Criteria, and the Role of Foundation Models for Physics&quot;, &quot;title_zh&quot;: &quot;\u9023\u7e8c\u7269\u7406\u63a8\u7406\uff1a\u5b9a\u7fa9\u3001\u6700\u4f4e\u6a19\u6e96\u548c\u57fa\u790e\u6a21\u578b\u5728\u7269\u7406\u4e2d\u7684\u89d2\u8272&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi6"
+              onclick="copyPrompt('chi6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi7" data-url="https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/" target="_blank">UCIe vs. BoW: Practical Insights For Choosing The Right Chiplet Standards</a></div>
+    <div class="title-zh">UCIe vs. BoW：選擇正確Chiplet標準的實踐見解</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As chiplet-based architectures gain traction across high-performance and cost-sensitive semiconductor applications, selecting the appropriate die-to-die interconnect standard has become a critical design decision. This white paper presents a practical, engineering-focused comparison of Universal Chiplet Interconnect Express (UCIe) and Bunch of Wires (BoW), highlighting their differing philosophies, capabilities, and trade-offs. The discussion begins by examining the industry shift from monolithic system-on-chip designs to chiplet-based integration, driven by improvements in yield, scalability, and cost efficiency. It then contrasts UCIe’s emphasis on interoperability and standardized ecosystems with BoW’s focus on simplicity and implementation flexibility. To move beyond theoretical compar</div>
+  <div class="summary-zh">隨著Chiplet架構在高性能和成本敏感型半導體應用中逐漸普及，選擇適當的晶粒間互連標準已成為關鍵設計決策。本白皮書提供Universal Chiplet Interconnect Express的實用工程對比。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi7"
+              onclick="toggleAnalysis('chi7', {&quot;url&quot;: &quot;https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/&quot;, &quot;title_en&quot;: &quot;UCIe vs. BoW: Practical Insights For Choosing The Right Chiplet Standards&quot;, &quot;title_zh&quot;: &quot;UCIe vs. BoW\uff1a\u9078\u64c7\u6b63\u78baChiplet\u6a19\u6e96\u7684\u5be6\u8e10\u898b\u89e3&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi7"
+              onclick="bookmarkArticle('chi7', {&quot;url&quot;: &quot;https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/&quot;, &quot;title_en&quot;: &quot;UCIe vs. BoW: Practical Insights For Choosing The Right Chiplet Standards&quot;, &quot;title_zh&quot;: &quot;UCIe vs. BoW\uff1a\u9078\u64c7\u6b63\u78baChiplet\u6a19\u6e96\u7684\u5be6\u8e10\u898b\u89e3&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi7', {&quot;url&quot;: &quot;https://semiengineering.com/ucie-vs-bow-practical-insights-for-choosing-the-right-chiplet-standards/&quot;, &quot;title_en&quot;: &quot;UCIe vs. BoW: Practical Insights For Choosing The Right Chiplet Standards&quot;, &quot;title_zh&quot;: &quot;UCIe vs. BoW\uff1a\u9078\u64c7\u6b63\u78baChiplet\u6a19\u6e96\u7684\u5be6\u8e10\u898b\u89e3&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi7"
+              onclick="copyPrompt('chi7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi8" data-url="https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/" target="_blank">Automate the Pain Away: HW/SW Interface Design Methodology</a></div>
+    <div class="title-zh">自動化消除困擾：硬體/軟體介面設計方法論</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As System-on-Chip (SoC) designs become increasingly complex, engineering teams face growing challenges coordinating hardware and software development across multiple domains. Today&amp;#8217;s projects require more than isolated point tools — they demand connected methodologies that streamline workflows from system architecture and assembly through software enablement, validation, and implementation. This presentation explores how automation can simplify HW/SW interface design, reduce integration challenges, and improve development productivity. Learn how a connected design methodology helps engineering teams accelerate development while maintaining consistency across the SoC lifecycle. What You&amp;#8217;ll Learn: Why traditional point-tool approaches create bottlenecks in modern SoC development </div>
+  <div class="summary-zh">隨著SoC設計日益複雜，工程團隊面臨跨多個領域協調硬體和軟體開發的挑戰。當今項目需要的不僅是孤立的點工具，而是需要連貫的方法論來簡化工作流程。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi8"
+              onclick="toggleAnalysis('chi8', {&quot;url&quot;: &quot;https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/&quot;, &quot;title_en&quot;: &quot;Automate the Pain Away: HW/SW Interface Design Methodology&quot;, &quot;title_zh&quot;: &quot;\u81ea\u52d5\u5316\u6d88\u9664\u56f0\u64fe\uff1a\u786c\u9ad4/\u8edf\u9ad4\u4ecb\u9762\u8a2d\u8a08\u65b9\u6cd5\u8ad6&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi8"
+              onclick="bookmarkArticle('chi8', {&quot;url&quot;: &quot;https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/&quot;, &quot;title_en&quot;: &quot;Automate the Pain Away: HW/SW Interface Design Methodology&quot;, &quot;title_zh&quot;: &quot;\u81ea\u52d5\u5316\u6d88\u9664\u56f0\u64fe\uff1a\u786c\u9ad4/\u8edf\u9ad4\u4ecb\u9762\u8a2d\u8a08\u65b9\u6cd5\u8ad6&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi8', {&quot;url&quot;: &quot;https://semiengineering.com/automate-the-pain-away-hw-sw-interface-design-methodology/&quot;, &quot;title_en&quot;: &quot;Automate the Pain Away: HW/SW Interface Design Methodology&quot;, &quot;title_zh&quot;: &quot;\u81ea\u52d5\u5316\u6d88\u9664\u56f0\u64fe\uff1a\u786c\u9ad4/\u8edf\u9ad4\u4ecb\u9762\u8a2d\u8a08\u65b9\u6cd5\u8ad6&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi8"
+              onclick="copyPrompt('chi8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi9" data-url="https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/" target="_blank">Optimizing Curvilinear OPC: Vector- Based Site and Anchor Decoupling</a></div>
+    <div class="title-zh">優化曲線型OPC：基於向量的位置和錨點解耦</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As semiconductor technology advances to sub-5 nm nodes, curvilinear mask features are essential for pattern fidelity but challenge traditional OPC methods. Siemens introduces an advanced vector-based site and anchor decoupling framework that independently and dynamically controls OPC fragmentation and optimization. This innovation significantly boosts process window robustness, speeds up mask recipe development and refines EPE management, delivering critical improvements for curvilinear photomask applications within Siemens EDA solutions. What you’ll learn: Why traditional OPC struggles with curvilinear mask designs. How vector-based site and anchor decoupling works. The benefits of independent fragmentation and anchor control. How Siemens EDA solutions enhance OPC for advanced nodes. Who </div>
+  <div class="summary-zh">隨著半導體工藝推進到5奈米以下節點，曲線型光罩特徵對圖案保真度至關重要，但對傳統OPC方法構成挑戰。西門子推出先進的基於向量的位置和錨點解耦框架。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi9')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi9"
+              onclick="toggleAnalysis('chi9', {&quot;url&quot;: &quot;https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/&quot;, &quot;title_en&quot;: &quot;Optimizing Curvilinear OPC: Vector- Based Site and Anchor Decoupling&quot;, &quot;title_zh&quot;: &quot;\u512a\u5316\u66f2\u7dda\u578bOPC\uff1a\u57fa\u65bc\u5411\u91cf\u7684\u4f4d\u7f6e\u548c\u9328\u9ede\u89e3\u8026&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi9"
+              onclick="bookmarkArticle('chi9', {&quot;url&quot;: &quot;https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/&quot;, &quot;title_en&quot;: &quot;Optimizing Curvilinear OPC: Vector- Based Site and Anchor Decoupling&quot;, &quot;title_zh&quot;: &quot;\u512a\u5316\u66f2\u7dda\u578bOPC\uff1a\u57fa\u65bc\u5411\u91cf\u7684\u4f4d\u7f6e\u548c\u9328\u9ede\u89e3\u8026&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi9">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi9"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi9')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi9', {&quot;url&quot;: &quot;https://semiengineering.com/optimizing-curvilinear-opc-vector-based-site-and-anchor-decoupling/&quot;, &quot;title_en&quot;: &quot;Optimizing Curvilinear OPC: Vector- Based Site and Anchor Decoupling&quot;, &quot;title_zh&quot;: &quot;\u512a\u5316\u66f2\u7dda\u578bOPC\uff1a\u57fa\u65bc\u5411\u91cf\u7684\u4f4d\u7f6e\u548c\u9328\u9ede\u89e3\u8026&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi9"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi9">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi9"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi9"
+              onclick="copyPrompt('chi9')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi10" data-url="https://semiengineering.com/creating-a-moores-law-for-ai-scaling/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/creating-a-moores-law-for-ai-scaling/" target="_blank">Creating A Moore’s Law For AI Scaling</a></div>
+    <div class="title-zh">為AI擴展創造摩爾定律</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Key Takeaways: AI scalability will require full-stack co-optimization, not just bigger data centers. AI workloads require a 10X compute efficiency gain over 10 years, making collaboration across algorithms, architectures, devices, packaging, and communication fabrics essential to deliver a 10X improvement in compute efficiency over the next decade. Edge AI chips are moving to leading-edge nodes at a faster pace. Physical AI calls for an adaptive architecture, with a focus on low latency, open architectures, reusable platforms, and fault tolerance. One of the greatest challenges of the AI era is its lack of scalability. Processing 10X the number of AI algorithms today essentially requires 10X the amount of data center hardware. Solving that challenge has global implications. “AI data center</div>
+  <div class="summary-zh">AI可擴展性需要全棧共優化，而非僅增加數據中心。AI工作負載需要10年內實現10倍計算效率提升，要求演算法、架構、設備、封裝和通訊結構的協作。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/creating-a-moores-law-for-ai-scaling/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi10')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi10"
+              onclick="toggleAnalysis('chi10', {&quot;url&quot;: &quot;https://semiengineering.com/creating-a-moores-law-for-ai-scaling/&quot;, &quot;title_en&quot;: &quot;Creating A Moore\u2019s Law For AI Scaling&quot;, &quot;title_zh&quot;: &quot;\u70baAI\u64f4\u5c55\u5275\u9020\u6469\u723e\u5b9a\u5f8b&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi10"
+              onclick="bookmarkArticle('chi10', {&quot;url&quot;: &quot;https://semiengineering.com/creating-a-moores-law-for-ai-scaling/&quot;, &quot;title_en&quot;: &quot;Creating A Moore\u2019s Law For AI Scaling&quot;, &quot;title_zh&quot;: &quot;\u70baAI\u64f4\u5c55\u5275\u9020\u6469\u723e\u5b9a\u5f8b&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi10">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi10"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi10')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi10', {&quot;url&quot;: &quot;https://semiengineering.com/creating-a-moores-law-for-ai-scaling/&quot;, &quot;title_en&quot;: &quot;Creating A Moore\u2019s Law For AI Scaling&quot;, &quot;title_zh&quot;: &quot;\u70baAI\u64f4\u5c55\u5275\u9020\u6469\u723e\u5b9a\u5f8b&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi10"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi10">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi10"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi10"
+              onclick="copyPrompt('chi10')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi11" data-url="https://semiengineering.com/blog-review-june-24-3/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">SemiEngineering</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://semiengineering.com/blog-review-june-24-3/" target="_blank">Blog Review: June 24</a></div>
+    <div class="title-zh">部落格評論：6月24日</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Cadence&amp;#8217;s Veena Parthan shows how finite element analysis simulations for crash testing can surpass the limitations of physical testing and offer insights into a wider array of crash scenarios that were once impossible to explore. Siemens&amp;#8217; Haitham Eissa and Amr Khafagy warn that once-passive dummy fill structures have begun to influence design performance significantly as the industry progresses toward sub-nanometer nodes. Synopsys&amp;#8217; Emily Gerken highlights the company&amp;#8217;s new startup program event, where the consensus was that success in today’s semiconductor landscape depends not just on breakthrough ideas, but on speed, ecosystem collaboration, and the ability to de-risk every stage of development. Keysight&amp;#8217;s Eric Yu finds that peak throughput alone is not a s</div>
+  <div class="summary-zh">Cadence的Veena Parthan展示有限元素分析碰撞測試模擬如何超越物理測試的局限。Siemens的Haitham Eissa和Amr Khafagy警告曾經的最佳實踐面臨風險。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://semiengineering.com/blog-review-june-24-3/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi11')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi11"
+              onclick="toggleAnalysis('chi11', {&quot;url&quot;: &quot;https://semiengineering.com/blog-review-june-24-3/&quot;, &quot;title_en&quot;: &quot;Blog Review: June 24&quot;, &quot;title_zh&quot;: &quot;\u90e8\u843d\u683c\u8a55\u8ad6\uff1a6\u670824\u65e5&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi11"
+              onclick="bookmarkArticle('chi11', {&quot;url&quot;: &quot;https://semiengineering.com/blog-review-june-24-3/&quot;, &quot;title_en&quot;: &quot;Blog Review: June 24&quot;, &quot;title_zh&quot;: &quot;\u90e8\u843d\u683c\u8a55\u8ad6\uff1a6\u670824\u65e5&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi11">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi11"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi11')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi11', {&quot;url&quot;: &quot;https://semiengineering.com/blog-review-june-24-3/&quot;, &quot;title_en&quot;: &quot;Blog Review: June 24&quot;, &quot;title_zh&quot;: &quot;\u90e8\u843d\u683c\u8a55\u8ad6\uff1a6\u670824\u65e5&quot;, &quot;source&quot;: &quot;SemiEngineering&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi11"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi11">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi11"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi11"
+              onclick="copyPrompt('chi11')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-chi12" data-url="https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">The Next Platform</span>
+      <span class="date-tag">Wed, 24 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332" target="_blank">HPE Delivers Upgraded HPC Hardware, Software For Security, Sovereignty, And Multi-Tenancy</a></div>
+    <div class="title-zh">HPE提供升級的HPC硬體、軟體，實現安全、主權和多租戶</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('chi12')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-chi12"
+              onclick="toggleAnalysis('chi12', {&quot;url&quot;: &quot;https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332&quot;, &quot;title_en&quot;: &quot;HPE Delivers Upgraded HPC Hardware, Software For Security, Sovereignty, And Multi-Tenancy&quot;, &quot;title_zh&quot;: &quot;HPE\u63d0\u4f9b\u5347\u7d1a\u7684HPC\u786c\u9ad4\u3001\u8edf\u9ad4\uff0c\u5be6\u73fe\u5b89\u5168\u3001\u4e3b\u6b0a\u548c\u591a\u79df\u6236&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-chi12"
+              onclick="bookmarkArticle('chi12', {&quot;url&quot;: &quot;https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332&quot;, &quot;title_en&quot;: &quot;HPE Delivers Upgraded HPC Hardware, Software For Security, Sovereignty, And Multi-Tenancy&quot;, &quot;title_zh&quot;: &quot;HPE\u63d0\u4f9b\u5347\u7d1a\u7684HPC\u786c\u9ad4\u3001\u8edf\u9ad4\uff0c\u5be6\u73fe\u5b89\u5168\u3001\u4e3b\u6b0a\u548c\u591a\u79df\u6236&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-chi12">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-chi12"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('chi12')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('chi12', {&quot;url&quot;: &quot;https://www.nextplatform.com/hpc/2026/06/24/hpe-delivers-upgraded-hpc-hardware-software-for-security-sovereignty-and-multi-tenancy/5261332&quot;, &quot;title_en&quot;: &quot;HPE Delivers Upgraded HPC Hardware, Software For Security, Sovereignty, And Multi-Tenancy&quot;, &quot;title_zh&quot;: &quot;HPE\u63d0\u4f9b\u5347\u7d1a\u7684HPC\u786c\u9ad4\u3001\u8edf\u9ad4\uff0c\u5be6\u73fe\u5b89\u5168\u3001\u4e3b\u6b0a\u548c\u591a\u79df\u6236&quot;, &quot;source&quot;: &quot;The Next Platform&quot;, &quot;date&quot;: &quot;Wed, 24 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-chi12"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-chi12">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-chi12"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-chi12"
+              onclick="copyPrompt('chi12')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
