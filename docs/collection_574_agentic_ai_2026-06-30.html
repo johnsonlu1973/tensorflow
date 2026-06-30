@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Agentic AI — 2026-06-30</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>🤖 Agentic AI</h1>
+<div class="page-meta">2026-06-30 &nbsp;·&nbsp; 9 篇 &nbsp;·&nbsp; 更新：2026-06-30 13:07 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-age0" data-url="https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Tue, 30 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/" target="_blank">The AI jobs debate just got messier</a></div>
+    <div class="title-zh">AI 就業辯論變得更加複雜</div>
+    
+<div class="summary-block">
+  <div class="summary-en">A new report finds &quot;high-intensity AI adopters” saw headcount increase 10.2%. Among those companies, entry-level headcount rose by 12%, countering the rhetoric that AI kills junior jobs.</div>
+  <div class="summary-zh">一份新報告發現「高強度 AI 採用者」的員工人數增加了 10.2%。在這些公司中，入門級員工人數上升 12%，反駁了 AI 會消滅初級工作的說法。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age0"
+              onclick="toggleAnalysis('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/&quot;, &quot;title_en&quot;: &quot;The AI jobs debate just got messier&quot;, &quot;title_zh&quot;: &quot;AI \u5c31\u696d\u8faf\u8ad6\u8b8a\u5f97\u66f4\u52a0\u8907\u96dc&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age0"
+              onclick="bookmarkArticle('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/&quot;, &quot;title_en&quot;: &quot;The AI jobs debate just got messier&quot;, &quot;title_zh&quot;: &quot;AI \u5c31\u696d\u8faf\u8ad6\u8b8a\u5f97\u66f4\u52a0\u8907\u96dc&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/the-ai-jobs-debate-just-got-messier/&quot;, &quot;title_en&quot;: &quot;The AI jobs debate just got messier&quot;, &quot;title_zh&quot;: &quot;AI \u5c31\u696d\u8faf\u8ad6\u8b8a\u5f97\u66f4\u52a0\u8907\u96dc&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age0"
+              onclick="copyPrompt('age0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age1" data-url="https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Tue, 30 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/" target="_blank">Vibe coding platform Base44 launches own model as AI startups seek defensibility</a></div>
+    <div class="title-zh">Vibe coding 平台 Base44 推出自有模型，AI 新創公司尋求差異化</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Wix-owned vibe coding platform Base44 has started rolling out its own AI model — with hopes that it will eventually outperform frontier models.</div>
+  <div class="summary-zh">Wix 旗下的 vibe coding 平台 Base44 開始推出自有 AI 模型，希望最終能超越前沿模型的性能。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age1"
+              onclick="toggleAnalysis('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/&quot;, &quot;title_en&quot;: &quot;Vibe coding platform Base44 launches own model as AI startups seek defensibility&quot;, &quot;title_zh&quot;: &quot;Vibe coding \u5e73\u53f0 Base44 \u63a8\u51fa\u81ea\u6709\u6a21\u578b\uff0cAI \u65b0\u5275\u516c\u53f8\u5c0b\u6c42\u5dee\u7570\u5316&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age1"
+              onclick="bookmarkArticle('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/&quot;, &quot;title_en&quot;: &quot;Vibe coding platform Base44 launches own model as AI startups seek defensibility&quot;, &quot;title_zh&quot;: &quot;Vibe coding \u5e73\u53f0 Base44 \u63a8\u51fa\u81ea\u6709\u6a21\u578b\uff0cAI \u65b0\u5275\u516c\u53f8\u5c0b\u6c42\u5dee\u7570\u5316&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/vibe-coding-platform-base44-launches-own-model-as-ai-startups-seek-defensibility/&quot;, &quot;title_en&quot;: &quot;Vibe coding platform Base44 launches own model as AI startups seek defensibility&quot;, &quot;title_zh&quot;: &quot;Vibe coding \u5e73\u53f0 Base44 \u63a8\u51fa\u81ea\u6709\u6a21\u578b\uff0cAI \u65b0\u5275\u516c\u53f8\u5c0b\u6c42\u5dee\u7570\u5316&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Tue, 30 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age1"
+              onclick="copyPrompt('age1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age2" data-url="https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/" target="_blank">Gemini’s personalized AI image generation is now free for US users</a></div>
+    <div class="title-zh">Gemini 個性化 AI 圖像生成功能現在對美國免費用戶開放</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Google is expanding Gemini’s personalized AI image generation to eligible free users in the U.S., allowing the chatbot to create images based on your interests and data from connected Google apps.</div>
+  <div class="summary-zh">Google 將 Gemini 的個性化 AI 圖像生成功能擴展到美國符合條件的免費用戶，允許聊天機器人根據你的興趣和來自相連 Google 應用程式的數據生成圖像。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age2"
+              onclick="toggleAnalysis('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/&quot;, &quot;title_en&quot;: &quot;Gemini\u2019s personalized AI image generation is now free for US users&quot;, &quot;title_zh&quot;: &quot;Gemini \u500b\u6027\u5316 AI \u5716\u50cf\u751f\u6210\u529f\u80fd\u73fe\u5728\u5c0d\u7f8e\u570b\u514d\u8cbb\u7528\u6236\u958b\u653e&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age2"
+              onclick="bookmarkArticle('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/&quot;, &quot;title_en&quot;: &quot;Gemini\u2019s personalized AI image generation is now free for US users&quot;, &quot;title_zh&quot;: &quot;Gemini \u500b\u6027\u5316 AI \u5716\u50cf\u751f\u6210\u529f\u80fd\u73fe\u5728\u5c0d\u7f8e\u570b\u514d\u8cbb\u7528\u6236\u958b\u653e&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/&quot;, &quot;title_en&quot;: &quot;Gemini\u2019s personalized AI image generation is now free for US users&quot;, &quot;title_zh&quot;: &quot;Gemini \u500b\u6027\u5316 AI \u5716\u50cf\u751f\u6210\u529f\u80fd\u73fe\u5728\u5c0d\u7f8e\u570b\u514d\u8cbb\u7528\u6236\u958b\u653e&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age2"
+              onclick="copyPrompt('age2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age3" data-url="https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/" target="_blank">Anthropic and Gov. Newsom forge deal allowing California government to use Claude at half price</a></div>
+    <div class="title-zh">Anthropic 與加州州長達成協議，允許加州政府以半價使用 Claude</div>
+    
+<div class="summary-block">
+  <div class="summary-en">As Anthropic forges a closer relationship with the state of California, the federal government has made an enemy out of the OpenAI rival.</div>
+  <div class="summary-zh">隨著 Anthropic 與加州建立更密切的關係，聯邦政府已將 OpenAI 的競爭對手視為敵手。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age3"
+              onclick="toggleAnalysis('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/&quot;, &quot;title_en&quot;: &quot;Anthropic and Gov. Newsom forge deal allowing California government to use Claude at half price&quot;, &quot;title_zh&quot;: &quot;Anthropic \u8207\u52a0\u5dde\u5dde\u9577\u9054\u6210\u5354\u8b70\uff0c\u5141\u8a31\u52a0\u5dde\u653f\u5e9c\u4ee5\u534a\u50f9\u4f7f\u7528 Claude&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age3"
+              onclick="bookmarkArticle('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/&quot;, &quot;title_en&quot;: &quot;Anthropic and Gov. Newsom forge deal allowing California government to use Claude at half price&quot;, &quot;title_zh&quot;: &quot;Anthropic \u8207\u52a0\u5dde\u5dde\u9577\u9054\u6210\u5354\u8b70\uff0c\u5141\u8a31\u52a0\u5dde\u653f\u5e9c\u4ee5\u534a\u50f9\u4f7f\u7528 Claude&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/anthropic-and-gov-newsom-forge-deal-allowing-california-government-to-use-claude-at-half-price/&quot;, &quot;title_en&quot;: &quot;Anthropic and Gov. Newsom forge deal allowing California government to use Claude at half price&quot;, &quot;title_zh&quot;: &quot;Anthropic \u8207\u52a0\u5dde\u5dde\u9577\u9054\u6210\u5354\u8b70\uff0c\u5141\u8a31\u52a0\u5dde\u653f\u5e9c\u4ee5\u534a\u50f9\u4f7f\u7528 Claude&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age3"
+              onclick="copyPrompt('age3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age4" data-url="https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/" target="_blank">South Korean tech giants commit over $550B to ease ‘RAMageddon’</a></div>
+    <div class="title-zh">南韓科技巨頭承諾投入超過 5,500 億美元應對「RAM 危機」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The world's two largest memory chip companies vow to build more memory lab fabs as South Korea positions itself as an AI tech powerhouse country.</div>
+  <div class="summary-zh">全球兩大記憶晶片公司承諾建造更多記憶體實驗室製造廠，南韓正將自己定位為 AI 科技強國。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age4"
+              onclick="toggleAnalysis('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/&quot;, &quot;title_en&quot;: &quot;South Korean tech giants commit over $550B to ease \u2018RAMageddon\u2019&quot;, &quot;title_zh&quot;: &quot;\u5357\u97d3\u79d1\u6280\u5de8\u982d\u627f\u8afe\u6295\u5165\u8d85\u904e 5,500 \u5104\u7f8e\u5143\u61c9\u5c0d\u300cRAM \u5371\u6a5f\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age4"
+              onclick="bookmarkArticle('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/&quot;, &quot;title_en&quot;: &quot;South Korean tech giants commit over $550B to ease \u2018RAMageddon\u2019&quot;, &quot;title_zh&quot;: &quot;\u5357\u97d3\u79d1\u6280\u5de8\u982d\u627f\u8afe\u6295\u5165\u8d85\u904e 5,500 \u5104\u7f8e\u5143\u61c9\u5c0d\u300cRAM \u5371\u6a5f\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age4', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/south-korean-tech-giants-commit-over-550b-to-ease-ramageddon/&quot;, &quot;title_en&quot;: &quot;South Korean tech giants commit over $550B to ease \u2018RAMageddon\u2019&quot;, &quot;title_zh&quot;: &quot;\u5357\u97d3\u79d1\u6280\u5de8\u982d\u627f\u8afe\u6295\u5165\u8d85\u904e 5,500 \u5104\u7f8e\u5143\u61c9\u5c0d\u300cRAM \u5371\u6a5f\u300d&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age4"
+              onclick="copyPrompt('age4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age5" data-url="https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/" target="_blank">Arena, the AI leaderboard everyone uses, is now a $100M business</a></div>
+    <div class="title-zh">所有人都在用的 AI 排行榜 Arena 現已成為 1 億美元業務</div>
+    
+<div class="summary-block">
+  <div class="summary-en">The startup, which runs a popular free AI leaderboard, launched its commercial service just last September.</div>
+  <div class="summary-zh">運營熱門免費 AI 排行榜的新創公司去年 9 月剛推出商業服務。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age5"
+              onclick="toggleAnalysis('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/&quot;, &quot;title_en&quot;: &quot;Arena, the AI leaderboard everyone uses, is now a $100M business&quot;, &quot;title_zh&quot;: &quot;\u6240\u6709\u4eba\u90fd\u5728\u7528\u7684 AI \u6392\u884c\u699c Arena \u73fe\u5df2\u6210\u70ba 1 \u5104\u7f8e\u5143\u696d\u52d9&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age5"
+              onclick="bookmarkArticle('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/&quot;, &quot;title_en&quot;: &quot;Arena, the AI leaderboard everyone uses, is now a $100M business&quot;, &quot;title_zh&quot;: &quot;\u6240\u6709\u4eba\u90fd\u5728\u7528\u7684 AI \u6392\u884c\u699c Arena \u73fe\u5df2\u6210\u70ba 1 \u5104\u7f8e\u5143\u696d\u52d9&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age5', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/arena-the-ai-leaderboard-everyone-uses-is-now-a-100m-business/&quot;, &quot;title_en&quot;: &quot;Arena, the AI leaderboard everyone uses, is now a $100M business&quot;, &quot;title_zh&quot;: &quot;\u6240\u6709\u4eba\u90fd\u5728\u7528\u7684 AI \u6392\u884c\u699c Arena \u73fe\u5df2\u6210\u70ba 1 \u5104\u7f8e\u5143\u696d\u52d9&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age5"
+              onclick="copyPrompt('age5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age6" data-url="https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/" target="_blank">Cursor now has a mobile app for guiding your coding agent on the go</a></div>
+    <div class="title-zh">Cursor 推出行動應用程式，方便隨時引導你的 coding agent</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Cursor has launched a new mobile app for remote oversight over coding agents.</div>
+  <div class="summary-zh">Cursor 推出了新的行動應用程式，用於遠端監督 coding agent。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age6"
+              onclick="toggleAnalysis('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/&quot;, &quot;title_en&quot;: &quot;Cursor now has a mobile app for guiding your coding agent on the go&quot;, &quot;title_zh&quot;: &quot;Cursor \u63a8\u51fa\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\uff0c\u65b9\u4fbf\u96a8\u6642\u5f15\u5c0e\u4f60\u7684 coding agent&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age6"
+              onclick="bookmarkArticle('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/&quot;, &quot;title_en&quot;: &quot;Cursor now has a mobile app for guiding your coding agent on the go&quot;, &quot;title_zh&quot;: &quot;Cursor \u63a8\u51fa\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\uff0c\u65b9\u4fbf\u96a8\u6642\u5f15\u5c0e\u4f60\u7684 coding agent&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age6', {&quot;url&quot;: &quot;https://techcrunch.com/2026/06/29/cursor-now-has-a-mobile-app-for-guiding-your-coding-agent-on-the-go/&quot;, &quot;title_en&quot;: &quot;Cursor now has a mobile app for guiding your coding agent on the go&quot;, &quot;title_zh&quot;: &quot;Cursor \u63a8\u51fa\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\uff0c\u65b9\u4fbf\u96a8\u6642\u5f15\u5c0e\u4f60\u7684 coding agent&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age6"
+              onclick="copyPrompt('age6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age7" data-url="https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">MIT Tech Review AI</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/" target="_blank">AI agents are not your “coworkers”</a></div>
+    <div class="title-zh">AI agent 不是你的「同事」</div>
+    
+<div class="summary-block">
+  <div class="summary-en">This story originally appeared in The Algorithm, our weekly newsletter on AI. To get stories like this in your inbox first, sign up here . Imagine coming in to work to learn that a new underling will report to you. The worker is not a person but an AI tool—one that your company nonetheless calls Alex, an “employee” with a title and defined responsibilities. How well do you think you would work with Alex? If you’re anything like the managers recently studied by Emma Wiles, a Boston University business professor, treating Alex as a “coworker” and not a software tool would lead you to do a worse job. Wiles found that people caught 18% fewer errors when the work was said to have come from an agentic “AI employee” rather than a chatbot. It turns out that what’s in a name matters. A lot. This is</div>
+  <div class="summary-zh">這個故事最初發表在我們的 AI 周報 The Algorithm 上。想要率先在收件箱中獲取類似故事，請在此註冊。想像一下進辦公室時得知一個新下屬將向你彙報。這個員工不是真人，而是一個 AI 工具——儘管你的公司稱它為 Ale。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age7"
+              onclick="toggleAnalysis('age7', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/&quot;, &quot;title_en&quot;: &quot;AI agents are not your \u201ccoworkers\u201d&quot;, &quot;title_zh&quot;: &quot;AI agent \u4e0d\u662f\u4f60\u7684\u300c\u540c\u4e8b\u300d&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age7"
+              onclick="bookmarkArticle('age7', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/&quot;, &quot;title_en&quot;: &quot;AI agents are not your \u201ccoworkers\u201d&quot;, &quot;title_zh&quot;: &quot;AI agent \u4e0d\u662f\u4f60\u7684\u300c\u540c\u4e8b\u300d&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age7', {&quot;url&quot;: &quot;https://www.technologyreview.com/2026/06/29/1139849/ai-agents-are-not-your-coworkers/&quot;, &quot;title_en&quot;: &quot;AI agents are not your \u201ccoworkers\u201d&quot;, &quot;title_zh&quot;: &quot;AI agent \u4e0d\u662f\u4f60\u7684\u300c\u540c\u4e8b\u300d&quot;, &quot;source&quot;: &quot;MIT Tech Review AI&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age7"
+              onclick="copyPrompt('age7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age8" data-url="https://huggingface.co/blog/allenai/discoformer">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Hugging Face Blog</span>
+      <span class="date-tag">Mon, 29 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://huggingface.co/blog/allenai/discoformer" target="_blank">DiScoFormer: One transformer for density and score, across distributions</a></div>
+    <div class="title-zh">DiScoFormer：跨分布的密度和評分單一 Transformer</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://huggingface.co/blog/allenai/discoformer" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age8"
+              onclick="toggleAnalysis('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/allenai/discoformer&quot;, &quot;title_en&quot;: &quot;DiScoFormer: One transformer for density and score, across distributions&quot;, &quot;title_zh&quot;: &quot;DiScoFormer\uff1a\u8de8\u5206\u5e03\u7684\u5bc6\u5ea6\u548c\u8a55\u5206\u55ae\u4e00 Transformer&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age8"
+              onclick="bookmarkArticle('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/allenai/discoformer&quot;, &quot;title_en&quot;: &quot;DiScoFormer: One transformer for density and score, across distributions&quot;, &quot;title_zh&quot;: &quot;DiScoFormer\uff1a\u8de8\u5206\u5e03\u7684\u5bc6\u5ea6\u548c\u8a55\u5206\u55ae\u4e00 Transformer&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/allenai/discoformer&quot;, &quot;title_en&quot;: &quot;DiScoFormer: One transformer for density and score, across distributions&quot;, &quot;title_zh&quot;: &quot;DiScoFormer\uff1a\u8de8\u5206\u5e03\u7684\u5bc6\u5ea6\u548c\u8a55\u5206\u55ae\u4e00 Transformer&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Mon, 29 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age8"
+              onclick="copyPrompt('age8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
