@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Agentic AI — 2026-07-17</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #e6edf3;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #e3b341;
+  --red: #f85149; --purple: #bc8cff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 12px; max-width: 900px; margin: 0 auto; line-height: 1.6;
+}
+h1 { color: var(--blue); font-size: 1.2em; margin-bottom: 4px; }
+.page-meta { color: var(--text-dim); font-size: 0.8em; margin-bottom: 20px; }
+
+/* ── Category header ── */
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  margin: 24px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.cat-header h2 { color: var(--text-bright); font-size: 1em; }
+.cat-count { color: var(--text-dim); font-size: 0.8em; }
+
+/* ── Article card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+}
+.card-head { padding: 12px 14px; }
+.card-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.source-tag {
+  font-size: 0.72em; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #21262d; color: var(--text-dim);
+  white-space: nowrap;
+}
+.date-tag { font-size: 0.72em; color: var(--text-dim); }
+.lang-tag {
+  font-size: 0.68em; padding: 1px 6px; border-radius: 8px;
+  background: #1a3a5c; color: #79c0ff;
+}
+
+/* ── Bilingual title ── */
+.title-en {
+  font-size: 0.9em; font-weight: 600; color: var(--text-bright);
+  line-height: 1.4; margin-bottom: 2px;
+}
+.title-en a { color: inherit; text-decoration: none; }
+.title-en a:hover { color: var(--blue); }
+.title-zh {
+  font-size: 0.85em; color: var(--text-dim); line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* ── Bilingual summary ── */
+.summary-block { margin-bottom: 10px; }
+.summary-en {
+  font-size: 0.8em; color: var(--text-dim); line-height: 1.5;
+  border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 4px;
+}
+.summary-zh {
+  font-size: 0.8em; color: #79c0ff; line-height: 1.5;
+  border-left: 2px solid #1a3a5c; padding-left: 8px;
+}
+
+/* ── Action buttons ── */
+.card-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; font-size: 0.78em;
+  font-weight: 600; cursor: pointer; border: 1px solid; text-decoration: none;
+  transition: opacity 0.15s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.8; }
+.btn-read {
+  background: #0d1926; border-color: var(--blue); color: var(--blue);
+}
+.btn-paste {
+  background: #1a1300; border-color: var(--yellow); color: var(--yellow);
+}
+.btn-analyze {
+  background: #1a0d0d; border-color: var(--red); color: var(--red);
+  opacity: 0.4; cursor: not-allowed;
+}
+.btn-analyze.enabled {
+  opacity: 1; cursor: pointer;
+}
+.btn-save {
+  background: #0d1a12; border-color: var(--green); color: var(--green);
+}
+.btn-copy-prompt {
+  background: #1a1326; border-color: var(--purple); color: var(--purple);
+}
+
+/* Bookmark button */
+.btn-bookmark {
+  background: #1a1400; border-color: #e8a317; color: #e8a317;
+}
+.btn-bookmark.bookmarked { opacity: 0.5; cursor: default; }
+
+/* Dismiss button */
+.btn-dismiss {
+  background: #111; border-color: #444; color: #555;
+}
+.btn-dismiss:hover { color: #999; border-color: #666; }
+
+/* ── Full text panel ── */
+.fulltext-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d1117;
+}
+.fulltext-panel.open { display: block; }
+.panel-label {
+  font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--yellow); margin-bottom: 6px;
+}
+.fulltext-area {
+  width: 100%; min-height: 160px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 0.82em; padding: 10px;
+  font-family: inherit; line-height: 1.6; resize: vertical;
+}
+.fulltext-area:focus { outline: none; border-color: var(--yellow); }
+.panel-actions {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  align-items: center;
+}
+.save-status { font-size: 0.75em; color: var(--text-dim); }
+.save-status.ok  { color: var(--green); }
+.save-status.err { color: var(--red); }
+
+/* ── Analysis prompt panel ── */
+.analysis-panel {
+  display: none; border-top: 1px solid var(--border);
+  padding: 12px 14px; background: #0d0d17;
+}
+.analysis-panel.open { display: block; }
+.prompt-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px; font-size: 0.78em;
+  color: var(--text-dim); white-space: pre-wrap; max-height: 300px;
+  overflow-y: auto; line-height: 1.6; margin-bottom: 8px;
+}
+
+/* ── Back link ── */
+.back { color: var(--blue); text-decoration: none; font-size: 0.82em;
+        display: inline-block; margin-bottom: 14px; }
+.back:hover { text-decoration: underline; }
+
+/* ── Index cards ── */
+.index-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  text-decoration: none; display: block;
+  transition: border-color 0.15s, background 0.15s;
+}
+.index-card:hover { border-color: var(--blue); background: #1c2128; }
+.index-card h2 { color: var(--blue); font-size: 0.95em; margin-bottom: 4px; }
+.index-card .card-meta { color: var(--text-dim); font-size: 0.8em; }
+.new-count { color: var(--green); font-weight: 600; }
+
+/* ── Token config banner ── */
+.token-banner {
+  background: #1a1300; border: 1px solid var(--yellow); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 0.82em;
+}
+.token-banner strong { color: var(--yellow); }
+.token-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 4px 8px; font-size: 0.9em; width: 320px;
+  margin: 4px 0;
+}
+.token-input:focus { outline: none; border-color: var(--yellow); }
+
+/* ── Hot News section ── */
+.hot-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+}
+.hot-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.hot-header h2 { color: var(--text-bright); font-size: 0.95em; margin: 0; }
+.hot-icon { font-size: 1.1em; }
+.hot-count { color: var(--text-dim); font-size: 0.75em; margin-left: auto; }
+.hot-card {
+  display: block; padding: 8px 10px; border-radius: 6px;
+  text-decoration: none; margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hot-card:hover { border-color: var(--blue); background: #1c2128; }
+.hot-source { font-size: 0.68em; font-weight: 700; color: var(--text-dim);
+              padding: 1px 6px; background: #21262d; border-radius: 8px; }
+.hot-date { font-size: 0.68em; color: var(--text-dim); margin-left: 6px; }
+.hot-title-en { font-size: 0.82em; color: var(--text-bright); margin-top: 4px; line-height: 1.4; }
+.hot-title-zh { font-size: 0.78em; color: var(--text-dim); line-height: 1.4; }
+.hot-empty { color: var(--text-dim); font-size: 0.8em; padding: 8px 0; }
+
+@media (max-width: 600px) {
+  .card-actions { gap: 6px; }
+  .btn { padding: 4px 9px; font-size: 0.74em; }
+  .token-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← 返回總覽</a>
+<h1>🤖 Agentic AI</h1>
+<div class="page-meta">2026-07-17 &nbsp;·&nbsp; 9 篇 &nbsp;·&nbsp; 更新：2026-07-17 12:08 (台灣時間)</div>
+
+<div class="token-banner" id="token-banner">
+  <strong>⚙️ 設定 GitHub Token</strong>（用於儲存全文到 GitHub）<br>
+  <small>需要 <code>repo</code> 權限的 Personal Access Token，只需設定一次。</small><br>
+  <input class="token-input" id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"><br>
+  <button class="btn btn-save" onclick="saveToken()" style="margin-top:6px">儲存 Token</button>
+</div>
+<script>const PROMPT_TEMPLATE = "\u4f60\u662f SoC \u7522\u54c1\u898f\u5283\u5c08\u5bb6\u3002\u8acb\u7528\u300c4 \u5c64\u56e0\u679c\u93c8\u5206\u6790\u6846\u67b6\u300d\u5206\u6790\u4ee5\u4e0b\u6587\u7ae0\uff0c\u4ee5\u7e41\u9ad4\u4e2d\u6587\u70ba\u4e3b\u3001\u82f1\u6587\u6280\u8853\u8853\u8a9e\u4fdd\u7559\u539f\u6587\uff0c\u8f38\u51fa\u4e2d\u82f1\u6587\u4e26\u5217\u683c\u5f0f\u3002\n\n## \u6587\u7ae0\u8cc7\u8a0a\n\u6a19\u984c\uff1a{title}\n\u4f86\u6e90\uff1a{source}\n\u65e5\u671f\uff1a{date}\n\n## \u5168\u6587\n{fulltext}\n\n---\n\n## 4 \u5c64\u5206\u6790\u6846\u67b6\n\n### \ud83d\udd35 \u555f\u52d5\u5c64\uff1a\u8da8\u52e2 \u2192 \u5e02\u5834\u65b0\u6a5f\u6703\n**\u7522\u696d\u8da8\u52e2**\uff1a\uff08\u539f\u6587\u4f9d\u64da\uff09\n**\u5e02\u5834\u65b0\u6a5f\u6703**\uff1a\uff08\u6253\u7834\u4e86\u4ec0\u9ebc\u73fe\u6709\u5e73\u8861\uff1f\uff09\n\n### \ud83d\udfe1 \u9396\u5b9a\u5c64\uff1a\u6a5f\u6703 \u2192 \u76ee\u6a19\u5ba2\u7fa4\u8207\u75db\u9ede\n**\u76ee\u6a19\u5ba2\u7fa4**\uff1a\n**\u6700\u6025\u8feb\u7684\u75db\u9ede**\uff1a\n**\u73fe\u6709\u65b9\u6848\u4e0d\u8db3**\uff1a\n\n### \ud83d\udfe2 \u8f49\u63db\u5c64\uff1a\u75db\u9ede \u2192 \u5ba2\u6236\u50f9\u503c\n**\u89e3\u6c7a\u65b9\u6848**\uff1a\n**\u5dee\u7570\u5316\u512a\u52e2**\uff1a\n**\u5ba2\u6236\u50f9\u503c**\uff1a\n\n### \ud83d\udd34 \u6536\u6210\u5c64\uff1a\u5ba2\u6236\u50f9\u503c \u2192 \u5546\u696d\u50f9\u503c\n**\u5546\u696d\u6a21\u5f0f**\uff1a\n**\u8b77\u57ce\u6cb3**\uff1a\n**\u5546\u696d\u50f9\u503c**\uff1a\n\n### \ud83d\uddfa \u7522\u696d\u93c8\u7d50\u69cb\u5716\n\uff08ASCII \u5716\uff0c\u5f9e\u7d42\u7aef\u7528\u6236\u5230\u4e0a\u6e38\uff09\n\n### \u26d3 \u7522\u696d\u93c8\u8a98\u56e0\u5206\u6790\n| \u7522\u696d\u5c64\u7d1a | \u8a98\u56e0\u4f86\u6e90 | \u8a98\u56e0\u5f37\u5ea6 | \u6f5b\u5728\u969c\u7919 | \u614b\u5ea6 |\n\n\u26a0\ufe0f \u8cc7\u6599\u898f\u5247\uff1a\u53ea\u5f15\u7528\u6587\u7ae0\u4e2d\u660e\u78ba\u51fa\u73fe\u7684\u6578\u5b57\u3002\u5982\u679c\u6587\u7ae0\u8cc7\u8a0a\u4e0d\u8db3\uff0c\u8acb\u6a19\u8a3b\uff08\u539f\u6587\u672a\u63d0\u53ca\uff09\u4e26\u8aaa\u660e\u9700\u8981\u88dc\u5145\u641c\u5c0b\u54ea\u4e9b\u8cc7\u8a0a\u3002";</script>
+
+<div class="card" id="card-age0" data-url="https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/" target="_blank">Google Vids now lets you star in your own AI videos</a></div>
+    <div class="title-zh">Google Vids 現在讓你在自己的 AI 影片中擔任主角</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Google is adding personalized AI avatars to Vids that let users create videos starring a digital version of themselves, alongside Gemini Omni-powered tools for generating and editing videos from prompts and reference images.</div>
+  <div class="summary-zh">Google 在 Vids 中加入個人化 AI 虛擬角色，讓使用者創建由自己的數位分身主演的影片，並搭配 Gemini Omni 動力工具從提示和參考圖像生成和編輯影片。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age0')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age0"
+              onclick="toggleAnalysis('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/&quot;, &quot;title_en&quot;: &quot;Google Vids now lets you star in your own AI videos&quot;, &quot;title_zh&quot;: &quot;Google Vids \u73fe\u5728\u8b93\u4f60\u5728\u81ea\u5df1\u7684 AI \u5f71\u7247\u4e2d\u64d4\u4efb\u4e3b\u89d2&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age0"
+              onclick="bookmarkArticle('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/&quot;, &quot;title_en&quot;: &quot;Google Vids now lets you star in your own AI videos&quot;, &quot;title_zh&quot;: &quot;Google Vids \u73fe\u5728\u8b93\u4f60\u5728\u81ea\u5df1\u7684 AI \u5f71\u7247\u4e2d\u64d4\u4efb\u4e3b\u89d2&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age0">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age0"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age0')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age0', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/google-vids-now-lets-you-star-in-your-own-ai-videos/&quot;, &quot;title_en&quot;: &quot;Google Vids now lets you star in your own AI videos&quot;, &quot;title_zh&quot;: &quot;Google Vids \u73fe\u5728\u8b93\u4f60\u5728\u81ea\u5df1\u7684 AI \u5f71\u7247\u4e2d\u64d4\u4efb\u4e3b\u89d2&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age0"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age0">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age0"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age0"
+              onclick="copyPrompt('age0')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age1" data-url="https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/" target="_blank">Roblox launches an AI-powered game-creation feature in its mobile app</a></div>
+    <div class="title-zh">Roblox 在行動應用程式中推出 AI 驅動的遊戲創作功能</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Roblox's new &quot;Build&quot; feature lets users generate basic games using a single text prompt.</div>
+  <div class="summary-zh">Roblox 的新「Build」功能讓使用者只需輸入單個文字提示即可生成基礎遊戲。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age1')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age1"
+              onclick="toggleAnalysis('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/&quot;, &quot;title_en&quot;: &quot;Roblox launches an AI-powered game-creation feature in its mobile app&quot;, &quot;title_zh&quot;: &quot;Roblox \u5728\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\u4e2d\u63a8\u51fa AI \u9a45\u52d5\u7684\u904a\u6232\u5275\u4f5c\u529f\u80fd&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age1"
+              onclick="bookmarkArticle('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/&quot;, &quot;title_en&quot;: &quot;Roblox launches an AI-powered game-creation feature in its mobile app&quot;, &quot;title_zh&quot;: &quot;Roblox \u5728\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\u4e2d\u63a8\u51fa AI \u9a45\u52d5\u7684\u904a\u6232\u5275\u4f5c\u529f\u80fd&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age1">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age1"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age1')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age1', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/roblox-launches-an-ai-powered-game-creation-feature-in-its-mobile-app/&quot;, &quot;title_en&quot;: &quot;Roblox launches an AI-powered game-creation feature in its mobile app&quot;, &quot;title_zh&quot;: &quot;Roblox \u5728\u884c\u52d5\u61c9\u7528\u7a0b\u5f0f\u4e2d\u63a8\u51fa AI \u9a45\u52d5\u7684\u904a\u6232\u5275\u4f5c\u529f\u80fd&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age1"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age1">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age1"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age1"
+              onclick="copyPrompt('age1')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age2" data-url="https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/" target="_blank">Google’s AI Mode now lets you link and interact with select apps</a></div>
+    <div class="title-zh">Google 的 AI Mode 現在讓你連結和互動精選應用程式</div>
+    
+<div class="summary-block">
+  <div class="summary-en">With this new update, Google is expanding AI Mode beyond answering questions and into completing tasks across the apps they use regularly.</div>
+  <div class="summary-zh">透過此次更新，Google 將 AI Mode 的功能從回答問題擴展到完成使用者日常使用應用程式中的任務。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age2')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age2"
+              onclick="toggleAnalysis('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Mode now lets you link and interact with select apps&quot;, &quot;title_zh&quot;: &quot;Google \u7684 AI Mode \u73fe\u5728\u8b93\u4f60\u9023\u7d50\u548c\u4e92\u52d5\u7cbe\u9078\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age2"
+              onclick="bookmarkArticle('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Mode now lets you link and interact with select apps&quot;, &quot;title_zh&quot;: &quot;Google \u7684 AI Mode \u73fe\u5728\u8b93\u4f60\u9023\u7d50\u548c\u4e92\u52d5\u7cbe\u9078\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age2">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age2"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age2')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age2', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/googles-ai-mode-now-lets-you-link-and-interact-with-select-apps/&quot;, &quot;title_en&quot;: &quot;Google\u2019s AI Mode now lets you link and interact with select apps&quot;, &quot;title_zh&quot;: &quot;Google \u7684 AI Mode \u73fe\u5728\u8b93\u4f60\u9023\u7d50\u548c\u4e92\u52d5\u7cbe\u9078\u61c9\u7528\u7a0b\u5f0f&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age2"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age2">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age2"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age2"
+              onclick="copyPrompt('age2')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age3" data-url="https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">TechCrunch AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/" target="_blank">Yes, you can now order DoorDash from the command line</a></div>
+    <div class="title-zh">你現在可以從命令列訂購 DoorDash</div>
+    
+<div class="summary-block">
+  <div class="summary-en">DoorDash is opening a limited beta of dd-cli, a command-line tool that lets developers and AI agents search stores, build carts, and place orders from the terminal, marking another step toward software designed for AI agents instead of just humans.</div>
+  <div class="summary-zh">DoorDash 推出限制測試版的 dd-cli，這是一個命令列工具，讓開發者和 AI 代理可以在終端機中搜尋店家、建構購物車和下單，標誌著向為 AI 代理而非只為人類設計的軟體邁進。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age3')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age3"
+              onclick="toggleAnalysis('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/&quot;, &quot;title_en&quot;: &quot;Yes, you can now order DoorDash from the command line&quot;, &quot;title_zh&quot;: &quot;\u4f60\u73fe\u5728\u53ef\u4ee5\u5f9e\u547d\u4ee4\u5217\u8a02\u8cfc DoorDash&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age3"
+              onclick="bookmarkArticle('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/&quot;, &quot;title_en&quot;: &quot;Yes, you can now order DoorDash from the command line&quot;, &quot;title_zh&quot;: &quot;\u4f60\u73fe\u5728\u53ef\u4ee5\u5f9e\u547d\u4ee4\u5217\u8a02\u8cfc DoorDash&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age3">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age3"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age3')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age3', {&quot;url&quot;: &quot;https://techcrunch.com/2026/07/16/yes-you-can-now-order-doordash-from-the-command-line/&quot;, &quot;title_en&quot;: &quot;Yes, you can now order DoorDash from the command line&quot;, &quot;title_zh&quot;: &quot;\u4f60\u73fe\u5728\u53ef\u4ee5\u5f9e\u547d\u4ee4\u5217\u8a02\u8cfc DoorDash&quot;, &quot;source&quot;: &quot;TechCrunch AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age3"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age3">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age3"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age3"
+              onclick="copyPrompt('age3')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age4" data-url="https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">VentureBeat AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs" target="_blank">The AI compute gap: Enterprises are buying infrastructure faster than they can measure what it costs</a></div>
+    <div class="title-zh">AI 運算差距：企業購買基礎設施的速度比衡量成本的速度更快</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Across 107 enterprises, AI infrastructure spending is accelerating well ahead of the ability to see or steer its economics. Most organizations run their AI on a familiar base of hyperscalers and model-provider APIs, yet the next dollar is aimed at specialized compute almost none of them use today; a majority intend to switch or add providers within the year, many within a quarter. Buying decisions turn on integration and total cost of ownership rather than headline token price — which is fortunate, because most enterprises cannot yet see their unit economics clearly: GPUs sit at half utilization or less, and fewer than half rigorously track what their compute actually costs. The result is a compute gap — heavy, fast-moving investment running ahead of the visibility needed to control it. Th</div>
+  <div class="summary-zh">在 107 家企業中，AI 基礎設施支出加速遠超過掌握或控制其成本的能力。大多數組織在熟悉的超大規模廠商和模型提供商 API 基礎上運行 AI，但下一筆支出瞄準的是幾乎沒有企業今日使用的專門運算。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age4')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age4"
+              onclick="toggleAnalysis('age4', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs&quot;, &quot;title_en&quot;: &quot;The AI compute gap: Enterprises are buying infrastructure faster than they can measure what it costs&quot;, &quot;title_zh&quot;: &quot;AI \u904b\u7b97\u5dee\u8ddd\uff1a\u4f01\u696d\u8cfc\u8cb7\u57fa\u790e\u8a2d\u65bd\u7684\u901f\u5ea6\u6bd4\u8861\u91cf\u6210\u672c\u7684\u901f\u5ea6\u66f4\u5feb&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age4"
+              onclick="bookmarkArticle('age4', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs&quot;, &quot;title_en&quot;: &quot;The AI compute gap: Enterprises are buying infrastructure faster than they can measure what it costs&quot;, &quot;title_zh&quot;: &quot;AI \u904b\u7b97\u5dee\u8ddd\uff1a\u4f01\u696d\u8cfc\u8cb7\u57fa\u790e\u8a2d\u65bd\u7684\u901f\u5ea6\u6bd4\u8861\u91cf\u6210\u672c\u7684\u901f\u5ea6\u66f4\u5feb&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age4">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age4"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age4')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age4', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-compute-gap-enterprises-are-buying-infrastructure-faster-than-they-can-measure-what-it-costs&quot;, &quot;title_en&quot;: &quot;The AI compute gap: Enterprises are buying infrastructure faster than they can measure what it costs&quot;, &quot;title_zh&quot;: &quot;AI \u904b\u7b97\u5dee\u8ddd\uff1a\u4f01\u696d\u8cfc\u8cb7\u57fa\u790e\u8a2d\u65bd\u7684\u901f\u5ea6\u6bd4\u8861\u91cf\u6210\u672c\u7684\u901f\u5ea6\u66f4\u5feb&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age4"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age4">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age4"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age4"
+              onclick="copyPrompt('age4')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age5" data-url="https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">VentureBeat AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials" target="_blank">The agent security gap: 54% of enterprises have already had an AI agent incident, and most still let agents share credentials</a></div>
+    <div class="title-zh">AI 代理安全差距：54% 企業已經遭遇 AI 代理事件，大多數仍讓代理共享憑證</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Across 107 enterprises, AI agents are being given real access to systems and data while the controls meant to contain them lag behind. More than half have already had a confirmed agent security incident or a near-miss; only about a third give every agent its own scoped identity, and most agents still share credentials; and only three in ten isolate their highest-risk agents. The security stack is overwhelmingly borrowed from the model providers and hyperscalers rather than purpose-built for agents, spending remains a thin slice of the security budget, and enterprises are evenly split on whether their defenses are keeping pace with AI-enabled attackers. The result is an agent security gap — autonomous agents proliferating faster than the identity, isolation, and enforcement controls needed </div>
+  <div class="summary-zh">在 107 家企業中，AI 代理被授予系統和資料的實際存取權，而控制它們的措施卻滯後。超過一半已經遭遇已確認的代理安全事件或近乎失誤；只有約三分之一的企業為每個代理配置自己的作用域身份，大多數代理仍然共享憑證。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age5')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age5"
+              onclick="toggleAnalysis('age5', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials&quot;, &quot;title_en&quot;: &quot;The agent security gap: 54% of enterprises have already had an AI agent incident, and most still let agents share credentials&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u5b89\u5168\u5dee\u8ddd\uff1a54% \u4f01\u696d\u5df2\u7d93\u906d\u9047 AI \u4ee3\u7406\u4e8b\u4ef6\uff0c\u5927\u591a\u6578\u4ecd\u8b93\u4ee3\u7406\u5171\u4eab\u6191\u8b49&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age5"
+              onclick="bookmarkArticle('age5', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials&quot;, &quot;title_en&quot;: &quot;The agent security gap: 54% of enterprises have already had an AI agent incident, and most still let agents share credentials&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u5b89\u5168\u5dee\u8ddd\uff1a54% \u4f01\u696d\u5df2\u7d93\u906d\u9047 AI \u4ee3\u7406\u4e8b\u4ef6\uff0c\u5927\u591a\u6578\u4ecd\u8b93\u4ee3\u7406\u5171\u4eab\u6191\u8b49&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age5">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age5"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age5')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age5', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-security-gap-54-of-enterprises-have-already-had-an-ai-agent-incident-and-most-still-let-agents-share-credentials&quot;, &quot;title_en&quot;: &quot;The agent security gap: 54% of enterprises have already had an AI agent incident, and most still let agents share credentials&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u5b89\u5168\u5dee\u8ddd\uff1a54% \u4f01\u696d\u5df2\u7d93\u906d\u9047 AI \u4ee3\u7406\u4e8b\u4ef6\uff0c\u5927\u591a\u6578\u4ecd\u8b93\u4ee3\u7406\u5171\u4eab\u6191\u8b49&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age5"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age5">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age5"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age5"
+              onclick="copyPrompt('age5')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age6" data-url="https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">VentureBeat AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix" target="_blank">The AI context gap: Enterprise AI organizations have a trust problem, not a retrieval problem — and most are still building the fix</a></div>
+    <div class="title-zh">AI 上下文差距：企業 AI 組織有信任問題而非檢索問題——大多數仍在建設修復方案</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Across 101 enterprises, the infrastructure that feeds AI agents their business context is being built faster than it can be trusted. Retrieval-augmented generation is already the default context source, and provider-native retrieval has quietly overtaken the dedicated vector databases that define the category — yet a majority of enterprises have already watched their agents produce confident, wrong answers traced to missing or inconsistent context. A governed semantic layer is emerging as the fix, but most are still building it; the field is converging on hybrid retrieval; and even as provider-native tools lead in practice, a plurality say they intend to keep best-of-breed. The result is a context gap — agents that sound authoritative running on a foundation their owners do not yet fully t</div>
+  <div class="summary-zh">在 101 家企業中，為 AI 代理提供業務上下文的基礎設施建設速度超過其被信任的速度。檢索增強生成已成為預設上下文來源，供應商原生檢索已悄然超越定義該領域的專用向量資料庫。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age6')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age6"
+              onclick="toggleAnalysis('age6', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix&quot;, &quot;title_en&quot;: &quot;The AI context gap: Enterprise AI organizations have a trust problem, not a retrieval problem \u2014 and most are still building the fix&quot;, &quot;title_zh&quot;: &quot;AI \u4e0a\u4e0b\u6587\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u4fe1\u4efb\u554f\u984c\u800c\u975e\u6aa2\u7d22\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u5efa\u8a2d\u4fee\u5fa9\u65b9\u6848&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age6"
+              onclick="bookmarkArticle('age6', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix&quot;, &quot;title_en&quot;: &quot;The AI context gap: Enterprise AI organizations have a trust problem, not a retrieval problem \u2014 and most are still building the fix&quot;, &quot;title_zh&quot;: &quot;AI \u4e0a\u4e0b\u6587\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u4fe1\u4efb\u554f\u984c\u800c\u975e\u6aa2\u7d22\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u5efa\u8a2d\u4fee\u5fa9\u65b9\u6848&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age6">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age6"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age6')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age6', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-ai-context-gap-enterprise-ai-organizations-have-a-trust-problem-not-a-retrieval-problem-and-most-are-still-building-the-fix&quot;, &quot;title_en&quot;: &quot;The AI context gap: Enterprise AI organizations have a trust problem, not a retrieval problem \u2014 and most are still building the fix&quot;, &quot;title_zh&quot;: &quot;AI \u4e0a\u4e0b\u6587\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u4fe1\u4efb\u554f\u984c\u800c\u975e\u6aa2\u7d22\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u5efa\u8a2d\u4fee\u5fa9\u65b9\u6848&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age6"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age6">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age6"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age6"
+              onclick="copyPrompt('age6')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age7" data-url="https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">VentureBeat AI</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway" target="_blank">The agent evaluation gap: Enterprise AI organizations have a reality-alignment problem, not a coverage problem — and most are shipping to production anyway</a></div>
+    <div class="title-zh">AI 代理評估差距：企業 AI 組織有現實對齊問題而非涵蓋問題——大多數仍在部署到生產環境</div>
+    
+<div class="summary-block">
+  <div class="summary-en">Across 157 enterprises, organizations are granting AI agents more autonomy while trusting the evaluations meant to gate that autonomy less. Half have already shipped an agent that passed their internal evaluations and then failed a customer in production; only one in twenty fully trusts automated evaluation today; and the most-cited weakness is that evaluations do not align with real-world outcomes. Yet two-thirds already allow, or are actively engineering toward, deploying agent changes to production on automated evaluation alone — with no human in the loop. The result is an evaluation gap — the distance between how much autonomy enterprises are handing their agents and how far they trust the tests that are supposed to catch the failures. This wave of VentureBeat Pulse Research examines h</div>
+  <div class="summary-zh">在 157 家企業中，組織在授予 AI 代理更多自主權的同時卻降低了對評估的信任。超過一半已經部署了通過內部評估但在客戶生產環境中失敗的代理；只有五分之一完全信任自動化評估。</div>
+</div>
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age7')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age7"
+              onclick="toggleAnalysis('age7', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway&quot;, &quot;title_en&quot;: &quot;The agent evaluation gap: Enterprise AI organizations have a reality-alignment problem, not a coverage problem \u2014 and most are shipping to production anyway&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u8a55\u4f30\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u73fe\u5be6\u5c0d\u9f4a\u554f\u984c\u800c\u975e\u6db5\u84cb\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u90e8\u7f72\u5230\u751f\u7522\u74b0\u5883&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age7"
+              onclick="bookmarkArticle('age7', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway&quot;, &quot;title_en&quot;: &quot;The agent evaluation gap: Enterprise AI organizations have a reality-alignment problem, not a coverage problem \u2014 and most are shipping to production anyway&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u8a55\u4f30\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u73fe\u5be6\u5c0d\u9f4a\u554f\u984c\u800c\u975e\u6db5\u84cb\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u90e8\u7f72\u5230\u751f\u7522\u74b0\u5883&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age7">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age7"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age7')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age7', {&quot;url&quot;: &quot;https://venturebeat.com/ai/the-agent-evaluation-gap-enterprise-ai-organizations-have-a-reality-alignment-problem-not-a-coverage-problem-and-most-are-shipping-to-production-anyway&quot;, &quot;title_en&quot;: &quot;The agent evaluation gap: Enterprise AI organizations have a reality-alignment problem, not a coverage problem \u2014 and most are shipping to production anyway&quot;, &quot;title_zh&quot;: &quot;AI \u4ee3\u7406\u8a55\u4f30\u5dee\u8ddd\uff1a\u4f01\u696d AI \u7d44\u7e54\u6709\u73fe\u5be6\u5c0d\u9f4a\u554f\u984c\u800c\u975e\u6db5\u84cb\u554f\u984c\u2014\u2014\u5927\u591a\u6578\u4ecd\u5728\u90e8\u7f72\u5230\u751f\u7522\u74b0\u5883&quot;, &quot;source&quot;: &quot;VentureBeat AI&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age7"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age7">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age7"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age7"
+              onclick="copyPrompt('age7')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="card-age8" data-url="https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb">
+  <div class="card-head">
+    <div class="card-meta-row">
+      <span class="source-tag">Hugging Face Blog</span>
+      <span class="date-tag">Thu, 16 Ju</span>
+      <span class="lang-tag">EN→中</span>
+    </div>
+    <div class="title-en"><a href="https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb" target="_blank">NVIDIA Nemotron 3 Embed Ranks #1 Overall on RTEB, Advancing Agentic Retrieval</a></div>
+    <div class="title-zh">NVIDIA Nemotron 3 Embed 在 RTEB 上排名第一，推進代理檢索發展</div>
+    
+    <div class="card-actions">
+      <a class="btn btn-read" href="https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb" target="_blank">🔗 閱讀全文</a>
+      <button class="btn btn-paste" onclick="togglePaste('age8')">📋 貼上全文</button>
+      <button class="btn btn-analyze" id="analyze-btn-age8"
+              onclick="toggleAnalysis('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb&quot;, &quot;title_en&quot;: &quot;NVIDIA Nemotron 3 Embed Ranks #1 Overall on RTEB, Advancing Agentic Retrieval&quot;, &quot;title_zh&quot;: &quot;NVIDIA Nemotron 3 Embed \u5728 RTEB \u4e0a\u6392\u540d\u7b2c\u4e00\uff0c\u63a8\u9032\u4ee3\u7406\u6aa2\u7d22\u767c\u5c55&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;}, PROMPT_TEMPLATE)">🔬 深度分析</button>
+      <button class="btn btn-bookmark" id="bm-btn-age8"
+              onclick="bookmarkArticle('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb&quot;, &quot;title_en&quot;: &quot;NVIDIA Nemotron 3 Embed Ranks #1 Overall on RTEB, Advancing Agentic Retrieval&quot;, &quot;title_zh&quot;: &quot;NVIDIA Nemotron 3 Embed \u5728 RTEB \u4e0a\u6392\u540d\u7b2c\u4e00\uff0c\u63a8\u9032\u4ee3\u7406\u6aa2\u7d22\u767c\u5c55&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">⭐ 加入關注</button>
+      
+    </div>
+  </div>
+
+  <div class="fulltext-panel" id="ft-age8">
+    <div class="panel-label">📄 貼上文章全文（存入 GitHub 備份）</div>
+    <textarea class="fulltext-area" id="ta-age8"
+              placeholder="請貼上文章全文..."
+              oninput="onTextChange('age8')"></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-save" onclick="saveFullText('age8', {&quot;url&quot;: &quot;https://huggingface.co/blog/nvidia/nemotron-3-embed-wins-rteb&quot;, &quot;title_en&quot;: &quot;NVIDIA Nemotron 3 Embed Ranks #1 Overall on RTEB, Advancing Agentic Retrieval&quot;, &quot;title_zh&quot;: &quot;NVIDIA Nemotron 3 Embed \u5728 RTEB \u4e0a\u6392\u540d\u7b2c\u4e00\uff0c\u63a8\u9032\u4ee3\u7406\u6aa2\u7d22\u767c\u5c55&quot;, &quot;source&quot;: &quot;Hugging Face Blog&quot;, &quot;date&quot;: &quot;Thu, 16 Ju&quot;, &quot;category&quot;: &quot;&quot;})">💾 儲存全文</button>
+      <span class="save-status" id="save-status-age8"></span>
+    </div>
+  </div>
+
+  <div class="analysis-panel" id="ap-age8">
+    <div class="panel-label">🔬 深度分析 Prompt（複製後貼到 Claude.ai）</div>
+    <div class="prompt-box" id="prompt-age8"></div>
+    <div class="panel-actions">
+      <button class="btn btn-copy-prompt" id="copy-btn-age8"
+              onclick="copyPrompt('age8')">📋 複製 Prompt</button>
+      <a class="btn btn-read" href="https://claude.ai" target="_blank">開啟 Claude.ai →</a>
+    </div>
+  </div>
+</div>
+<script>
+// ── GitHub token management ──
+function getToken() { return localStorage.getItem('gh_pat') || ''; }
+function setToken(t) { localStorage.setItem('gh_pat', t); }
+
+function checkToken() {
+  const t = getToken();
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = t ? 'none' : 'block';
+  // Enable/disable save buttons
+  document.querySelectorAll('.btn-save').forEach(b => {
+    b.style.opacity = t ? '1' : '0.4';
+    b.style.cursor  = t ? 'pointer' : 'not-allowed';
+  });
+}
+
+function saveToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (val) { setToken(val); checkToken(); }
+}
+
+// ── Toggle full text panel ──
+function togglePaste(cardId) {
+  const panel = document.getElementById('ft-' + cardId);
+  panel.classList.toggle('open');
+}
+
+// ── Update analyze button when text is pasted ──
+function onTextChange(cardId) {
+  const area = document.getElementById('ta-' + cardId);
+  const btn  = document.getElementById('analyze-btn-' + cardId);
+  if (area.value.trim().length > 100) {
+    btn.classList.add('enabled');
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } else {
+    btn.classList.remove('enabled');
+    btn.style.opacity = '0.4';
+    btn.style.cursor  = 'not-allowed';
+  }
+}
+
+// ── Save full text to GitHub ──
+async function saveFullText(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+  const text = document.getElementById('ta-' + cardId).value.trim();
+  if (!text) { alert('請先貼上文章全文'); return; }
+
+  const statusEl = document.getElementById('save-status-' + cardId);
+  statusEl.textContent = '儲存中...'; statusEl.className = 'save-status';
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/fulltext/${date}_${hash}.json`;
+  const payload = {
+    url:       articleMeta.url,
+    title_en:  articleMeta.title_en,
+    title_zh:  articleMeta.title_zh,
+    source:    articleMeta.source,
+    date:      articleMeta.date,
+    category:  articleMeta.category,
+    saved_at:  new Date().toISOString(),
+    fulltext:  text,
+  };
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = { message: `fulltext: ${articleMeta.title_en.slice(0,60)}`,
+                   content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+                   branch: 'master' };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      statusEl.textContent = '✅ 已儲存到 GitHub'; statusEl.className = 'save-status ok';
+    } else {
+      const err = await res.json();
+      statusEl.textContent = `❌ ${err.message}`; statusEl.className = 'save-status err';
+    }
+  } catch(e) {
+    statusEl.textContent = `❌ ${e.message}`; statusEl.className = 'save-status err';
+  }
+}
+
+// ── Toggle deep analysis panel ──
+function toggleAnalysis(cardId, articleMeta, promptTemplate) {
+  const btn = document.getElementById('analyze-btn-' + cardId);
+  if (!btn.classList.contains('enabled')) return;
+  const panel = document.getElementById('ap-' + cardId);
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open'); return;
+  }
+  // Build prompt
+  const fulltext = document.getElementById('ta-' + cardId).value.trim();
+  const prompt = promptTemplate
+    .replace('{title}',    articleMeta.title_en)
+    .replace('{source}',   articleMeta.source)
+    .replace('{date}',     articleMeta.date)
+    .replace('{fulltext}', fulltext);
+  document.getElementById('prompt-' + cardId).textContent = prompt;
+  panel.classList.add('open');
+}
+
+// ── Copy prompt to clipboard ──
+function copyPrompt(cardId) {
+  const text = document.getElementById('prompt-' + cardId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn-' + cardId);
+    btn.textContent = '✅ 已複製'; setTimeout(() => btn.textContent = '📋 複製 Prompt', 2000);
+  });
+}
+
+// ── Bookmark article ──
+async function bookmarkArticle(cardId, articleMeta) {
+  const token = getToken();
+  if (!token) { alert('請先設定 GitHub Personal Access Token'); return; }
+
+  const btn = document.getElementById('bm-btn-' + cardId);
+  if (btn.disabled) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  const hash = btoa(articleMeta.url).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  const path = `soc_planning_agent/archive/bookmarks/${date}_${hash}.json`;
+  const payload = {
+    url:           articleMeta.url,
+    title_en:      articleMeta.title_en,
+    title_zh:      articleMeta.title_zh,
+    source:        articleMeta.source,
+    date:          articleMeta.date,
+    category:      articleMeta.category,
+    bookmarked_at: new Date().toISOString(),
+  };
+
+  btn.textContent = '⭐ 儲存中...';
+
+  try {
+    // Check if file exists to get SHA
+    let sha = '';
+    try {
+      const chk = await fetch(
+        `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+        { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }}
+      );
+      if (chk.ok) { sha = (await chk.json()).sha; }
+    } catch {}
+
+    const body = {
+      message: `bookmark: ${articleMeta.title_en.slice(0, 60)}`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: 'master',
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/johnsonlu1973/tensorflow/contents/${path}`,
+      { method: 'PUT', headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        }, body: JSON.stringify(body) }
+    );
+    if (res.ok) {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+      localStorage.setItem('bm_' + cardId, '1');
+      // Store metadata so index.html can show it immediately
+      const stored = JSON.parse(localStorage.getItem('gh_bookmarks') || '[]');
+      if (!stored.find(a => a.url === articleMeta.url)) {
+        stored.unshift({...articleMeta, bookmarked_at: new Date().toISOString()});
+        localStorage.setItem('gh_bookmarks', JSON.stringify(stored.slice(0, 30)));
+      }
+    } else {
+      const err = await res.json();
+      btn.textContent = '⭐ 加入關注';
+      alert('❌ ' + err.message);
+    }
+  } catch(e) {
+    btn.textContent = '⭐ 加入關注';
+    alert('❌ ' + e.message);
+  }
+}
+
+// ── Restore bookmark state on page load ──
+function initBookmarks() {
+  document.querySelectorAll('[id^="bm-btn-"]').forEach(btn => {
+    const cardId = btn.id.replace('bm-btn-', '');
+    if (localStorage.getItem('bm_' + cardId) === '1') {
+      btn.textContent = '⭐ 已關注';
+      btn.style.opacity = '0.6';
+      btn.disabled = true;
+      btn.classList.add('bookmarked');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkToken();
+  initBookmarks();
+});
+</script>
+</body></html>
